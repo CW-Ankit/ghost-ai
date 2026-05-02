@@ -18,6 +18,8 @@ Update this file whenever the current phase, active feature, or implementation s
 - [x] Added UI primitive components: Button, Card, Dialog, Input, Tabs, Textarea, ScrollArea.
 - [x] Created `lib/utils.ts` helper.
 - [x] Migrated feature specs from Prisma/PostgreSQL to Convex (05-convex.md and others).
+- [x] Implemented Editor Chrome: Navbar and Project Sidebar (02-editor-chrome.md).
+- [x] Fixed Tailwind CSS v4 build error by mapping shadcn variables to `@theme` colors.
 
 ## In Progress
 
@@ -25,7 +27,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- 02-editor-chrome.md
+- 03-project-selection.md
 
 ## Open Questions
 

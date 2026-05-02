@@ -1,8 +1,8 @@
-# 👻 GHOST AI
+# GHOST AI
 
 A high-performance, AI-driven web application built with a minimal dark-themed interface.
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
 - **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) (Custom Minimal Dark Theme)
@@ -13,7 +13,7 @@ A high-performance, AI-driven web application built with a minimal dark-themed i
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Installation
 
@@ -64,7 +64,7 @@ Open [http://localhost:3000](http://localhost:3000) to view the app.
 
 ---
 
-## 🏗 Architecture Overview
+## Architecture Overview
 
 - `app/`: Next.js App Router pages and layouts.
 - `convex/`: Backend logic, schema definitions, and auth configuration.
@@ -72,7 +72,7 @@ Open [http://localhost:3000](http://localhost:3000) to view the app.
 - `lib/`: Shared utility functions and client initializations.
 - `context/`: Project architectural guidelines and documentation.
 
-## 🎨 Design System
+## Design System
 
 The app uses a strict minimal dark mode:
 
