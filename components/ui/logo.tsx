@@ -14,6 +14,7 @@ export function Logo({
   color 
 }: LogoProps) {
   const defaultColor = color || 'currentColor';
+  const eyeColor = variant === 'filled' ? 'var(--bg-base)' : defaultColor;
   
   return (
     <svg 
@@ -32,8 +33,8 @@ export function Logo({
         strokeLinecap="round" 
         strokeLinejoin="round" 
       />
-      <circle cx="9" cy="11" r="1" fill={defaultColor} />
-      <circle cx="15" cy="11" r="1" fill={defaultColor} />
+      <circle cx="9" cy="11" r="1" fill={eyeColor} />
+      <circle cx="15" cy="11" r="1" fill={eyeColor} />
     </svg>
   );
 }
