@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Plus } from "lucide-react";
+import { Plus, Shapes } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface EditorHomeProps {
@@ -11,6 +11,9 @@ interface EditorHomeProps {
 export function EditorHome({ onNewProject }: EditorHomeProps) {
   return (
     <div className="flex h-full w-full flex-col items-center justify-center text-center p-6">
+      <div className="mb-6 p-4 rounded-full bg-accent-primary/10 text-accent-primary">
+        <Shapes className="h-12 w-12" />
+      </div>
       <h1 className="text-3xl font-heading font-semibold text-text-primary mb-2">
         Create a project or open an existing one
       </h1>

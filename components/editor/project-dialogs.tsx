@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useProjectDialogs } from "@/hooks/use-project-dialogs";
+import { FolderPlus, Pencil, Trash2 } from "lucide-react";
 
 // Let's redefine it to take the hook state as props
 interface ProjectDialogsProps {
@@ -51,11 +52,14 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
     return (
       <Dialog open={true} onOpenChange={closeDialog}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create Project</DialogTitle>
-            <DialogDescription>
-              Enter a name for your new architecture project.
-            </DialogDescription>
+          <DialogHeader className="flex-row items-center gap-3">
+            <FolderPlus className="h-5 w-5 text-accent-primary" />
+            <div>
+              <DialogTitle>Create Project</DialogTitle>
+              <DialogDescription>
+                Enter a name for your new architecture project.
+              </DialogDescription>
+            </div>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -97,11 +101,14 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
     return (
       <Dialog open={true} onOpenChange={closeDialog}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename Project</DialogTitle>
-            <DialogDescription>
-              Renaming <strong>{selectedProject?.name}</strong>.
-            </DialogDescription>
+          <DialogHeader className="flex-row items-center gap-3">
+            <Pencil className="h-5 w-5 text-accent-primary" />
+            <div>
+              <DialogTitle>Rename Project</DialogTitle>
+              <DialogDescription>
+                Renaming <strong>{selectedProject?.name}</strong>.
+              </DialogDescription>
+            </div>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -144,12 +151,15 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
     return (
       <Dialog open={true} onOpenChange={closeDialog}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Project</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete <strong>{selectedProject?.name}</strong>? 
-              This action cannot be undone.
-            </DialogDescription>
+          <DialogHeader className="flex-row items-center gap-3">
+            <Trash2 className="h-5 w-5 text-state-error" />
+            <div>
+              <DialogTitle>Delete Project</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete <strong>{selectedProject?.name}</strong>? 
+                This action cannot be undone.
+              </DialogDescription>
+            </div>
           </DialogHeader>
           <div className="py-4" />
           <DialogFooter>

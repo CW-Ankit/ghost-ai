@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Plus, X, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Plus, X, MoreVertical, Pencil, Trash2, Folder, Users, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -81,8 +81,14 @@ export function ProjectSidebar({ isOpen, onClose, dialogs }: ProjectSidebarProps
           <div className="flex-1 overflow-hidden flex flex-col p-4 gap-4">
             <Tabs defaultValue="my-projects" className="flex-1 flex flex-col">
               <TabsList className="grid w-full grid-cols-2 bg-bg-subtle">
-                <TabsTrigger value="my-projects">My Projects</TabsTrigger>
-                <TabsTrigger value="shared">Shared</TabsTrigger>
+                <TabsTrigger value="my-projects" className="gap-2">
+                  <Folder className="h-3.5 w-3.5" />
+                  My Projects
+                </TabsTrigger>
+                <TabsTrigger value="shared" className="gap-2">
+                  <Users className="h-3.5 w-3.5" />
+                  Shared
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="my-projects" className="flex-1 mt-4">
@@ -97,7 +103,10 @@ export function ProjectSidebar({ isOpen, onClose, dialogs }: ProjectSidebarProps
                         )}
                         onClick={() => setActiveProjectId(project.id)}
                       >
-                        <span className="text-sm font-medium truncate">{project.name}</span>
+                        <span className="text-sm font-medium truncate flex items-center gap-2">
+                          <FileText className="h-3.5 w-3.5 text-text-muted" />
+                          {project.name}
+                        </span>
                         <div className="flex items-center gap-1">
                           {showingActions === project.id ? (
                             <div className="flex items-center gap-1 bg-bg-surface border border-border-subtle rounded-md p-1 shadow-sm">
@@ -158,7 +167,7 @@ export function ProjectSidebar({ isOpen, onClose, dialogs }: ProjectSidebarProps
                 <ScrollArea className="h-[calc(100vh-200px)]">
                   <div className="flex flex-col gap-1">
                     {MOCK_PROJECTS.filter(p => !p.isOwner).map(project => (
-                      <div
+                      <div 
                         key={project.id}
                         className={cn(
                           "group flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors",
@@ -166,7 +175,10 @@ export function ProjectSidebar({ isOpen, onClose, dialogs }: ProjectSidebarProps
                         )}
                         onClick={() => setActiveProjectId(project.id)}
                       >
-                        <span className="text-sm font-medium truncate">{project.name}</span>
+                        <span className="text-sm font-medium truncate flex items-center gap-2">
+                          <FileText className="h-3.5 w-3.5 text-text-muted" />
+                          {project.name}
+                        </span>
                       </div>
                     ))}
                     {MOCK_PROJECTS.filter(p => !p.isOwner).length === 0 && (

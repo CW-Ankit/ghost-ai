@@ -4,6 +4,7 @@ import React from "react";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserButton } from "@clerk/nextjs";
+import { Logo } from "@/components/ui/logo";
 
 interface EditorNavbarProps {
   sidebarOpen: boolean;
@@ -24,8 +25,9 @@ export function EditorNavbar({ sidebarOpen, onToggleSidebar }: EditorNavbarProps
         >
           {sidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
         </Button>
-        <div className="ml-2 text-sm font-medium text-text-secondary">
-          Ghost AI Editor
+        <div className="ml-2 flex items-center gap-2 text-sm font-medium text-text-primary">
+          <Logo className="text-accent-primary" size={20} />
+          <span>Ghost AI Editor</span>
         </div>
       </div>
 
