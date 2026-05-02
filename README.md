@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 👻 GHOST AI
 
-## Getting Started
+A high-performance, AI-driven web application built with a minimal dark-themed interface.
 
-First, run the development server:
+## 🛠 Tech Stack
+
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
+- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) (Custom Minimal Dark Theme)
+- **Backend/Database**: [Convex](https://convex.dev/) (Real-time Database & Serverless Functions)
+- **Authentication**: [Clerk](https://clerk.com/)
+- **Language**: TypeScript
+- **Package Manager**: pnpm
+
+---
+
+## 🚀 Getting Started
+
+### 1. Installation
+
+Clone the repository and install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create a `.env.local` file in the root directory and add the following:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_publishable_key
+CLERK_SECRET_KEY=your_secret_key
+CLERK_FRONTEND_API_URL=https://your-clerk-frontend-api-url.clerk.accounts.dev
 
-## Learn More
+# Convex Backend
+NEXT_PUBLIC_CONVEX_URL=your_convex_url
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Backend Setup (Convex)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Initialize Convex in your project:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   ```bash
+   pnpm dlx convex dev
+   ```
 
-## Deploy on Vercel
+2. This will prompt you to log in and create a project. It will also automatically sync the `convex/schema.ts` and `convex/auth.config.ts` to your backend.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 4. Authentication Setup (Clerk)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Go to the [Clerk Dashboard](https://dashboard.clerk.com/).
+2. Navigate to **Integrations** $\rightarrow$ **Convex**.
+3. Activate the Convex integration.
+4. Copy the **Frontend API URL** and paste it into `CLERK_FRONTEND_API_URL` in your `.env.local`.
+
+### 5. Running the App
+
+```bash
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) to view the app.
+
+---
+
+## 🏗 Architecture Overview
+
+- `app/`: Next.js App Router pages and layouts.
+- `convex/`: Backend logic, schema definitions, and auth configuration.
+- `components/`: Reusable UI components (including the `ConvexClientProvider`).
+- `lib/`: Shared utility functions and client initializations.
+- `context/`: Project architectural guidelines and documentation.
+
+## 🎨 Design System
+
+The app uses a strict minimal dark mode:
+
+- **Background**: `#0a0a0a`
+- **Foreground**: `#e5e5e5`
+- **Muted**: `#737373`
+- **Border**: `#262626`
