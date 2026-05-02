@@ -42,7 +42,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- 05-convex.md
+- 06-project-apis.md
 
 ## Open Questions
 

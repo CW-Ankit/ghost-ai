@@ -28,7 +28,7 @@ Ensure a unique constraint or validation logic is in place for the project/email
 
 ## Data Access
 
-All data access must happen through Convex functions (queries and mutations) in the `convex/` directory. 
+All data access must happen through Convex functions (queries and mutations) in the `convex/` directory.
 
 Follow the guidelines in `convex/_generated/ai/guidelines.md` for implementing these functions.
 
