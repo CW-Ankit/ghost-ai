@@ -6,7 +6,7 @@
 - Fix root causes — do not layer workarounds.
 - Do not mix unrelated concerns in one component or route.
 - Respect the system boundaries defined in `architecture-context.md`.
-- Never use Emojis in the whole codebase.
+- Never use emojis in the codebase.
 
 ## TypeScript
 

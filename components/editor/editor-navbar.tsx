@@ -3,6 +3,7 @@
 import React from "react";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { UserButton } from "@clerk/nextjs";
 
 interface EditorNavbarProps {
   sidebarOpen: boolean;
@@ -17,6 +18,8 @@ export function EditorNavbar({ sidebarOpen, onToggleSidebar }: EditorNavbarProps
           variant="ghost"
           size="icon"
           onClick={onToggleSidebar}
+          aria-label="Toggle sidebar"
+          aria-expanded={sidebarOpen}
           className="text-text-secondary hover:text-text-primary hover:bg-bg-subtle"
         >
           {sidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
@@ -29,7 +32,7 @@ export function EditorNavbar({ sidebarOpen, onToggleSidebar }: EditorNavbarProps
       <div className="flex-1" />
 
       <div className="flex items-center gap-2">
-        {/* Right section stays empty for now */}
+        <UserButton />
       </div>
     </nav>
   );
