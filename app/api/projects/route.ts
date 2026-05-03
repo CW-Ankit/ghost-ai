@@ -17,7 +17,7 @@ export async function GET() {
     if (!token) {
       return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
     }
-    const projects = await convexHttpClient.query(api.projects.list, {}, { token });
+    const projects = await (convexHttpClient.query as any)(api.projects.list, {}, { token });
     return NextResponse.json(projects);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     if (!token) {
       return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
     }
-    const projectId = await convexHttpClient.mutation(api.projects.create, {
+    const projectId = await (convexHttpClient.mutation as any)(api.projects.create, {
       name: body.name,
       description: body.description,
       roomId: body.roomId,

@@ -22,7 +22,7 @@ export async function checkProjectAccess(roomId: string) {
   convexHttpClient.setAuth(identity.token);
 
   try {
-    const project = await convexHttpClient.query<Doc<"projects">>(api.projects.getByRoomId, {
+    const project = await (convexHttpClient.query as any)(api.projects.getByRoomId, {
       roomId,
     });
     return project;

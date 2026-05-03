@@ -4,6 +4,7 @@ import { getProjects } from "@/lib/projects-server";
 import { WorkspaceShell } from "@/components/editor/workspace-shell";
 import { AccessDenied } from "@/components/editor/access-denied";
 import { auth } from "@clerk/nextjs/server";
+import { Doc } from "@/convex/_generated/dataModel";
 
 export default async function EditorRoomPage({
   params,
@@ -29,7 +30,7 @@ export default async function EditorRoomPage({
 
   return (
     <WorkspaceShell 
-      project={project} 
+      project={project as Doc<"projects">} 
       initialProjects={projects} 
       initialSharedProjects={sharedProjects}
     >

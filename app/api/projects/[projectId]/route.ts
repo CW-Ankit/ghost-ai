@@ -25,7 +25,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
     }
     
-    await convexHttpClient.mutation(api.projects.rename, {
+    await (convexHttpClient.mutation as any)(api.projects.rename, {
       projectId: projectId as Id<"projects">,
       name: body.name,
     }, { token });
@@ -57,7 +57,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
     }
     
-    await convexHttpClient.mutation(api.projects.remove, {
+    await (convexHttpClient.mutation as any)(api.projects.remove, {
       projectId: projectId as Id<"projects">,
     }, { token });
 

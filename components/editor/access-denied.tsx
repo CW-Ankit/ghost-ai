@@ -16,9 +16,12 @@ export function AccessDenied() {
         <p className="text-text-secondary">
           You don&apos;t have permission to access this project, or the project no longer exists.
         </p>
-        <Button asChild className="mt-4 bg-accent-primary text-bg-base hover:bg-accent-primary/90">
-          <Link href="/editor">Back to Projects</Link>
-        </Button>
+        <Link 
+          href="/editor" 
+          className="mt-4 inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg bg-accent-primary text-bg-base hover:bg-accent-primary/90 transition-colors"
+        >
+          Back to Projects
+        </Link>
       </div>
     </div>
   );

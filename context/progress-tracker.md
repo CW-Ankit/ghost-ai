@@ -53,6 +53,13 @@ Update this file whenever the current phase, active feature, or implementation s
   - Created `WorkspaceShell` layout with Top Navbar, Project Sidebar, and AI Sidebar placeholder.
   - Integrated room highlighting in `ProjectSidebar`.
   - Added a canvas placeholder with dark technical theme.
+- [x] Implemented Share Dialog (09-share-dialog.md):
+  - Added "Share" button to workspace shell.
+  - Created `ShareDialog` with collaborator list, invite, and remove functionality.
+  - Implemented enriched collaborator data fetching using Clerk Backend API.
+  - Implemented "Copy project link" with visual feedback.
+  - Enforced owner-only permissions for inviting and removing collaborators.
+  - Created API routes for collaborator management.
 
 
 ## In Progress
@@ -61,7 +68,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- 08-editor-workspace-shell.md
+- 10-liveblocks-setup.md
 
 ## Open Questions
 

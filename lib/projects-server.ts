@@ -19,7 +19,7 @@ import { Doc } from "@/convex/_generated/dataModel";
  */
 const convexHttpClient = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-export async function getProjects() {
+export async function getProjects(): Promise<{ projects: Doc<'projects'>[]; sharedProjects: Doc<'projects'>[] }> {
   try {
     const { userId, getToken } = await auth();
 
@@ -37,7 +37,7 @@ export async function getProjects() {
 
     // Fetch owned projects
     // api.projects.list expects no arguments and handles auth via ctx.auth.getUserIdentity()
-    const projects = await convexHttpClient.query<Doc<'projects'>[]>(api.projects.list, {});
+    const projects = await (convexHttpClient.query as any)(api.projects.list, {});
 
     // Fetch shared projects (Not yet implemented in API, but spec asks for it)
     const sharedProjects: Doc<'projects'>[] = [];

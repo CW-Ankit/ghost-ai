@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useProjectActions } from "../../hooks/use-project-actions";
 import { Doc } from "@/convex/_generated/dataModel";
+import { ShareDialog } from "./share-dialog";
 
 interface WorkspaceShellProps {
   project: Doc<"projects">;
@@ -23,6 +24,7 @@ export function WorkspaceShell({
 }: WorkspaceShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const actions = useProjectActions();
 
   return (
@@ -55,7 +57,12 @@ export function WorkspaceShell({
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="text-text-secondary gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setShareDialogOpen(true)}
+              className="text-text-secondary gap-2"
+            >
               <Share2 className="h-4 w-4" />
               <span className="hidden sm:inline">Share</span>
             </Button>
@@ -103,6 +110,13 @@ export function WorkspaceShell({
           </aside>
         </main>
       </div>
+
+      <ShareDialog 
+        projectId={project._id}
+        ownerId={project.ownerId}
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+      />
     </div>
   );
 }
