@@ -1,4 +1,8 @@
-Wire the editor home sidebar and dialogs to the real project API.
+# Wiring Editor Frontend to Backend
+
+## Overview
+
+Wire the editor home sidebar and dialogs to the real project API
 
 ### Data Fetching
 

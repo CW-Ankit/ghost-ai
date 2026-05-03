@@ -34,6 +34,18 @@ Update this file whenever the current phase, active feature, or implementation s
   - Added project management actions (rename/delete) to the `ProjectSidebar` for owned projects.
   - Implemented `useProjectDialogs` hook to manage dialog state and mock API interactions.
   - Added mobile-responsive sidebar backdrop.
+- [x] Implemented Project APIs (06-project-apis.md):
+  - Created Convex functions for listing, creating, renaming, and deleting projects.
+  - Implemented REST endpoints in `/api/projects` and `/api/projects/[projectId]`.
+  - Integrated Clerk auth for identity mapping and ownership checks.
+  - Handled 401, 403, and 404 responses.
+- [x] Wired Editor Home to Backend (07-wire-editor-home.md):
+  - Converted Editor Page to a server component for optimized data fetching.
+  - Implemented `useProjectActions` hook for project mutations via API routes.
+  - Integrated server-side project listing into the sidebar.
+  - Added slugification and room ID generation for project creation.
+  - Wired create, rename, and delete flows with real API calls and navigation.
+  - Added room ID preview to the create dialog.
 
 
 ## In Progress
@@ -42,7 +54,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- 06-project-apis.md
+- 08-editor-workspace-shell.md
 
 ## Open Questions
 
@@ -57,3 +69,4 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Theme is strict dark-only.
 - Components are managed via shadcn CLI.
+- **Critical**: Avoid running recursive terminal commands (e.g., `grep -r`, `find .`) that may timeout or take excessively long. Use targeted commands on specific directories or files first.

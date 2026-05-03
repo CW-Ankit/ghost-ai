@@ -11,12 +11,12 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useProjectDialogs } from "@/hooks/use-project-dialogs";
+import { useProjectActions } from "../../hooks/use-project-actions";
 import { FolderPlus, Pencil, Trash2 } from "lucide-react";
 
 // Let's redefine it to take the hook state as props
 interface ProjectDialogsProps {
-  state: ReturnType<typeof useProjectDialogs>;
+  state: ReturnType<typeof useProjectActions>;
 }
 
 export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
@@ -30,6 +30,8 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
     handleCreateProject,
     handleRenameProject,
     handleDeleteProject,
+    slugify,
+    generateShortId,
   } = state;
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -39,14 +41,6 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
       inputRef.current.focus();
     }
   }, [activeDialog]);
-
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  };
 
   if (activeDialog === 'create') {
     return (
@@ -75,11 +69,11 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
             </div>
             <div className="space-y-2">
               <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
-                Project Slug
+                Room ID Preview
               </label>
               <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-bg-subtle border border-border-subtle text-text-secondary font-mono text-sm">
                 <span className="text-text-muted">ghost.ai/</span>
-                <span>{generateSlug(projectName) || 'your-project-slug'}</span>
+                <span>{slugify(projectName) || 'your-project'}-XXXXX</span>
               </div>
             </div>
           </div>
@@ -121,9 +115,9 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
                 onChange={(e) => setProjectName(e.target.value)}
                 placeholder="Enter new name"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && selectedProject?.id && projectName.trim()) {
+                  if (e.key === 'Enter' && selectedProject?._id && projectName.trim()) {
                     e.preventDefault();
-                    handleRenameProject(selectedProject.id, projectName);
+                    handleRenameProject(selectedProject._id, projectName);
                   }
                 }}
               />
@@ -133,11 +127,11 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
             <Button variant="outline" onClick={closeDialog}>Cancel</Button>
             <Button 
               onClick={() => {
-                if (selectedProject?.id && projectName.trim()) {
-                  handleRenameProject(selectedProject.id, projectName);
+                if (selectedProject?._id && projectName.trim()) {
+                  handleRenameProject(selectedProject._id, projectName);
                 }
               }}
-              disabled={!selectedProject?.id || !projectName.trim() || isLoading}
+              disabled={!selectedProject?._id || !projectName.trim() || isLoading}
             >
               {isLoading ? "Saving..." : "Save Changes"}
             </Button>
@@ -167,11 +161,11 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
             <Button 
               variant="destructive" 
               onClick={() => {
-                if (selectedProject?.id) {
-                  handleDeleteProject(selectedProject.id);
+                if (selectedProject?._id) {
+                  handleDeleteProject(selectedProject._id);
                 }
               }}
-              disabled={isLoading || !selectedProject?.id}
+              disabled={isLoading || !selectedProject?._id}
             >
               {isLoading ? "Deleting..." : "Delete Project"}
             </Button>

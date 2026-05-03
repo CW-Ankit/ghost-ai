@@ -6,35 +6,27 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { useProjectDialogs } from "@/hooks/use-project-dialogs";
-
-interface Project {
-  id: string;
-  name: string;
-  slug: string;
-  isOwner: boolean;
-}
-
-const MOCK_PROJECTS: Project[] = [
-  { id: '1', name: 'E-commerce Platform', slug: 'ecommerce-platform', isOwner: true },
-  { id: '2', name: 'Payment Gateway', slug: 'payment-gateway', isOwner: true },
-  { id: '3', name: 'Analytics Dashboard', slug: 'analytics-dashboard', isOwner: false },
-  { id: '4', name: 'Auth Service', slug: 'auth-service', isOwner: true },
-];
+import { useProjectActions } from "../../hooks/use-project-actions";
+import { Doc } from "@/convex/_generated/dataModel";
 
 interface ProjectSidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  dialogs: ReturnType<typeof useProjectDialogs>;
+  actions: ReturnType<typeof useProjectActions>;
+  initialProjects: Doc<"projects">[];
+  initialSharedProjects: Doc<"projects">[];
 }
 
-export function ProjectSidebar({ isOpen, onClose, dialogs }: ProjectSidebarProps) {
+export function ProjectSidebar({ isOpen, onClose, actions, initialProjects, initialSharedProjects }: ProjectSidebarProps) {
   const [activeProjectId, setActiveProjectId] = React.useState<string | null>(null);
   const [showingActions, setShowingActions] = React.useState<string | null>(null);
 
   const handleOpenActions = (id: string) => {
     setShowingActions(showingActions === id ? null : id);
   };
+
+  const myProjects = initialProjects; 
+  const sharedProjects = initialSharedProjects;
 
   return (
     <>
@@ -94,21 +86,21 @@ export function ProjectSidebar({ isOpen, onClose, dialogs }: ProjectSidebarProps
               <TabsContent value="my-projects" className="flex-1 mt-4">
                 <ScrollArea className="h-[calc(100vh-200px)]">
                   <div className="flex flex-col gap-1">
-                    {MOCK_PROJECTS.filter(p => p.isOwner).map(project => (
+                    {myProjects.map((project: Doc<"projects">) => (
                       <div
-                        key={project.id}
+                        key={project._id}
                         className={cn(
                           "group flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors",
-                          activeProjectId === project.id ? "bg-bg-subtle text-text-primary" : "text-text-secondary hover:bg-bg-subtle"
+                          activeProjectId === project._id ? "bg-bg-subtle text-text-primary" : "text-text-secondary hover:bg-bg-subtle"
                         )}
-                        onClick={() => setActiveProjectId(project.id)}
+                        onClick={() => setActiveProjectId(project._id)}
                       >
                         <span className="text-sm font-medium truncate flex items-center gap-2">
                           <FileText className="h-3.5 w-3.5 text-text-muted" />
                           {project.name}
                         </span>
                         <div className="flex items-center gap-1">
-                          {showingActions === project.id ? (
+                          {showingActions === project._id ? (
                             <div className="flex items-center gap-1 bg-bg-surface border border-border-subtle rounded-md p-1 shadow-sm">
                               <Button
                                 variant="ghost"
@@ -117,7 +109,7 @@ export function ProjectSidebar({ isOpen, onClose, dialogs }: ProjectSidebarProps
                                 className="h-7 w-7 text-text-secondary hover:text-text-primary"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  dialogs.openRenameDialog(project);
+                                  actions.openRenameDialog(project);
                                   setShowingActions(null);
                                 }}
                               >
@@ -130,7 +122,7 @@ export function ProjectSidebar({ isOpen, onClose, dialogs }: ProjectSidebarProps
                                 className="h-7 w-7 text-text-secondary hover:text-destructive"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  dialogs.openDeleteDialog(project);
+                                  actions.openDeleteDialog(project);
                                   setShowingActions(null);
                                 }}
                               >
@@ -145,7 +137,7 @@ export function ProjectSidebar({ isOpen, onClose, dialogs }: ProjectSidebarProps
                               className="h-7 w-7 opacity-0 group-hover:opacity-100 text-text-muted hover:text-text-primary"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleOpenActions(project.id);
+                                handleOpenActions(project._id);
                               }}
                             >
                               <MoreVertical className="h-3.5 w-3.5" />
@@ -154,7 +146,7 @@ export function ProjectSidebar({ isOpen, onClose, dialogs }: ProjectSidebarProps
                         </div>
                       </div>
                     ))}
-                    {MOCK_PROJECTS.filter(p => p.isOwner).length === 0 && (
+                    {myProjects.length === 0 && (
                       <div className="flex flex-col items-center justify-center py-8 text-center text-text-muted">
                         <p className="text-sm">No projects yet.</p>
                       </div>
@@ -166,14 +158,14 @@ export function ProjectSidebar({ isOpen, onClose, dialogs }: ProjectSidebarProps
               <TabsContent value="shared" className="flex-1 mt-4">
                 <ScrollArea className="h-[calc(100vh-200px)]">
                   <div className="flex flex-col gap-1">
-                    {MOCK_PROJECTS.filter(p => !p.isOwner).map(project => (
+                    {sharedProjects.map(project => (
                       <div 
-                        key={project.id}
+                        key={project._id}
                         className={cn(
                           "group flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors",
-                          activeProjectId === project.id ? "bg-bg-subtle text-text-primary" : "text-text-secondary hover:bg-bg-subtle"
+                          activeProjectId === project._id ? "bg-bg-subtle text-text-primary" : "text-text-secondary hover:bg-bg-subtle"
                         )}
-                        onClick={() => setActiveProjectId(project.id)}
+                        onClick={() => setActiveProjectId(project._id)}
                       >
                         <span className="text-sm font-medium truncate flex items-center gap-2">
                           <FileText className="h-3.5 w-3.5 text-text-muted" />
@@ -181,7 +173,7 @@ export function ProjectSidebar({ isOpen, onClose, dialogs }: ProjectSidebarProps
                         </span>
                       </div>
                     ))}
-                    {MOCK_PROJECTS.filter(p => !p.isOwner).length === 0 && (
+                    {sharedProjects.length === 0 && (
                       <div className="flex flex-col items-center justify-center py-8 text-center text-text-muted">
                         <p className="text-sm">No shared projects yet.</p>
                       </div>
@@ -195,7 +187,7 @@ export function ProjectSidebar({ isOpen, onClose, dialogs }: ProjectSidebarProps
           {/* Footer */}
           <div className="p-4 border-t border-border-subtle">
             <Button
-              onClick={dialogs.openCreateDialog}
+              onClick={actions.openCreateDialog}
               className="w-full gap-2 bg-accent-primary text-bg-base hover:bg-accent-primary/90"
             >
               <Plus className="h-4 w-4" />
