@@ -46,6 +46,13 @@ Update this file whenever the current phase, active feature, or implementation s
   - Added slugification and room ID generation for project creation.
   - Wired create, rename, and delete flows with real API calls and navigation.
   - Added room ID preview to the create dialog.
+- [x] Implemented Editor Workspace Shell (08-editor-workspace-shell.md):
+  - Created `/editor/[roomId]` server component with access checks.
+  - Implemented `lib/project-access.ts` for ownership and collaborator verification.
+  - Built `AccessDenied` component for unauthorized access.
+  - Created `WorkspaceShell` layout with Top Navbar, Project Sidebar, and AI Sidebar placeholder.
+  - Integrated room highlighting in `ProjectSidebar`.
+  - Added a canvas placeholder with dark technical theme.
 
 
 ## In Progress

@@ -88,3 +88,46 @@ export const remove = mutation({
     return true;
   },
 });
+
+export const getByRoomId = query({
+  args: { roomId: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError("Unauthenticated");
+    }
+
+    const project = await ctx.db
+      .query("projects")
+      .filter((q) => q.eq(q.field("roomId"), args.roomId))
+      .unique();
+
+    if (!project) {
+      return null;
+    }
+
+    // Check ownership
+    if (project.ownerId === identity.tokenIdentifier) {
+      return project;
+    }
+
+    // Check collaborator access by email
+    const userEmail = identity.email;
+    if (!userEmail) {
+      return null;
+    }
+
+    const collaborator = await ctx.db
+      .query("projectCollaborators")
+      .withIndex("by_projectId_and_email", (q) => 
+        q.eq("projectId", project._id).eq("email", userEmail)
+      )
+      .unique();
+
+    if (collaborator) {
+      return project;
+    }
+
+    return null;
+  },
+});

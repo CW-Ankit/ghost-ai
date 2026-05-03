@@ -15,10 +15,10 @@ interface ProjectSidebarProps {
   actions: ReturnType<typeof useProjectActions>;
   initialProjects: Doc<"projects">[];
   initialSharedProjects: Doc<"projects">[];
+  activeProjectId?: string;
 }
 
-export function ProjectSidebar({ isOpen, onClose, actions, initialProjects, initialSharedProjects }: ProjectSidebarProps) {
-  const [activeProjectId, setActiveProjectId] = React.useState<string | null>(null);
+export function ProjectSidebar({ isOpen, onClose, actions, initialProjects, initialSharedProjects, activeProjectId }: ProjectSidebarProps) {
   const [showingActions, setShowingActions] = React.useState<string | null>(null);
 
   const handleOpenActions = (id: string) => {
@@ -93,7 +93,9 @@ export function ProjectSidebar({ isOpen, onClose, actions, initialProjects, init
                           "group flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors",
                           activeProjectId === project._id ? "bg-bg-subtle text-text-primary" : "text-text-secondary hover:bg-bg-subtle"
                         )}
-                        onClick={() => setActiveProjectId(project._id)}
+                        onClick={() => {
+                          // In a real app, this would navigate to /editor/[roomId]
+                        }}
                       >
                         <span className="text-sm font-medium truncate flex items-center gap-2">
                           <FileText className="h-3.5 w-3.5 text-text-muted" />
@@ -165,7 +167,9 @@ export function ProjectSidebar({ isOpen, onClose, actions, initialProjects, init
                           "group flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors",
                           activeProjectId === project._id ? "bg-bg-subtle text-text-primary" : "text-text-secondary hover:bg-bg-subtle"
                         )}
-                        onClick={() => setActiveProjectId(project._id)}
+                        onClick={() => {
+                          // In a real app, this would navigate to /editor/[roomId]
+                        }}
                       >
                         <span className="text-sm font-medium truncate flex items-center gap-2">
                           <FileText className="h-3.5 w-3.5 text-text-muted" />
