@@ -15,7 +15,8 @@ When working on Convex code, **always read
 how to correctly use Convex APIs and patterns. The file contains rules that
 override what you may have learned about Convex from training data.
 
-Convex agent skills for common tasks is already installed.
+Convex agent skills for common tasks can be installed by running
+`npx convex ai-files install`.
 
 <!-- convex-ai-end -->
 
@@ -28,8 +29,9 @@ Read the following files in order before implementing or making any architectura
 3. `context/ui-context.md` — theme, colors, typography, canvas design, and component conventions
 4. `context/code-standards.md` — implementation rules and conventions
 5. `context/ai-workflow-rules.md` — development workflow, scoping rules, and delivery approach
-6. `context/progress-tracker.md` — current phase, completed work, open questions, and next steps
+6. `context/lessons-learned.md` — log of mistakes, postmortems, edge cases, and architectural lessons
+7. `context/progress-tracker.md` — current phase, completed work, open questions, and next steps
 
-Update `context/progress-tracker.md` after each meaningful implementation change. Use it for your memory management and make sure to check it before starting any work.
+Update `context/progress-tracker.md` after each meaningful implementation change and record new edge cases or mistakes in `context/lessons-learned.md`. Use them for your memory management and make sure to check them before starting any work.
 
 If implementation changes the architecture, scope, or standards documented in the context files, update the relevant file before continuing.
