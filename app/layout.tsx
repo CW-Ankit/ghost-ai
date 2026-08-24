@@ -1,23 +1,12 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { ClerkProvider } from '@clerk/nextjs'
 import { shadcn } from '@clerk/ui/themes'
 import ConvexClientProvider from '@/components/convex-client-provider'
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-})
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-})
-
 export const metadata: Metadata = {
-  title: 'GHOST AI',
-  description: 'GHOST AI',
+  title: 'GHOST AI — Collaborative Architecture Canvas',
+  description: 'Next-generation AI architecture design and collaborative canvas',
 }
 
 export default function RootLayout({
@@ -26,8 +15,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+    <html lang="en" className="h-full antialiased">
+      <body className="min-h-full flex flex-col font-sans selection:bg-accent-primary/20 selection:text-accent-primary" suppressHydrationWarning>
         <ClerkProvider
           appearance={{
             cssLayerName: 'clerk',

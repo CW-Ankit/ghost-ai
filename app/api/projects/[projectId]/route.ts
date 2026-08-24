@@ -4,8 +4,6 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { NextResponse } from "next/server";
 
-const convexHttpClient = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> }
@@ -24,11 +22,14 @@ export async function PATCH(
     if (!token) {
       return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
     }
+
+    const convexHttpClient = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    convexHttpClient.setAuth(token);
     
     await (convexHttpClient.mutation as any)(api.projects.rename, {
       projectId: projectId as Id<"projects">,
       name: body.name,
-    }, { token });
+    });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
@@ -56,10 +57,13 @@ export async function DELETE(
     if (!token) {
       return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
     }
+
+    const convexHttpClient = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    convexHttpClient.setAuth(token);
     
     await (convexHttpClient.mutation as any)(api.projects.remove, {
       projectId: projectId as Id<"projects">,
-    }, { token });
+    });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

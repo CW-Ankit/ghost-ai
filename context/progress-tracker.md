@@ -12,6 +12,13 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
+- [x] Implemented Live Presence Avatars and Multi-User Cursors (19-presence-avatars-cursors.md):
+  - Configured shared `Presence` and `UserMeta` types and registered global `Liveblocks` interface in `liveblocks.config.ts`.
+  - Updated `RoomProvider` initial presence to `{ cursor: null, thinking: false }`.
+  - Built `PresenceAvatars` component in `components/editor/canvas/presence-avatars.tsx` rendering up to 5 collaborator avatars in an overlapping stack with profile pictures or initials, `+N` overflow chip, subtle ring styling, dynamic divider, and Clerk `UserButton` for the active user.
+  - Built `LiveCursors` component in `components/editor/canvas/live-cursors.tsx` rendering colored SVG pointers and name badges for all active collaborators, mapped from canvas flow coordinates via `useViewport()`.
+  - Integrated `onMouseMove` and `onMouseLeave` in `components/editor/canvas/canvas.tsx` broadcasting cursor coordinates via `useUpdateMyPresence()`.
+  - Preserved existing editor home navbar without global modification.
 - [x] Implemented Starter System Design Templates Library (18-starter-templates.md):
   - Created `components/editor/starter-templates.ts` defining `CanvasTemplate` and 4 curated architecture blueprints (Microservices E-Commerce, Event-Driven Analytics, Serverless Web App, CI/CD Pipeline) using valid shapes, colors, handles, and arrowheads.
   - Built `StarterTemplatesModal` with responsive SVG diagram previews, search and category filtering, and confirmation prompt before canvas overwrite.
@@ -43,17 +50,13 @@ Update this file whenever the current phase, active feature, or implementation s
   - Attached default arrowhead `MarkerType.ArrowClosed` on edge creation in `canvas.tsx`.
   - Rendered interactive tag filter chips in `ProjectDashboard`.
 
-
-
-
 ## In Progress
 
 - None.
 
-
 ## Next Up
 
-- 19-presence-avatars-cursors.md (Live presence avatars and multi-user cursors)
+- 20-ai-sidebar-shell.md (AI Sidebar Shell)
 
 ## Open Questions
 

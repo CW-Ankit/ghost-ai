@@ -31,7 +31,6 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
     handleRenameProject,
     handleDeleteProject,
     slugify,
-    generateShortId,
   } = state;
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -161,8 +160,8 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
             <Button 
               variant="destructive" 
               onClick={() => {
-                if (selectedProject?._id) {
-                  handleDeleteProject(selectedProject._id);
+                if (selectedProject?._id && selectedProject?.roomId) {
+                  handleDeleteProject(selectedProject._id, selectedProject.roomId);
                 }
               }}
               disabled={isLoading || !selectedProject?._id}

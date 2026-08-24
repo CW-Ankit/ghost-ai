@@ -39,25 +39,27 @@ export function ShareDialog({ projectId, ownerId, open, onOpenChange }: ShareDia
   const [isFetching, setIsFetching] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      fetchCollaborators();
-    }
-  }, [open, projectId]);
-
-  async function fetchCollaborators() {
+  const fetchCollaborators = React.useCallback(async () => {
+    if (!projectId) return;
     setIsFetching(true);
     try {
       const res = await fetch(`/api/projects/${projectId}/collaborators`);
       if (!res.ok) throw new Error("Failed to fetch collaborators");
       const data = await res.json();
       setCollaborators(data);
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to fetch collaborators";
+      toast.error(message);
     } finally {
       setIsFetching(false);
     }
-  }
+  }, [projectId]);
+
+  useEffect(() => {
+    if (open) {
+      fetchCollaborators();
+    }
+  }, [open, fetchCollaborators]);
 
   async function handleInvite() {
     if (!email) return;
@@ -75,8 +77,9 @@ export function ShareDialog({ projectId, ownerId, open, onOpenChange }: ShareDia
       toast.success(`Invitation sent to ${email}`);
       setEmail("");
       await fetchCollaborators();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to invite collaborator";
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -94,8 +97,9 @@ export function ShareDialog({ projectId, ownerId, open, onOpenChange }: ShareDia
       }
       toast.success(`Removed ${email}`);
       await fetchCollaborators();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to remove collaborator";
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -111,7 +115,7 @@ export function ShareDialog({ projectId, ownerId, open, onOpenChange }: ShareDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-3xl bg-bg-surface border-border-default text-text-primary">
+      <DialogContent className="sm:max-w-md rounded-3xl bg-bg-surface border-border-default text-text-primary overflow-hidden">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Share Project</DialogTitle>
           <DialogDescription className="text-text-muted">

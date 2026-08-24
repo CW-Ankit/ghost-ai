@@ -24,7 +24,7 @@ export function CanvasProvider({ roomId, projectId: initialProjectId, children }
     <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
       <RoomProvider 
         id={roomId} 
-        initialPresence={{ cursor: null }}
+        initialPresence={{ cursor: null, thinking: false }}
       >
         <ReactFlowProvider>
           <React.Suspense fallback={

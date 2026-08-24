@@ -35,14 +35,17 @@ export async function getProjects(): Promise<{ projects: Doc<'projects'>[]; shar
     // Set authorization header for the request
     convexHttpClient.setAuth(token);
 
-    // Fetch owned projects
-    // api.projects.list expects no arguments and handles auth via ctx.auth.getUserIdentity()
-    const projects = await (convexHttpClient.query as any)(api.projects.list, {});
+    // Fetch projects (owned and shared)
+    const response = await convexHttpClient.query(api.projects.list, {});
+    
+    if (!response) {
+      return { projects: [], sharedProjects: [] };
+    }
 
-    // Fetch shared projects (Not yet implemented in API, but spec asks for it)
-    const sharedProjects: Doc<'projects'>[] = [];
-
-    return { projects, sharedProjects };
+    return { 
+      projects: response.owned, 
+      sharedProjects: response.shared 
+    };
   } catch (error) {
     console.error("Error in getProjects:", error);
     return { projects: [], sharedProjects: [] };

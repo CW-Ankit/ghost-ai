@@ -30,12 +30,13 @@ Tailwind utility names map to these variables. Use `bg-base`, `bg-surface`, `tex
 
 ## Typography
 
-| Role      | Font       | CSS Variable        |
-| --------- | ---------- | ------------------- |
-| UI text   | Geist Sans | `--font-geist-sans` |
-| Code/mono | Geist Mono | `--font-geist-mono` |
+| Role                  | Font               | CSS Variable     |
+| --------------------- | ------------------ | ---------------- |
+| UI & Body text        | Plus Jakarta Sans  | `--font-sans`    |
+| Headings & Titles     | Space Grotesk      | `--font-heading` |
+| Code & Technical mono | JetBrains Mono     | `--font-mono`    |
 
-Both fonts are loaded via `next/font/google` and applied as CSS variables on the `<html>` element. The base `body` uses Geist Sans with `antialiased`.
+Fonts are loaded self-hosted via `@fontsource` packages, guaranteeing zero network waterfalls during compilation, maximum rendering crispness, antialiasing, and subpixel rendering.
 
 ## Border Radius
 

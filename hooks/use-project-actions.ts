@@ -2,17 +2,29 @@
 
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { toast } from 'sonner';
 
-export type ProjectDialogType = 'create' | 'rename' | 'delete' | null;
+export type ProjectDialogType = 'create' | 'rename' | 'delete' | 'share' | null;
 
 interface Project {
   _id: string;
   name: string;
+  roomId: string;
 }
 
 export function useProjectActions() {
   const router = useRouter();
   const pathname = usePathname();
+  
+  const createProject = useMutation(api.projects.create);
+  const renameProject = useMutation(api.projects.rename);
+  const removeProject = useMutation(api.projects.remove);
+  const togglePinProject = useMutation(api.projects.togglePin);
+  const bulkUpdateStatus = useMutation(api.projects.bulkUpdateStatus);
+  const bulkDelete = useMutation(api.projects.bulkDelete);
+  const updateStatus = useMutation(api.projects.updateStatus);
   
   const [activeDialog, setActiveDialog] = useState<ProjectDialogType>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -38,6 +50,11 @@ export function useProjectActions() {
     setActiveDialog('delete');
   };
 
+  const openShareDialog = (project: Project) => {
+    setSelectedProject(project);
+    setActiveDialog('share');
+  };
+
   const closeDialog = () => {
     setActiveDialog(null);
     setSelectedProject(null);
@@ -57,91 +74,120 @@ export function useProjectActions() {
   };
 
   const handleCreateProject = async (name: string) => {
-    setIsLoading(true);
     try {
+      setIsLoading(true);
       const slug = slugify(name);
       const suffix = generateShortId();
       const roomId = `${slug}-${suffix}`;
 
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          name, 
-          roomId,
-          description: '' 
-        }),
+      await createProject({ 
+        name, 
+        roomId,
+        description: '' 
       });
-
-      if (!response.ok) throw new Error('Failed to create project');
       
-      const { projectId } = await response.json();
-      
-      router.push(`/workspace/${projectId}`);
       closeDialog();
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error('Error creating project:', error);
-        alert(error.message);
-      } else {
-        console.error('Error creating project:', error);
-        alert(String(error));
-      }
+      router.push(`/editor/${roomId}`);
+    } catch (error: any) {
+      console.error('Error creating project:', error);
+      toast.error(error.message || "Failed to create project");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleRenameProject = async (id: string, newName: string) => {
-    setIsLoading(true);
     try {
-      const response = await fetch(`/api/projects/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName }),
+      setIsLoading(true);
+      await renameProject({ 
+        projectId: id as any, 
+        name: newName 
       });
-
-      if (!response.ok) throw new Error('Failed to rename project');
-      
-      router.refresh();
       closeDialog();
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error('Error renaming project:', error);
-        alert(error.message);
-      } else {
-        console.error('Error renaming project:', error);
-        alert(String(error));
-      }
+    } catch (error: any) {
+      console.error('Error renaming project:', error);
+      toast.error(error.message || "Failed to rename project");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDeleteProject = async (id: string) => {
-    setIsLoading(true);
+  const handleDeleteProject = async (id: string, roomId: string) => {
     try {
-      const response = await fetch(`/api/projects/${id}`, {
-        method: 'DELETE',
+      setIsLoading(true);
+      await removeProject({ 
+        projectId: id as any 
       });
-
-      if (!response.ok) throw new Error('Failed to delete project');
       
       const segments = pathname.split('/').filter(Boolean);
-      if (segments.includes(id)) {
+      if (segments.includes(roomId)) {
         router.push('/editor');
       } else {
-        router.refresh();
+        closeDialog();
       }
-      closeDialog();
+    } catch (error: any) {
+      console.error('Error deleting project:', error);
+      toast.error(error.message || "Failed to delete project");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTogglePin = async (id: string) => {
+    try {
+      await togglePinProject({ 
+        projectId: id as any 
+      });
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error('Error deleting project:', error);
-        alert(error.message);
-      } else {
-        console.error('Error deleting project:', error);
-        alert(String(error));
-      }
+      console.error('Error toggling pin:', error);
+      toast.error(String(error));
+    }
+  };
+
+  const handleBulkUpdateStatus = async (projectIds: string[], status: any) => {
+    if (projectIds.length === 0) return;
+    setIsLoading(true);
+    try {
+      await bulkUpdateStatus({ 
+        projectIds: projectIds as any, 
+        status 
+      });
+      toast.success(`Successfully updated ${projectIds.length} projects`);
+    } catch (error: unknown) {
+      console.error('Error bulk updating status:', error);
+      toast.error(String(error));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async (projectIds: string[]) => {
+    if (projectIds.length === 0) return;
+    setIsLoading(true);
+    try {
+      await bulkDelete({ 
+        projectIds: projectIds as any 
+      });
+      toast.success(`Successfully deleted ${projectIds.length} projects`);
+    } catch (error: unknown) {
+      console.error('Error bulk deleting:', error);
+      toast.error(String(error));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateStatus = async (id: string, status: any) => {
+    try {
+      setIsLoading(true);
+      await updateStatus({
+        projectId: id as any,
+        status,
+      });
+      toast.success(`Project status updated to ${status}`);
+    } catch (error: any) {
+      console.error('Error updating status:', error);
+      toast.error(error.message || "Failed to update status");
     } finally {
       setIsLoading(false);
     }
@@ -156,10 +202,15 @@ export function useProjectActions() {
     openCreateDialog,
     openRenameDialog,
     openDeleteDialog,
+    openShareDialog,
     closeDialog,
     handleCreateProject,
     handleRenameProject,
     handleDeleteProject,
+    handleTogglePin,
+    handleBulkUpdateStatus,
+    handleBulkDelete,
+    handleUpdateStatus,
     slugify,
     generateShortId,
   };

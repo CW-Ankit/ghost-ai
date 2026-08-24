@@ -1,27 +1,39 @@
 import { auth } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
-import { Doc } from "@/convex/_generated/dataModel";
 
 export async function getCurrentUserIdentity() {
-  const { userId, getToken } = await auth();
-  if (!userId) return null;
+  try {
+    const { userId, getToken } = await auth();
+    if (!userId) return null;
 
-  const token = await getToken();
-  if (!token) return null;
+    let token: string | null = null;
+    try {
+      token = await getToken({ template: "convex" });
+    } catch {
+      token = await getToken().catch(() => null);
+    }
 
-  // We don't return the token here, but we can use it to call Convex
-  return { userId, token };
+    return { userId, token };
+  } catch (error) {
+    console.error("Error getting user identity:", error);
+    return null;
+  }
 }
 
 export async function checkProjectAccess(roomId: string) {
-  const identity = await getCurrentUserIdentity();
-  if (!identity) return null;
-
-  const convexHttpClient = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-  convexHttpClient.setAuth(identity.token);
-
   try {
+    const identity = await getCurrentUserIdentity();
+    if (!identity) return null;
+
+    const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+    if (!convexUrl) return null;
+
+    const convexHttpClient = new ConvexHttpClient(convexUrl);
+    if (identity.token) {
+      convexHttpClient.setAuth(identity.token);
+    }
+
     const project = await (convexHttpClient.query as any)(api.projects.getByRoomId, {
       roomId,
     });
