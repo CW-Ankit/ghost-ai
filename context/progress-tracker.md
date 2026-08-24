@@ -8,10 +8,25 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Implement live presence avatars and multi-user cursors (19-presence-avatars-cursors.md).
+- Implement AI prompt-to-graph background workflows and spec generator integration.
 
 ## Completed
 
+- [x] Implemented AI Workspace Sidebar Shell (20-ai-sidebar-shell.md):
+  - Extracted AI workspace sidebar into dedicated `AISidebar` component (`components/editor/ai-sidebar.tsx`).
+  - Preserved floating slide-over drawer layout with smooth transition, backdrop blur, and dark technical workspace styling.
+  - Built header with Bot icon badge, `AI Workspace` title, subtitle, and close action.
+  - Integrated shadcn `Tabs` with `AI Architect` and `Specs` views.
+  - Implemented `AI Architect` tab featuring:
+    - Empty state with bot icon, description, and 3 starter prompt pills (`Design an e-commerce backend`, `Create a chat app architecture`, `Build a CI/CD pipeline`).
+    - Right-aligned user bubbles (`bg-accent-primary-dim border-accent-primary/40`) and left-aligned assistant bubbles (`bg-bg-elevated border-border-default`).
+    - Auto-resizing textarea (`72px` min to `160px` max), `Enter` submission, and `Shift+Enter` multi-line editing.
+    - Interactive mock responses to verify live message appending and scrolling.
+  - Implemented `Specs` tab featuring:
+    - `Generate Spec` action button with animated loading state.
+    - Structured Markdown preview spec card with metadata badges.
+    - Disabled download action ready for backend binding.
+  - Integrated `AISidebar` in `WorkspaceShell` with top navbar toggle and clean open/close state.
 - [x] Implemented Live Presence Avatars and Multi-User Cursors (19-presence-avatars-cursors.md):
   - Configured shared `Presence` and `UserMeta` types and registered global `Liveblocks` interface in `liveblocks.config.ts`.
   - Updated `RoomProvider` initial presence to `{ cursor: null, thinking: false }`.
@@ -56,7 +71,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- 20-ai-sidebar-shell.md (AI Sidebar Shell)
+- AI Background Workflows (Trigger.dev integration & canvas node generation)
 
 ## Open Questions
 

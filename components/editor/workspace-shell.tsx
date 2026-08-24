@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ProjectSidebar } from "./project-sidebar";
-import { Plus, Share2, MessageSquare, PanelLeftClose, PanelLeftOpen, ChevronLeft, LayoutTemplate } from "lucide-react";
+import { Plus, Share2, MessageSquare, PanelLeftClose, PanelLeftOpen, ChevronLeft, LayoutTemplate, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useProjectActions } from "../../hooks/use-project-actions";
@@ -18,6 +18,7 @@ import { useReactFlow } from "@xyflow/react";
 import { toast } from "sonner";
 import { StarterTemplatesModal } from "./starter-templates-modal";
 import { CanvasTemplate } from "./starter-templates";
+import { AISidebar } from "./ai-sidebar";
 
 interface WorkspaceShellProps {
   children: React.ReactNode;
@@ -226,11 +227,11 @@ export function WorkspaceShell({
               onClick={() => setAiSidebarOpen(!aiSidebarOpen)}
               className={cn(
                 "gap-2",
-                aiSidebarOpen ? "bg-accent-ai-dim text-accent-ai-text" : "text-text-secondary"
+                aiSidebarOpen ? "bg-accent-ai-dim text-accent-ai-text border border-accent-ai/30" : "text-text-secondary"
               )}
             >
-              <MessageSquare className="h-4 w-4" />
-              <span className="hidden sm:inline">AI Assistant</span>
+              <Bot className="h-4 w-4 text-accent-ai-text" />
+              <span className="hidden sm:inline">AI Workspace</span>
             </Button>
           </div>
         </header>
@@ -243,25 +244,10 @@ export function WorkspaceShell({
           </div>
 
           {/* Right AI Sidebar */}
-          <aside 
-            className={cn(
-              "h-full bg-bg-surface border-l border-border-default transition-all duration-300 ease-in-out overflow-hidden",
-              aiSidebarOpen ? "w-80" : "w-0"
-            )}
-          >
-            <div className="w-80 h-full p-4 flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold text-text-primary">AI Assistant</h2>
-                <Button variant="ghost" size="icon" onClick={() => setAiSidebarOpen(false)} className="h-6 w-6">
-                  <Plus className="h-4 w-4 rotate-45" />
-                </Button>
-              </div>
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-text-muted">
-                <MessageSquare className="h-8 w-8 mb-2 opacity-20" />
-                <p className="text-sm">Ask AI to generate or modify your architecture</p>
-              </div>
-            </div>
-          </aside>
+          <AISidebar 
+            isOpen={aiSidebarOpen} 
+            onClose={() => setAiSidebarOpen(false)} 
+          />
         </main>
       </div>
 
