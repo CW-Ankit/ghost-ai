@@ -8,10 +8,19 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Implement advanced edge behavior and custom rendering (16-edge-behavior.md).
+- Implement live presence avatars and multi-user cursors (19-presence-avatars-cursors.md).
 
 ## Completed
 
+- [x] Implemented Starter System Design Templates Library (18-starter-templates.md):
+  - Created `components/editor/starter-templates.ts` defining `CanvasTemplate` and 4 curated architecture blueprints (Microservices E-Commerce, Event-Driven Analytics, Serverless Web App, CI/CD Pipeline) using valid shapes, colors, handles, and arrowheads.
+  - Built `StarterTemplatesModal` with responsive SVG diagram previews, search and category filtering, and confirmation prompt before canvas overwrite.
+  - Integrated template loader with Liveblocks CRDT storage (`useMutation`) and ReactFlow `fitView()`.
+  - Added "Templates" button to the top editor navbar in `WorkspaceShell.tsx`.
+- [x] Implemented Canvas Ergonomics (17-canvas-ergonomics.md.md):
+  - Created `useKeyboardShortcuts` hook handling zoom (`+`, `-`) and history (`Cmd/Ctrl+Z`, `Cmd/Ctrl+Shift+Z`, `Cmd/Ctrl+Y`) with editable element guard.
+  - Added bottom-left floating `CanvasControlBar` with animated zoom in/out/fit view and Liveblocks history undo/redo buttons.
+  - Dynamically disabled and visually dimmed history buttons when `!canUndo` / `!canRedo`.
 - [x] Implemented advanced edge behavior and custom rendering (16-edge-behavior.md):
   - Added handles on all four sides of nodes with hover fade-in.
   - Created custom `CanvasEdge` with right-angle routing and arrowhead.
@@ -23,31 +32,28 @@ Update this file whenever the current phase, active feature, or implementation s
   - Implemented predefined background/text color pairs.
   - Ensured seamless sync with collaborative canvas state.
 - [x] Fixed runtime crash in `CanvasInner` due to null nodes/edges.
-- [x] Addressed Code Review Findings:
+- [x] Addressed Code Review Findings & Feature Inconsistencies:
   - Fixed security vulnerability in `updateSnapshot` mutation by adding project membership verification.
   - Fixed potential race condition in `WorkspaceShell` presence cleanup.
   - Standardized error reporting in `useProjectActions` to use `toast.error` instead of `alert`.
+  - Fixed `getToken({ template: "convex" })` in `lib/project-access.ts` ensuring authenticated Liveblocks room checks.
+  - Secured `CanvasProvider` by replacing `publicApiKey` with `authEndpoint="/api/liveblocks-auth"`.
+  - Added `.index("by_roomId", ["roomId"])` in `convex/schema.ts` and optimized `getByRoomId` query.
+  - Added distinct handle IDs (`id="top-target"`, etc.) across all 4 sides of `CanvasNode`.
+  - Attached default arrowhead `MarkerType.ArrowClosed` on edge creation in `canvas.tsx`.
+  - Rendered interactive tag filter chips in `ProjectDashboard`.
 
 
 
 
 ## In Progress
 
-- Implementing advanced project dashboard and visual insights (05-better-dashboard.md).
-  - [x] Search bar and real-time filtering.
-  - [x] "Last Modified" and "Node Count" metadata in cards.
-  - [x] "Recent Projects" quick-access rail.
-  - [x] Grid vs List view toggle.
-  - [x] Visual Canvas snapshots (Phase 3).
-  - [x] Bulk administrative actions (Archive/Delete).
-  - [x] Tag-based organization and filtering.
-  - [x] Interactive hover previews for snapshots.
+- None.
 
 
 ## Next Up
 
-- 17-canvas-ergonomics.md.md (Floating canvas control bar and keyboard shortcuts)
-- 18-starter-templates.md (Prebuilt system design templates library)
+- 19-presence-avatars-cursors.md (Live presence avatars and multi-user cursors)
 
 ## Open Questions
 
