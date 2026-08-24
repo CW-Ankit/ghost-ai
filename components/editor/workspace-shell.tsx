@@ -4,7 +4,18 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ProjectSidebar } from "./project-sidebar";
-import { Plus, Share2, MessageSquare, PanelLeftClose, PanelLeftOpen, ChevronLeft, LayoutTemplate, Bot } from "lucide-react";
+import { 
+  Share2, 
+  PanelLeftClose, 
+  PanelLeftOpen, 
+  ChevronLeft, 
+  LayoutTemplate, 
+  Bot,
+  Check,
+  Loader2,
+  Save,
+  AlertCircle
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useProjectActions } from "../../hooks/use-project-actions";
@@ -19,14 +30,62 @@ import { toast } from "sonner";
 import { StarterTemplatesModal } from "./starter-templates-modal";
 import { CanvasTemplate } from "./starter-templates";
 import { AISidebar } from "./ai-sidebar";
+import { SaveProvider, useSaveContext } from "./canvas/save-context";
 
 interface WorkspaceShellProps {
   children: React.ReactNode;
 }
 
-export function WorkspaceShell({ 
-  children 
-}: WorkspaceShellProps) {
+function SaveStatusIndicator() {
+  const { saveStatus, triggerSave } = useSaveContext();
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => triggerSave()}
+      disabled={saveStatus === "saving"}
+      className={cn(
+        "gap-2 h-8 px-2.5 rounded-lg border text-xs font-medium transition-all shadow-sm",
+        saveStatus === "saving" && "border-accent-primary/40 bg-accent-primary-dim text-accent-primary",
+        saveStatus === "saved" && "border-border-subtle bg-bg-subtle/50 text-text-muted hover:text-text-primary",
+        saveStatus === "unsaved" && "border-state-warning/40 bg-bg-subtle text-text-primary hover:border-state-warning",
+        saveStatus === "error" && "border-state-error/40 bg-state-error/10 text-state-error hover:bg-state-error/20",
+        saveStatus === "idle" && "border-border-subtle bg-bg-subtle text-text-secondary"
+      )}
+      title="Save Canvas to Blob Storage & Database"
+    >
+      {saveStatus === "saving" ? (
+        <>
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <span className="hidden sm:inline">Saving...</span>
+        </>
+      ) : saveStatus === "saved" ? (
+        <>
+          <Check className="h-3.5 w-3.5 text-state-success" />
+          <span className="hidden sm:inline text-text-muted">Saved</span>
+        </>
+      ) : saveStatus === "unsaved" ? (
+        <>
+          <span className="h-2 w-2 rounded-full bg-state-warning animate-pulse" />
+          <span className="hidden sm:inline">Save</span>
+        </>
+      ) : saveStatus === "error" ? (
+        <>
+          <AlertCircle className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Retry Save</span>
+        </>
+      ) : (
+        <>
+          <Save className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Save</span>
+        </>
+      )}
+    </Button>
+  );
+}
+
+function WorkspaceShellInner({ children }: WorkspaceShellProps) {
   const params = useParams();
   const roomIdParam = params?.roomId;
   const roomId = (Array.isArray(roomIdParam) ? roomIdParam[0] : roomIdParam) as string | undefined;
@@ -202,11 +261,13 @@ export function WorkspaceShell({
           </div>
 
           <div className="flex items-center gap-2">
+            <SaveStatusIndicator />
+
             <Button 
               variant="outline" 
               size="sm" 
               onClick={() => setTemplatesModalOpen(true)}
-              className="gap-2 border-border-subtle bg-bg-subtle text-text-primary hover:bg-bg-elevated hover:text-accent-primary transition-colors"
+              className="gap-2 border-border-subtle bg-bg-subtle text-text-primary hover:bg-bg-elevated hover:text-accent-primary transition-colors h-8"
             >
               <LayoutTemplate className="h-4 w-4" />
               <span className="hidden sm:inline">Templates</span>
@@ -216,7 +277,7 @@ export function WorkspaceShell({
               size="sm" 
               disabled={!project}
               onClick={() => project && actions.openShareDialog(project)}
-              className="text-text-secondary gap-2"
+              className="text-text-secondary gap-2 h-8"
             >
               <Share2 className="h-4 w-4" />
               <span className="hidden sm:inline">Share</span>
@@ -226,7 +287,7 @@ export function WorkspaceShell({
               size="sm" 
               onClick={() => setAiSidebarOpen(!aiSidebarOpen)}
               className={cn(
-                "gap-2",
+                "gap-2 h-8",
                 aiSidebarOpen ? "bg-accent-ai-dim text-accent-ai-text border border-accent-ai/30" : "text-text-secondary"
               )}
             >
@@ -265,5 +326,13 @@ export function WorkspaceShell({
         hasExistingNodes={nodeCount > 0}
       />
     </div>
+  );
+}
+
+export function WorkspaceShell({ children }: WorkspaceShellProps) {
+  return (
+    <SaveProvider>
+      <WorkspaceShellInner>{children}</WorkspaceShellInner>
+    </SaveProvider>
   );
 }

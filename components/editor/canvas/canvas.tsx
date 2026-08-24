@@ -1,14 +1,11 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState, useRef } from 'react'
 import {
   ReactFlow,
   Background,
   MiniMap,
-  Controls,
   useReactFlow,
-  addEdge,
-  ReactFlowProvider,
   MarkerType,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
@@ -21,7 +18,7 @@ import {
   useCanRedo,
   useUpdateMyPresence,
 } from '@liveblocks/react'
-import { LiveObject } from '@liveblocks/client'
+import { LiveObject, LiveMap } from '@liveblocks/client'
 import { CanvasNode } from './nodes/canvas-node'
 import { CanvasEdge } from './edges/canvas-edge'
 import { ShapePanel } from './shape-panel'
@@ -30,9 +27,12 @@ import { DragPreview } from './drag-preview'
 import { PresenceAvatars } from './presence-avatars'
 import { LiveCursors } from './live-cursors'
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts'
-import { NODE_COLORS, NodeShape } from '@/types/canvas'
-import { useMutation, useQuery } from 'convex/react'
+import { useCanvasAutosave } from '@/hooks/use-canvas-autosave'
+import { useSaveContext } from './save-context'
+import { NodeShape } from '@/types/canvas'
+import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
+import { Id } from '@/convex/_generated/dataModel'
 import { useParams } from 'next/navigation'
 
 const nodeTypes = {
@@ -103,43 +103,147 @@ function CanvasInner({ projectId }: { projectId: string }) {
     canRedo,
   })
 
-  const updateSnapshot = useMutation(api.projects.updateSnapshot)
+  // Hook for debounced autosave to Vercel Blob and Convex
+  const { saveStatus, lastSavedAt, saveNow } = useCanvasAutosave({
+    projectId,
+    roomId,
+    nodes,
+    edges,
+    debounceMs: 2500,
+  })
 
-  // Automatically update snapshot when nodes or edges change
+  const { setSaveStatus, setLastSavedAt, registerSaveHandler } = useSaveContext()
+
   useEffect(() => {
-    if (!roomId || !nodes || nodes.length === 0) return
+    setSaveStatus(saveStatus)
+  }, [saveStatus, setSaveStatus])
 
-    const timer = setTimeout(async () => {
-      const snapshot = {
-        nodes: nodes.map((n: any) => ({
-          id: n.id,
-          x: n.position.x,
-          y: n.position.y,
-          shape: n.data.shape,
-          color: n.data.color,
-          label: n.data.label,
-        })),
-        edges: (edges || []).map((e: any) => ({
-          source: e.source,
-          target: e.target,
-          label: e.data?.label,
-        })),
+  useEffect(() => {
+    setLastSavedAt(lastSavedAt)
+  }, [lastSavedAt, setLastSavedAt])
+
+  useEffect(() => {
+    registerSaveHandler(saveNow)
+  }, [registerSaveHandler, saveNow])
+
+  // Liveblocks mutation to load saved canvas state if room is empty
+  const loadSavedState = useLiveblocksMutation(({ storage }, savedData: { nodes: any[]; edges: any[] }) => {
+    const flow = storage.get('flow') as any
+    if (!flow) {
+      const nodesMap = new LiveMap()
+      const edgesMap = new LiveMap()
+      savedData.nodes.forEach((n) => {
+        nodesMap.set(
+          n.id,
+          new LiveObject<any>({
+            id: n.id,
+            type: n.type || 'canvasNode',
+            position: n.position,
+            data: new LiveObject(n.data as any),
+            ...(n.style ? { style: n.style } : {}),
+          })
+        )
+      })
+      savedData.edges.forEach((e) => {
+        edgesMap.set(
+          e.id,
+          new LiveObject<any>({
+            id: e.id,
+            source: e.source,
+            target: e.target,
+            sourceHandle: e.sourceHandle,
+            targetHandle: e.targetHandle,
+            type: e.type || 'canvasEdge',
+            markerEnd: e.markerEnd,
+            data: new LiveObject((e.data || {}) as any),
+          })
+        )
+      })
+      storage.set('flow', new LiveObject({ nodes: nodesMap, edges: edgesMap }))
+      return
+    }
+
+    const nodesMap = flow.get('nodes')
+    const edgesMap = flow.get('edges')
+
+    if (nodesMap) {
+      for (const key of Array.from(nodesMap.keys())) {
+        nodesMap.delete(key)
       }
-
-      try {
-        await updateSnapshot({
-          projectId: projectId as any,
-          snapshot,
-          nodeCount: nodes.length,
-          edgeCount: (edges || []).length,
-        })
-      } catch (e) {
-        console.error('Snapshot update failed', e)
+      for (const node of savedData.nodes) {
+        nodesMap.set(
+          node.id,
+          new LiveObject<any>({
+            id: node.id,
+            type: node.type || 'canvasNode',
+            position: node.position,
+            data: new LiveObject(node.data as any),
+            ...(node.style ? { style: node.style } : {}),
+          })
+        )
       }
-    }, 5000) // Debounce updates to every 5 seconds
+    }
 
-    return () => clearTimeout(timer)
-  }, [nodes, edges, roomId, projectId, updateSnapshot])
+    if (edgesMap) {
+      for (const key of Array.from(edgesMap.keys())) {
+        edgesMap.delete(key)
+      }
+      for (const edge of savedData.edges) {
+        edgesMap.set(
+          edge.id,
+          new LiveObject<any>({
+            id: edge.id,
+            source: edge.source,
+            target: edge.target,
+            sourceHandle: edge.sourceHandle,
+            targetHandle: edge.targetHandle,
+            type: edge.type || 'canvasEdge',
+            markerEnd: edge.markerEnd,
+            data: new LiveObject((edge.data || {}) as any),
+          })
+        )
+      }
+    }
+  }, [])
+
+  // Retrieve saved canvas URL from Convex
+  const canvasBlobUrl = useQuery(
+    api.projects.getCanvasUrl,
+    projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
+  )
+  const hasAttemptedHydration = useRef(false)
+
+  // Rehydrate canvas state when room is empty and saved blob URL is available
+  useEffect(() => {
+    if (!nodes || !edges || hasAttemptedHydration.current) return
+
+    const isRoomEmpty = nodes.length === 0 && edges.length === 0
+
+    if (isRoomEmpty && canvasBlobUrl) {
+      hasAttemptedHydration.current = true
+      ;(async () => {
+        try {
+          const res = await fetch(canvasBlobUrl)
+          if (res.ok) {
+            const data = await res.json()
+            if (data.nodes && data.nodes.length > 0) {
+              loadSavedState({
+                nodes: data.nodes,
+                edges: data.edges || [],
+              })
+              setTimeout(() => {
+                fitView({ duration: 400, padding: 0.2 })
+              }, 150)
+            }
+          }
+        } catch (err) {
+          console.warn('Could not load saved canvas from blob URL', err)
+        }
+      })()
+    } else if (!isRoomEmpty) {
+      hasAttemptedHydration.current = true
+    }
+  }, [nodes, edges, canvasBlobUrl, loadSavedState, fitView])
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
@@ -189,13 +293,6 @@ function CanvasInner({ projectId }: { projectId: string }) {
           position: { x: event.clientX, y: event.clientY },
         })
       } catch {}
-    }
-  }, [])
-
-  const onDragLeave = useCallback((event: React.DragEvent) => {
-    // Only clear if we are leaving the canvas entirely
-    if (event.currentTarget === event.target) {
-      setDragPreview(null)
     }
   }, [])
 

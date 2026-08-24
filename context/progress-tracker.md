@@ -12,6 +12,13 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
+- [x] Implemented Canvas Autosave & State Recovery with Vercel Blob & Convex (21-canvas-autosave.md):
+  - Installed `@vercel/blob` for artifact storage.
+  - Implemented `saveCanvas` mutation and `getCanvasUrl` query in `convex/projects.ts` with strict project membership authorization checks.
+  - Created Next.js API route `/api/canvas/save` handling authenticated serialization and upload of canvas JSON to Vercel Blob (`canvas/{projectId}.json`).
+  - Created `useCanvasAutosave` hook (`hooks/use-canvas-autosave.ts`) with debounced auto-sync (2.5s) and structural fingerprint change detection.
+  - Implemented state rehydration on editor mount if the Liveblocks room is empty (0 nodes and 0 edges), avoiding overwrites when active collaboration exists.
+  - Built `SaveProvider` context (`components/editor/canvas/save-context.tsx`) and `SaveStatusIndicator` in `WorkspaceShell` showing saving, saved, unsaved, and error states with manual save support.
 - [x] Implemented AI Workspace Sidebar Shell (20-ai-sidebar-shell.md):
   - Extracted AI workspace sidebar into dedicated `AISidebar` component (`components/editor/ai-sidebar.tsx`).
   - Preserved floating slide-over drawer layout with smooth transition, backdrop blur, and dark technical workspace styling.

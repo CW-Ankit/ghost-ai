@@ -436,3 +436,88 @@ export const getByRoomId = query({
     return null;
   },
 });
+
+export const saveCanvas = mutation({
+  args: {
+    projectId: v.id("projects"),
+    canvasJsonPath: v.string(),
+    nodeCount: v.optional(v.number()),
+    edgeCount: v.optional(v.number()),
+    snapshot: v.optional(v.any()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new ConvexError("Unauthenticated");
+
+    const project = await ctx.db.get(args.projectId);
+    if (!project) throw new ConvexError("Project not found");
+
+    const userId = identity.tokenIdentifier;
+    const userEmail = identity.email;
+
+    // Verify project membership: must be owner or a collaborator
+    const isOwner = project.ownerId === userId;
+    let isCollaborator = false;
+
+    if (userEmail) {
+      const collaboration = await ctx.db
+        .query("projectCollaborators")
+        .withIndex("by_projectId_and_email", (q) => 
+          q.eq("projectId", args.projectId).eq("email", userEmail)
+        )
+        .unique();
+      if (collaboration) isCollaborator = true;
+    }
+
+    if (!isOwner && !isCollaborator) {
+      throw new ConvexError("Unauthorized: You do not have permission to modify this project");
+    }
+
+    await ctx.db.patch(args.projectId, {
+      canvasJsonPath: args.canvasJsonPath,
+      nodeCount: args.nodeCount ?? project.nodeCount,
+      edgeCount: args.edgeCount ?? project.edgeCount,
+      canvasSnapshot: args.snapshot ?? project.canvasSnapshot,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, canvasJsonPath: args.canvasJsonPath };
+  },
+});
+
+export const getCanvasUrl = query({
+  args: { projectId: v.id("projects") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return null;
+    }
+
+    const project = await ctx.db.get(args.projectId);
+    if (!project) {
+      return null;
+    }
+
+    const userId = identity.tokenIdentifier;
+    const userEmail = identity.email;
+
+    const isOwner = project.ownerId === userId;
+    let isCollaborator = false;
+
+    if (userEmail) {
+      const collaboration = await ctx.db
+        .query("projectCollaborators")
+        .withIndex("by_projectId_and_email", (q) => 
+          q.eq("projectId", args.projectId).eq("email", userEmail)
+        )
+        .unique();
+      if (collaboration) isCollaborator = true;
+    }
+
+    if (!isOwner && !isCollaborator) {
+      return null;
+    }
+
+    return project.canvasJsonPath ?? null;
+  },
+});
