@@ -67,11 +67,11 @@ export function WorkspaceShell({
       template.nodes.forEach((n) => {
         nodesMap.set(
           n.id,
-          new LiveObject({
+          new LiveObject<any>({
             id: n.id,
             type: n.type || "canvasNode",
             position: n.position,
-            data: new LiveObject(n.data),
+            data: new LiveObject(n.data as any),
             ...(n.style ? { style: n.style } : {}),
           })
         );
@@ -79,7 +79,7 @@ export function WorkspaceShell({
       template.edges.forEach((e) => {
         edgesMap.set(
           e.id,
-          new LiveObject({
+          new LiveObject<any>({
             id: e.id,
             source: e.source,
             target: e.target,
@@ -87,7 +87,7 @@ export function WorkspaceShell({
             targetHandle: e.targetHandle,
             type: e.type || "canvasEdge",
             markerEnd: e.markerEnd,
-            data: new LiveObject(e.data || {}),
+            data: new LiveObject((e.data || {}) as any),
           })
         );
       });
@@ -106,11 +106,11 @@ export function WorkspaceShell({
       for (const node of template.nodes) {
         nodesMap.set(
           node.id,
-          new LiveObject({
+          new LiveObject<any>({
             id: node.id,
             type: node.type || "canvasNode",
             position: node.position,
-            data: new LiveObject(node.data),
+            data: new LiveObject(node.data as any),
             ...(node.style ? { style: node.style } : {}),
           })
         );
@@ -125,7 +125,7 @@ export function WorkspaceShell({
       for (const edge of template.edges) {
         edgesMap.set(
           edge.id,
-          new LiveObject({
+          new LiveObject<any>({
             id: edge.id,
             source: edge.source,
             target: edge.target,
@@ -133,7 +133,7 @@ export function WorkspaceShell({
             targetHandle: edge.targetHandle,
             type: edge.type || "canvasEdge",
             markerEnd: edge.markerEnd,
-            data: new LiveObject(edge.data || {}),
+            data: new LiveObject((edge.data || {}) as any),
           })
         );
       }
