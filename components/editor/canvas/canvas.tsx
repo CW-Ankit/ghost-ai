@@ -22,7 +22,7 @@ import { CanvasControlBar } from "./canvas-control-bar";
 import { DragPreview } from "./drag-preview";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { NODE_COLORS, NodeShape } from "@/types/canvas";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useParams } from "next/navigation";
  
