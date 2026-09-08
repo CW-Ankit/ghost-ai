@@ -9,16 +9,16 @@
 | Auth             | Clerk                   | User identity and route protection                             |
 | Database         | Convex                  | Relational metadata: projects, collaborators, specs, task runs |
 | Canvas           | Liveblocks + React Flow | Real-time collaborative canvas, presence, and cursors          |
-| Background tasks | Trigger.dev             | Durable AI generation workflows                                |
+| Background tasks | Convex actions          | Durable AI generation workflows (design + spec)                |
+| AI               | Mistral AI              | LLM-powered architecture and spec generation                   |
 | Artifact storage | Vercel Blob             | Canvas snapshots and generated Markdown specs                  |
 
 ## System Boundaries
 
-- `app/api` — Authenticated request handlers: input validation, ownership checks, task triggering, and persistence.
-- `trigger` — Long-running background jobs: AI design generation and spec generation.
-- `lib` — Shared infrastructure: Prisma client, access control helpers, and utilities.
+- `app/api` — Authenticated request handlers: input validation, ownership checks, and persistence.
+- `convex` — Database schema, server-side functions (queries/mutations), and background AI actions.
+- `lib` — Shared infrastructure: auth helpers, API clients, and utilities.
 - `components` — UI composition: canvas surfaces, sidebars, dialogs, and interactive elements.
-- `convex` — Database schema and server-side functions (queries/mutations).
 - `data` — Legacy local directory. Not used for new artifacts.
 
 ## Storage Model
@@ -50,14 +50,14 @@
 ### Design Generation
 
 - Input: user prompt, project context, and current canvas state.
-- Execution: durable background task via Trigger.dev.
-- Output: structured node and edge updates written into the shared Liveblocks room.
+- Execution: Convex action calling Mistral AI (mistral-small-latest with JSON mode) for structured graph output.
+- Output: structured node and edge updates written into the shared Liveblocks room via the client.
 
 ### Spec Generation
 
 - Input: current canvas graph and project context.
-- Execution: durable background task via Trigger.dev.
-- Output: Markdown technical spec saved to the filesystem and linked to the project in the database.
+- Execution: Convex action calling Mistral AI (mistral-large-latest) for Markdown generation.
+- Output: Markdown technical spec saved to Vercel Blob and linked to the project in the database.
 
 ## Invariants
 

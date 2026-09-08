@@ -1,6 +1,6 @@
-"use client";
+'use client'
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -8,15 +8,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useProjectActions } from "../../hooks/use-project-actions";
-import { FolderPlus, Pencil, Trash2 } from "lucide-react";
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useProjectActions } from '../../hooks/use-project-actions'
+import { FolderPlus, Pencil, Trash2 } from 'lucide-react'
 
 // Let's redefine it to take the hook state as props
 interface ProjectDialogsProps {
-  state: ReturnType<typeof useProjectActions>;
+  state: ReturnType<typeof useProjectActions>
 }
 
 export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
@@ -31,15 +31,15 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
     handleRenameProject,
     handleDeleteProject,
     slugify,
-  } = state;
+  } = state
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (activeDialog === 'rename' && inputRef.current) {
-      inputRef.current.focus();
+      inputRef.current.focus()
     }
-  }, [activeDialog]);
+  }, [activeDialog])
 
   if (activeDialog === 'create') {
     return (
@@ -49,9 +49,7 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
             <FolderPlus className="h-5 w-5 text-accent-primary" />
             <div>
               <DialogTitle>Create Project</DialogTitle>
-              <DialogDescription>
-                Enter a name for your new architecture project.
-              </DialogDescription>
+              <DialogDescription>Enter a name for your new architecture project.</DialogDescription>
             </div>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -59,7 +57,7 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
               <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
                 Project Name
               </label>
-              <Input 
+              <Input
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
                 placeholder="e.g. E-commerce Platform"
@@ -77,17 +75,19 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={closeDialog}>Cancel</Button>
-            <Button 
-              onClick={() => handleCreateProject(projectName)} 
+            <Button variant="outline" onClick={closeDialog}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => handleCreateProject(projectName)}
               disabled={!projectName || isLoading}
             >
-              {isLoading ? "Creating..." : "Create Project"}
+              {isLoading ? 'Creating...' : 'Create Project'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    );
+    )
   }
 
   if (activeDialog === 'rename') {
@@ -108,36 +108,38 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
               <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
                 New Project Name
               </label>
-              <Input 
+              <Input
                 ref={inputRef}
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
                 placeholder="Enter new name"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && selectedProject?._id && projectName.trim()) {
-                    e.preventDefault();
-                    handleRenameProject(selectedProject._id, projectName);
+                    e.preventDefault()
+                    handleRenameProject(selectedProject._id, projectName)
                   }
                 }}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={closeDialog}>Cancel</Button>
-            <Button 
+            <Button variant="outline" onClick={closeDialog}>
+              Cancel
+            </Button>
+            <Button
               onClick={() => {
                 if (selectedProject?._id && projectName.trim()) {
-                  handleRenameProject(selectedProject._id, projectName);
+                  handleRenameProject(selectedProject._id, projectName)
                 }
               }}
               disabled={!selectedProject?._id || !projectName.trim() || isLoading}
             >
-              {isLoading ? "Saving..." : "Save Changes"}
+              {isLoading ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    );
+    )
   }
 
   if (activeDialog === 'delete') {
@@ -149,30 +151,32 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
             <div>
               <DialogTitle>Delete Project</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete <strong>{selectedProject?.name}</strong>? 
-                This action cannot be undone.
+                Are you sure you want to delete <strong>{selectedProject?.name}</strong>? This
+                action cannot be undone.
               </DialogDescription>
             </div>
           </DialogHeader>
           <div className="py-4" />
           <DialogFooter>
-            <Button variant="outline" onClick={closeDialog}>Cancel</Button>
-            <Button 
-              variant="destructive" 
+            <Button variant="outline" onClick={closeDialog}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
               onClick={() => {
                 if (selectedProject?._id && selectedProject?.roomId) {
-                  handleDeleteProject(selectedProject._id, selectedProject.roomId);
+                  handleDeleteProject(selectedProject._id, selectedProject.roomId)
                 }
               }}
               disabled={isLoading || !selectedProject?._id}
             >
-              {isLoading ? "Deleting..." : "Delete Project"}
+              {isLoading ? 'Deleting...' : 'Delete Project'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    );
+    )
   }
 
-  return null;
+  return null
 }

@@ -175,3 +175,10 @@ This document serves as the project's engineering memory, recording mistakes, bu
 - **Symptom**: Client console error `[CONVEX M(projects:updateStatus)] Server Error: Could not find public function for 'projects:updateStatus'`.
 - **Root Cause**: Unlike local Next.js API routes that hot-reload in Node, Convex functions run on the Convex serverless backend and must be synchronized via `npx convex dev` or `npx convex dev --once`.
 - **Solution**: Keep `npx convex dev` running in a dedicated terminal during development or execute `npx convex dev --once` immediately after creating new queries/mutations.
+
+### 7.2 Convex Node.js Runtime Isolation & API Type Regeneration
+
+- **Mistake**: Mixing Convex mutations or queries directly inside a `"use node"` action file (e.g. `convex/ai.ts`) or calling newly created actions before regenerating `convex/_generated/api.d.ts`.
+- **Symptom**: Build failure or runtime exception stating that queries/mutations cannot execute in the Node.js runtime, alongside TypeScript errors stating `Property 'ai' does not exist on type 'api'`.
+- **Root Cause**: Convex strictly isolates Node runtime actions from standard V8 runtime queries/mutations. Additionally, `api.*` and `internal.*` types are statically declared in `convex/_generated/api.d.ts` which must be regenerated when new backend files are added.
+- **Solution**: Keep `"use node"` actions in dedicated files (`convex/ai.ts`) and place database mutations/queries in standard runtime files (`convex/taskRuns.ts`, `convex/specs.ts`). Run `npx convex dev --once` whenever new files or functions are declared.

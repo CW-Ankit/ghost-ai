@@ -1,13 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useState, useRef } from 'react'
-import {
-  ReactFlow,
-  Background,
-  MiniMap,
-  useReactFlow,
-  MarkerType,
-} from '@xyflow/react'
+import { ReactFlow, Background, MiniMap, useReactFlow, MarkerType } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useLiveblocksFlow } from '@liveblocks/react-flow'
 import {
@@ -127,84 +121,87 @@ function CanvasInner({ projectId }: { projectId: string }) {
   }, [registerSaveHandler, saveNow])
 
   // Liveblocks mutation to load saved canvas state if room is empty
-  const loadSavedState = useLiveblocksMutation(({ storage }, savedData: { nodes: any[]; edges: any[] }) => {
-    const flow = storage.get('flow') as any
-    if (!flow) {
-      const nodesMap = new LiveMap()
-      const edgesMap = new LiveMap()
-      savedData.nodes.forEach((n) => {
-        nodesMap.set(
-          n.id,
-          new LiveObject<any>({
-            id: n.id,
-            type: n.type || 'canvasNode',
-            position: n.position,
-            data: new LiveObject(n.data as any),
-            ...(n.style ? { style: n.style } : {}),
-          })
-        )
-      })
-      savedData.edges.forEach((e) => {
-        edgesMap.set(
-          e.id,
-          new LiveObject<any>({
-            id: e.id,
-            source: e.source,
-            target: e.target,
-            sourceHandle: e.sourceHandle,
-            targetHandle: e.targetHandle,
-            type: e.type || 'canvasEdge',
-            markerEnd: e.markerEnd,
-            data: new LiveObject((e.data || {}) as any),
-          })
-        )
-      })
-      storage.set('flow', new LiveObject({ nodes: nodesMap, edges: edgesMap }))
-      return
-    }
+  const loadSavedState = useLiveblocksMutation(
+    ({ storage }, savedData: { nodes: any[]; edges: any[] }) => {
+      const flow = storage.get('flow') as any
+      if (!flow) {
+        const nodesMap = new LiveMap()
+        const edgesMap = new LiveMap()
+        savedData.nodes.forEach((n) => {
+          nodesMap.set(
+            n.id,
+            new LiveObject<any>({
+              id: n.id,
+              type: n.type || 'canvasNode',
+              position: n.position,
+              data: new LiveObject(n.data as any),
+              ...(n.style ? { style: n.style } : {}),
+            })
+          )
+        })
+        savedData.edges.forEach((e) => {
+          edgesMap.set(
+            e.id,
+            new LiveObject<any>({
+              id: e.id,
+              source: e.source,
+              target: e.target,
+              sourceHandle: e.sourceHandle,
+              targetHandle: e.targetHandle,
+              type: e.type || 'canvasEdge',
+              markerEnd: e.markerEnd,
+              data: new LiveObject((e.data || {}) as any),
+            })
+          )
+        })
+        storage.set('flow', new LiveObject({ nodes: nodesMap, edges: edgesMap }))
+        return
+      }
 
-    const nodesMap = flow.get('nodes')
-    const edgesMap = flow.get('edges')
+      const nodesMap = flow.get('nodes')
+      const edgesMap = flow.get('edges')
 
-    if (nodesMap) {
-      for (const key of Array.from(nodesMap.keys())) {
-        nodesMap.delete(key)
+      if (nodesMap) {
+        for (const key of Array.from(nodesMap.keys())) {
+          nodesMap.delete(key)
+        }
+        for (const node of savedData.nodes) {
+          nodesMap.set(
+            node.id,
+            new LiveObject<any>({
+              id: node.id,
+              type: node.type || 'canvasNode',
+              position: node.position,
+              data: new LiveObject(node.data as any),
+              ...(node.style ? { style: node.style } : {}),
+            })
+          )
+        }
       }
-      for (const node of savedData.nodes) {
-        nodesMap.set(
-          node.id,
-          new LiveObject<any>({
-            id: node.id,
-            type: node.type || 'canvasNode',
-            position: node.position,
-            data: new LiveObject(node.data as any),
-            ...(node.style ? { style: node.style } : {}),
-          })
-        )
-      }
-    }
 
-    if (edgesMap) {
-      for (const key of Array.from(edgesMap.keys())) {
-        edgesMap.delete(key)
+      if (edgesMap) {
+        for (const key of Array.from(edgesMap.keys())) {
+          edgesMap.delete(key)
+        }
+        for (const edge of savedData.edges) {
+          edgesMap.set(
+            edge.id,
+            new LiveObject<any>({
+              id: edge.id,
+              source: edge.source,
+              target: edge.target,
+              sourceHandle: edge.sourceHandle,
+              targetHandle: edge.targetHandle,
+              type: edge.type || 'canvasEdge',
+              markerEnd: edge.markerEnd,
+              data: new LiveObject((edge.data || {}) as any),
+            })
+          )
+        }
       }
-      for (const edge of savedData.edges) {
-        edgesMap.set(
-          edge.id,
-          new LiveObject<any>({
-            id: edge.id,
-            source: edge.source,
-            target: edge.target,
-            sourceHandle: edge.sourceHandle,
-            targetHandle: edge.targetHandle,
-            type: edge.type || 'canvasEdge',
-            markerEnd: edge.markerEnd,
-            data: new LiveObject((edge.data || {}) as any),
-          })
-        )
-      }
-    }
-  }, [])
+    },
+    []
+  )
 
   // Retrieve saved canvas URL from Convex
   const canvasBlobUrl = useQuery(

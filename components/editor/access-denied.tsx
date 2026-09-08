@@ -1,9 +1,9 @@
-"use client";
+'use client'
 
-import React from "react";
-import Link from "next/link";
-import { Lock } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import React from 'react'
+import Link from 'next/link'
+import { Lock } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export function AccessDenied() {
   return (
@@ -16,13 +16,13 @@ export function AccessDenied() {
         <p className="text-text-secondary">
           You don&apos;t have permission to access this project, or the project no longer exists.
         </p>
-        <Link 
-          href="/editor" 
+        <Link
+          href="/editor"
           className="mt-4 inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg bg-accent-primary text-bg-base hover:bg-accent-primary/90 transition-colors"
         >
           Back to Projects
         </Link>
       </div>
     </div>
-  );
+  )
 }

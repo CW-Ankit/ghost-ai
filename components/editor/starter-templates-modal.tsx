@@ -1,54 +1,51 @@
-"use client";
+'use client'
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo } from 'react'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  CANVAS_TEMPLATES,
-  CanvasTemplate,
-} from "@/components/editor/starter-templates";
-import { NODE_COLORS, NodeShape } from "@/types/canvas";
-import { Search, Sparkles, LayoutTemplate, AlertTriangle } from "lucide-react";
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { CANVAS_TEMPLATES, CanvasTemplate } from '@/components/editor/starter-templates'
+import { NODE_COLORS, NodeShape } from '@/types/canvas'
+import { Search, Sparkles, LayoutTemplate, AlertTriangle } from 'lucide-react'
 
 interface TemplatePreviewProps {
-  template: CanvasTemplate;
+  template: CanvasTemplate
 }
 
 function TemplatePreview({ template }: TemplatePreviewProps) {
-  const { nodes, edges } = template;
+  const { nodes, edges } = template
 
   const { viewBox, nodePositions } = useMemo(() => {
     if (!nodes || nodes.length === 0) {
-      return { viewBox: "0 0 100 100", nodePositions: new Map() };
+      return { viewBox: '0 0 100 100', nodePositions: new Map() }
     }
 
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
 
     const positions = new Map<
       string,
       { x: number; y: number; w: number; h: number; cx: number; cy: number }
-    >();
+    >()
 
     nodes.forEach((n) => {
-      const w = (n.style?.width as number) || 160;
-      const h = (n.style?.height as number) || 60;
-      const x = n.position.x;
-      const y = n.position.y;
+      const w = (n.style?.width as number) || 160
+      const h = (n.style?.height as number) || 60
+      const x = n.position.x
+      const y = n.position.y
 
-      if (x < minX) minX = x;
-      if (y < minY) minY = y;
-      if (x + w > maxX) maxX = x + w;
-      if (y + h > maxY) maxY = y + h;
+      if (x < minX) minX = x
+      if (y < minY) minY = y
+      if (x + w > maxX) maxX = x + w
+      if (y + h > maxY) maxY = y + h
 
       positions.set(n.id, {
         x,
@@ -57,32 +54,32 @@ function TemplatePreview({ template }: TemplatePreviewProps) {
         h,
         cx: x + w / 2,
         cy: y + h / 2,
-      });
-    });
+      })
+    })
 
-    const padding = 40;
-    const boxX = minX - padding;
-    const boxY = minY - padding;
-    const boxW = Math.max(maxX - minX + padding * 2, 100);
-    const boxH = Math.max(maxY - minY + padding * 2, 100);
+    const padding = 40
+    const boxX = minX - padding
+    const boxY = minY - padding
+    const boxW = Math.max(maxX - minX + padding * 2, 100)
+    const boxH = Math.max(maxY - minY + padding * 2, 100)
 
     return {
       viewBox: `${boxX} ${boxY} ${boxW} ${boxH}`,
       nodePositions: positions,
-    };
-  }, [nodes]);
+    }
+  }, [nodes])
 
   const renderShape = (node: (typeof nodes)[0]) => {
-    const pos = nodePositions.get(node.id);
-    if (!pos) return null;
-    const { x, y, w, h, cx, cy } = pos;
-    const colorKey = node.data?.color || "default";
-    const colors = NODE_COLORS[colorKey] || NODE_COLORS.default;
-    const shape = (node.data?.shape || "rectangle") as NodeShape;
+    const pos = nodePositions.get(node.id)
+    if (!pos) return null
+    const { x, y, w, h, cx, cy } = pos
+    const colorKey = node.data?.color || 'default'
+    const colors = NODE_COLORS[colorKey] || NODE_COLORS.default
+    const shape = (node.data?.shape || 'rectangle') as NodeShape
 
     switch (shape) {
-      case "circle": {
-        const r = Math.min(w, h) / 2;
+      case 'circle': {
+        const r = Math.min(w, h) / 2
         return (
           <g key={node.id}>
             <circle
@@ -105,9 +102,9 @@ function TemplatePreview({ template }: TemplatePreviewProps) {
               {node.data?.label}
             </text>
           </g>
-        );
+        )
       }
-      case "pill": {
+      case 'pill': {
         return (
           <g key={node.id}>
             <rect
@@ -133,10 +130,10 @@ function TemplatePreview({ template }: TemplatePreviewProps) {
               {node.data?.label}
             </text>
           </g>
-        );
+        )
       }
-      case "diamond": {
-        const points = `${cx},${y} ${x + w},${cy} ${cx},${y + h} ${x},${cy}`;
+      case 'diamond': {
+        const points = `${cx},${y} ${x + w},${cy} ${cx},${y + h} ${x},${cy}`
         return (
           <g key={node.id}>
             <polygon
@@ -154,13 +151,13 @@ function TemplatePreview({ template }: TemplatePreviewProps) {
               textAnchor="middle"
               className="select-none pointer-events-none font-sans"
             >
-              {node.data?.label?.split("\n")[0] || ""}
+              {node.data?.label?.split('\n')[0] || ''}
             </text>
           </g>
-        );
+        )
       }
-      case "cylinder": {
-        const ry = 10;
+      case 'cylinder': {
+        const ry = 10
         return (
           <g key={node.id}>
             <path
@@ -190,11 +187,11 @@ function TemplatePreview({ template }: TemplatePreviewProps) {
               {node.data?.label}
             </text>
           </g>
-        );
+        )
       }
-      case "hexagon": {
-        const offset = w * 0.2;
-        const pts = `${x + offset},${y} ${x + w - offset},${y} ${x + w},${cy} ${x + w - offset},${y + h} ${x + offset},${y + h} ${x},${cy}`;
+      case 'hexagon': {
+        const offset = w * 0.2
+        const pts = `${x + offset},${y} ${x + w - offset},${y} ${x + w},${cy} ${x + w - offset},${y + h} ${x + offset},${y + h} ${x},${cy}`
         return (
           <g key={node.id}>
             <polygon
@@ -215,9 +212,9 @@ function TemplatePreview({ template }: TemplatePreviewProps) {
               {node.data?.label}
             </text>
           </g>
-        );
+        )
       }
-      case "rectangle":
+      case 'rectangle':
       default: {
         return (
           <g key={node.id}>
@@ -244,18 +241,14 @@ function TemplatePreview({ template }: TemplatePreviewProps) {
               {node.data?.label}
             </text>
           </g>
-        );
+        )
       }
     }
-  };
+  }
 
   return (
     <div className="w-full h-44 bg-bg-base/60 rounded-xl border border-border-subtle overflow-hidden flex items-center justify-center p-2">
-      <svg
-        viewBox={viewBox}
-        className="w-full h-full"
-        preserveAspectRatio="xMidYMid meet"
-      >
+      <svg viewBox={viewBox} className="w-full h-full" preserveAspectRatio="xMidYMid meet">
         <defs>
           <marker
             id={`arrow-${template.id}`}
@@ -272,9 +265,9 @@ function TemplatePreview({ template }: TemplatePreviewProps) {
 
         {/* Edges */}
         {edges.map((edge) => {
-          const from = nodePositions.get(edge.source);
-          const to = nodePositions.get(edge.target);
-          if (!from || !to) return null;
+          const from = nodePositions.get(edge.source)
+          const to = nodePositions.get(edge.target)
+          if (!from || !to) return null
 
           return (
             <line
@@ -288,21 +281,21 @@ function TemplatePreview({ template }: TemplatePreviewProps) {
               strokeDasharray="4 4"
               markerEnd={`url(#arrow-${template.id})`}
             />
-          );
+          )
         })}
 
         {/* Nodes */}
         {nodes.map((node) => renderShape(node))}
       </svg>
     </div>
-  );
+  )
 }
 
 interface StarterTemplatesModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSelectTemplate: (template: CanvasTemplate) => void;
-  hasExistingNodes?: boolean;
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSelectTemplate: (template: CanvasTemplate) => void
+  hasExistingNodes?: boolean
 }
 
 export function StarterTemplatesModal({
@@ -311,44 +304,41 @@ export function StarterTemplatesModal({
   onSelectTemplate,
   hasExistingNodes = false,
 }: StarterTemplatesModalProps) {
-  const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  const [pendingTemplate, setPendingTemplate] = useState<CanvasTemplate | null>(
-    null
-  );
+  const [search, setSearch] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<string>('All')
+  const [pendingTemplate, setPendingTemplate] = useState<CanvasTemplate | null>(null)
 
   const categories = useMemo(() => {
-    const cats = new Set(CANVAS_TEMPLATES.map((t) => t.category));
-    return ["All", ...Array.from(cats)];
-  }, []);
+    const cats = new Set(CANVAS_TEMPLATES.map((t) => t.category))
+    return ['All', ...Array.from(cats)]
+  }, [])
 
   const filteredTemplates = useMemo(() => {
     return CANVAS_TEMPLATES.filter((t) => {
-      const matchesCategory =
-        selectedCategory === "All" || t.category === selectedCategory;
+      const matchesCategory = selectedCategory === 'All' || t.category === selectedCategory
       const matchesSearch =
         t.name.toLowerCase().includes(search.toLowerCase()) ||
-        t.description.toLowerCase().includes(search.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
-  }, [search, selectedCategory]);
+        t.description.toLowerCase().includes(search.toLowerCase())
+      return matchesCategory && matchesSearch
+    })
+  }, [search, selectedCategory])
 
   const handleApply = (template: CanvasTemplate) => {
     if (hasExistingNodes) {
-      setPendingTemplate(template);
+      setPendingTemplate(template)
     } else {
-      onSelectTemplate(template);
-      onOpenChange(false);
+      onSelectTemplate(template)
+      onOpenChange(false)
     }
-  };
+  }
 
   const confirmApply = () => {
     if (pendingTemplate) {
-      onSelectTemplate(pendingTemplate);
-      setPendingTemplate(null);
-      onOpenChange(false);
+      onSelectTemplate(pendingTemplate)
+      setPendingTemplate(null)
+      onOpenChange(false)
     }
-  };
+  }
 
   return (
     <>
@@ -360,9 +350,7 @@ export function StarterTemplatesModal({
                 <LayoutTemplate className="h-5 w-5" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-semibold">
-                  Starter Templates
-                </DialogTitle>
+                <DialogTitle className="text-xl font-semibold">Starter Templates</DialogTitle>
                 <DialogDescription className="text-text-muted text-sm mt-0.5">
                   Kickstart your system architecture with pre-built, production-grade templates.
                 </DialogDescription>
@@ -385,13 +373,13 @@ export function StarterTemplatesModal({
               {categories.map((cat) => (
                 <Button
                   key={cat}
-                  variant={selectedCategory === cat ? "secondary" : "ghost"}
+                  variant={selectedCategory === cat ? 'secondary' : 'ghost'}
                   size="sm"
                   onClick={() => setSelectedCategory(cat)}
                   className={`text-xs h-9 rounded-xl px-3 transition-colors ${
                     selectedCategory === cat
-                      ? "bg-accent-primary/15 text-accent-primary font-medium border border-accent-primary/30"
-                      : "text-text-secondary hover:text-text-primary hover:bg-bg-subtle"
+                      ? 'bg-accent-primary/15 text-accent-primary font-medium border border-accent-primary/30'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-bg-subtle'
                   }`}
                 >
                   {cat}
@@ -458,11 +446,10 @@ export function StarterTemplatesModal({
               <AlertTriangle className="h-6 w-6" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-semibold">
-                Replace Current Canvas?
-              </DialogTitle>
+              <DialogTitle className="text-lg font-semibold">Replace Current Canvas?</DialogTitle>
               <DialogDescription className="text-text-muted text-sm mt-1">
-                Loading &quot;{pendingTemplate?.name}&quot; will clear all existing nodes and edges on your canvas. This action cannot be undone.
+                Loading &quot;{pendingTemplate?.name}&quot; will clear all existing nodes and edges
+                on your canvas. This action cannot be undone.
               </DialogDescription>
             </div>
           </DialogHeader>
@@ -485,5 +472,5 @@ export function StarterTemplatesModal({
         </DialogContent>
       </Dialog>
     </>
-  );
+  )
 }

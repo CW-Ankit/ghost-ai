@@ -16,7 +16,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col font-sans selection:bg-accent-primary/20 selection:text-accent-primary" suppressHydrationWarning>
+      <body
+        className="min-h-full flex flex-col font-sans selection:bg-accent-primary/20 selection:text-accent-primary"
+        suppressHydrationWarning
+      >
         <ClerkProvider
           appearance={{
             cssLayerName: 'clerk',

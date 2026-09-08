@@ -1,11 +1,11 @@
-"use client";
+'use client'
 
-import React from "react";
-import { Plus, Shapes } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import React from 'react'
+import { Plus, Shapes } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface EditorHomeProps {
-  onNewProject: () => void;
+  onNewProject: () => void
 }
 
 export function EditorHome({ onNewProject }: EditorHomeProps) {
@@ -20,7 +20,7 @@ export function EditorHome({ onNewProject }: EditorHomeProps) {
       <p className="text-text-secondary max-w-md mb-8">
         Start a new architecture workspace, or choose a project from the sidebar.
       </p>
-      <Button 
+      <Button
         onClick={onNewProject}
         className="gap-2 bg-accent-primary text-bg-base hover:bg-accent-primary/90 px-6 py-6 text-lg"
       >
@@ -28,5 +28,5 @@ export function EditorHome({ onNewProject }: EditorHomeProps) {
         New Project
       </Button>
     </div>
-  );
+  )
 }

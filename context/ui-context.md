@@ -30,11 +30,11 @@ Tailwind utility names map to these variables. Use `bg-base`, `bg-surface`, `tex
 
 ## Typography
 
-| Role                  | Font               | CSS Variable     |
-| --------------------- | ------------------ | ---------------- |
-| UI & Body text        | Plus Jakarta Sans  | `--font-sans`    |
-| Headings & Titles     | Space Grotesk      | `--font-heading` |
-| Code & Technical mono | JetBrains Mono     | `--font-mono`    |
+| Role                  | Font              | CSS Variable     |
+| --------------------- | ----------------- | ---------------- |
+| UI & Body text        | Plus Jakarta Sans | `--font-sans`    |
+| Headings & Titles     | Space Grotesk     | `--font-heading` |
+| Code & Technical mono | JetBrains Mono    | `--font-mono`    |
 
 Fonts are loaded self-hosted via `@fontsource` packages, guaranteeing zero network waterfalls during compilation, maximum rendering crispness, antialiasing, and subpixel rendering.
 

@@ -1,25 +1,28 @@
-"use client";
+'use client'
 
-import React from "react";
-import { Square, Circle, Diamond, Pill, Database, Hexagon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { NodeShape } from "@/types/canvas";
+import React from 'react'
+import { Square, Circle, Diamond, Pill, Database, Hexagon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { NodeShape } from '@/types/canvas'
 
 interface ShapeItemProps {
-  shape: NodeShape;
-  icon: React.ReactNode;
-  label: string;
+  shape: NodeShape
+  icon: React.ReactNode
+  label: string
 }
 
 function ShapeItem({ shape, icon, label }: ShapeItemProps) {
   const onDragStart = (e: React.DragEvent) => {
-    e.dataTransfer.setData("application/ghost-ai-shape", JSON.stringify({
-      shape,
-      label,
-      size: shape === "circle" ? { width: 60, height: 60 } : { width: 140, height: 70 }
-    }));
-  };
+    e.dataTransfer.setData(
+      'application/ghost-ai-shape',
+      JSON.stringify({
+        shape,
+        label,
+        size: shape === 'circle' ? { width: 60, height: 60 } : { width: 140, height: 70 },
+      })
+    )
+  }
 
   return (
     <Button
@@ -35,18 +38,18 @@ function ShapeItem({ shape, icon, label }: ShapeItemProps) {
         {label}
       </span>
     </Button>
-  );
+  )
 }
 
 export function ShapePanel() {
   const shapes: { shape: NodeShape; icon: React.ReactNode; label: string }[] = [
-    { shape: "rectangle", icon: <Square className="h-5 w-5" />, label: "Process" },
-    { shape: "diamond", icon: <Diamond className="h-5 w-5" />, label: "Decision" },
-    { shape: "circle", icon: <Circle className="h-5 w-5" />, label: "Event" },
-    { shape: "pill", icon: <Pill className="h-5 w-5" />, label: "Service" },
-    { shape: "cylinder", icon: <Database className="h-5 w-5" />, label: "Storage" },
-    { shape: "hexagon", icon: <Hexagon className="h-5 w-5" />, label: "Boundary" },
-  ];
+    { shape: 'rectangle', icon: <Square className="h-5 w-5" />, label: 'Process' },
+    { shape: 'diamond', icon: <Diamond className="h-5 w-5" />, label: 'Decision' },
+    { shape: 'circle', icon: <Circle className="h-5 w-5" />, label: 'Event' },
+    { shape: 'pill', icon: <Pill className="h-5 w-5" />, label: 'Service' },
+    { shape: 'cylinder', icon: <Database className="h-5 w-5" />, label: 'Storage' },
+    { shape: 'hexagon', icon: <Hexagon className="h-5 w-5" />, label: 'Boundary' },
+  ]
 
   return (
     <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
@@ -56,5 +59,5 @@ export function ShapePanel() {
         ))}
       </div>
     </div>
-  );
+  )
 }

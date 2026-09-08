@@ -1,18 +1,18 @@
-"use client";
+'use client'
 
-import React from "react";
-import { ZoomIn, ZoomOut, Maximize2, Undo2, Redo2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import React from 'react'
+import { ZoomIn, ZoomOut, Maximize2, Undo2, Redo2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 interface CanvasControlBarProps {
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-  onFitView: () => void;
-  onUndo: () => void;
-  onRedo: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
+  onZoomIn: () => void
+  onZoomOut: () => void
+  onFitView: () => void
+  onUndo: () => void
+  onRedo: () => void
+  canUndo: boolean
+  canRedo: boolean
 }
 
 export function CanvasControlBar({
@@ -69,10 +69,10 @@ export function CanvasControlBar({
             onClick={onUndo}
             disabled={!canUndo}
             className={cn(
-              "h-9 w-9 rounded-xl transition-colors",
+              'h-9 w-9 rounded-xl transition-colors',
               canUndo
-                ? "text-text-secondary hover:text-text-primary hover:bg-bg-elevated"
-                : "text-text-muted/40 cursor-not-allowed"
+                ? 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'
+                : 'text-text-muted/40 cursor-not-allowed'
             )}
             title="Undo (Ctrl+Z)"
           >
@@ -84,10 +84,10 @@ export function CanvasControlBar({
             onClick={onRedo}
             disabled={!canRedo}
             className={cn(
-              "h-9 w-9 rounded-xl transition-colors",
+              'h-9 w-9 rounded-xl transition-colors',
               canRedo
-                ? "text-text-secondary hover:text-text-primary hover:bg-bg-elevated"
-                : "text-text-muted/40 cursor-not-allowed"
+                ? 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'
+                : 'text-text-muted/40 cursor-not-allowed'
             )}
             title="Redo (Ctrl+Shift+Z / Ctrl+Y)"
           >
@@ -96,5 +96,5 @@ export function CanvasControlBar({
         </div>
       </div>
     </div>
-  );
+  )
 }

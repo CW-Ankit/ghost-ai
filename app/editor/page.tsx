@@ -1,8 +1,5 @@
 import { EditorLayout } from '@/components/editor/editor-layout'
-import { getProjects } from '@/lib/projects-server'
 
 export default async function EditorPage() {
-  return (
-    <EditorLayout />
-  );
+  return <EditorLayout />
 }

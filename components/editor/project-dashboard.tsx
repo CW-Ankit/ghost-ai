@@ -1,43 +1,60 @@
-"use client";
+'use client'
 
-import React from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Plus, MoreVertical, Folder, Users, FileText, Pencil, Trash2, Clock, Archive } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
-import { CanvasPreview } from "./project-dashboard/canvas-preview";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { useProjectActions } from "../../hooks/use-project-actions";
-import { Doc } from "@/convex/_generated/dataModel";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import {
+  Plus,
+  MoreVertical,
+  Folder,
+  Users,
+  FileText,
+  Pencil,
+  Trash2,
+  Clock,
+  Archive,
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { cn } from '@/lib/utils'
+import { CanvasPreview } from './project-dashboard/canvas-preview'
+import { useQuery } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { useProjectActions } from '../../hooks/use-project-actions'
+import { Doc } from '@/convex/_generated/dataModel'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface ProjectCardProps {
-  project: Doc<"projects">;
-  isOwner: boolean;
-  onAction: (id: string) => void;
-  onRename: (project: Doc<"projects">) => void;
-  onDelete: (project: Doc<"projects">) => void;
-  onClick: (roomId: string) => void;
+  project: Doc<'projects'>
+  isOwner: boolean
+  onAction: (id: string) => void
+  onRename: (project: Doc<'projects'>) => void
+  onDelete: (project: Doc<'projects'>) => void
+  onClick: (roomId: string) => void
 }
 
-function ProjectCard({ project, isOwner, onAction, onRename, onDelete, onClick }: ProjectCardProps) {
-  const router = useRouter();
-  const [showMenu, setShowMenu] = React.useState(false);
+function ProjectCard({
+  project,
+  isOwner,
+  onAction,
+  onRename,
+  onDelete,
+  onClick,
+}: ProjectCardProps) {
+  const router = useRouter()
+  const [showMenu, setShowMenu] = React.useState(false)
 
   const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  };
+    const date = new Date(timestamp)
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  }
 
   return (
-    <Card 
+    <Card
       className={cn(
-        "group relative p-5 bg-bg-surface border-border-default hover:border-accent-primary transition-all duration-200 cursor-pointer overflow-hidden",
-        "hover:shadow-[0_0_20px_rgba(0,200,212,0.1)]"
+        'group relative p-5 bg-bg-surface border-border-default hover:border-accent-primary transition-all duration-200 cursor-pointer overflow-hidden',
+        'hover:shadow-[0_0_20px_rgba(0,200,212,0.1)]'
       )}
       onClick={() => onClick(project.roomId)}
       onMouseEnter={() => router.prefetch(`/editor/${project.roomId}`)}
@@ -59,14 +76,14 @@ function ProjectCard({ project, isOwner, onAction, onRename, onDelete, onClick }
               size="icon"
               className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-text-muted hover:text-text-primary"
               onClick={(e) => {
-                e.stopPropagation();
-                setShowMenu(!showMenu);
+                e.stopPropagation()
+                setShowMenu(!showMenu)
               }}
             >
               <MoreVertical className="h-4 w-4" />
             </Button>
             {showMenu && (
-              <div 
+              <div
                 className="absolute right-0 top-8 z-20 w-32 bg-bg-elevated border border-border-default rounded-xl shadow-xl p-1 flex flex-col gap-1"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -75,9 +92,9 @@ function ProjectCard({ project, isOwner, onAction, onRename, onDelete, onClick }
                   size="sm"
                   className="justify-start gap-2 text-xs h-8 text-text-secondary hover:text-text-primary"
                   onClick={(e) => {
-                    e.stopPropagation();
-                    onRename(project);
-                    setShowMenu(false);
+                    e.stopPropagation()
+                    onRename(project)
+                    setShowMenu(false)
                   }}
                 >
                   <Pencil className="h-3 w-3" /> Rename
@@ -87,9 +104,9 @@ function ProjectCard({ project, isOwner, onAction, onRename, onDelete, onClick }
                   size="sm"
                   className="justify-start gap-2 text-xs h-8 text-text-secondary hover:text-accent-ai"
                   onClick={(e) => {
-                    e.stopPropagation();
-                    onAction(project._id); // We'll use onAction for archive
-                    setShowMenu(false);
+                    e.stopPropagation()
+                    onAction(project._id) // We'll use onAction for archive
+                    setShowMenu(false)
                   }}
                 >
                   <Archive className="h-3 w-3" /> Archive
@@ -99,9 +116,9 @@ function ProjectCard({ project, isOwner, onAction, onRename, onDelete, onClick }
                   size="sm"
                   className="justify-start gap-2 text-xs h-8 text-text-secondary hover:text-destructive"
                   onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(project);
-                    setShowMenu(false);
+                    e.stopPropagation()
+                    onDelete(project)
+                    setShowMenu(false)
                   }}
                 >
                   <Trash2 className="h-3 w-3" /> Delete
@@ -114,19 +131,20 @@ function ProjectCard({ project, isOwner, onAction, onRename, onDelete, onClick }
 
       <div className="space-y-1">
         <h3 className="text-text-primary font-medium truncate">{project.name}</h3>
-        <p className="text-xs text-text-muted font-mono truncate">
-          ghost.ai/{project.roomId}
-        </p>
+        <p className="text-xs text-text-muted font-mono truncate">ghost.ai/{project.roomId}</p>
       </div>
 
       <div className="mt-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className={cn(
-            "px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider",
-            project.status === "DRAFT" && "bg-bg-subtle border-border-subtle text-text-muted",
-            project.status === "REVIEW" && "bg-accent-ai-dim border-accent-ai text-accent-ai-text",
-            project.status === "ARCHIVED" && "bg-red-900/20 border-red-900/50 text-red-400",
-          )}>
+          <div
+            className={cn(
+              'px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider',
+              project.status === 'DRAFT' && 'bg-bg-subtle border-border-subtle text-text-muted',
+              project.status === 'REVIEW' &&
+                'bg-accent-ai-dim border-accent-ai text-accent-ai-text',
+              project.status === 'ARCHIVED' && 'bg-red-900/20 border-red-900/50 text-red-400'
+            )}
+          >
             {project.status}
           </div>
           {project.nodeCount && (
@@ -135,41 +153,39 @@ function ProjectCard({ project, isOwner, onAction, onRename, onDelete, onClick }
             </div>
           )}
         </div>
-        <span className="text-[10px] text-text-faint">
-          {formatDate(project.updatedAt)}
-        </span>
+        <span className="text-[10px] text-text-faint">{formatDate(project.updatedAt)}</span>
       </div>
     </Card>
-  );
+  )
 }
 
-export function ProjectDashboard({ 
-  onNewProject, 
-  searchQuery, 
-  setSearchQuery, 
-  sortBy, 
-  setSortBy, 
-  viewMode, 
+export function ProjectDashboard({
+  onNewProject,
+  searchQuery,
+  setSearchQuery,
+  sortBy,
+  setSortBy,
+  viewMode,
   setViewMode,
-  actions
-}: { 
-  onNewProject: () => void;
-  searchQuery: string;
-  setSearchQuery: (val: string) => void;
-  sortBy: string;
-  setSortBy: (val: any) => void;
-  viewMode: "grid" | "list";
-  setViewMode: (val: "grid" | "list") => void;
-  actions: ReturnType<typeof useProjectActions>;
+  actions,
+}: {
+  onNewProject: () => void
+  searchQuery: string
+  setSearchQuery: (val: string) => void
+  sortBy: string
+  setSortBy: (val: any) => void
+  viewMode: 'grid' | 'list'
+  setViewMode: (val: 'grid' | 'list') => void
+  actions: ReturnType<typeof useProjectActions>
 }) {
-  const router = useRouter();
-  const projects = useQuery(api.projects.list);
-  const [selectedProjects, setSelectedProjects] = React.useState<string[]>([]);
-  const [activeTag, setActiveTag] = React.useState<string | null>(null);
+  const router = useRouter()
+  const projects = useQuery(api.projects.list)
+  const [selectedProjects, setSelectedProjects] = React.useState<string[]>([])
+  const [activeTag, setActiveTag] = React.useState<string | null>(null)
 
   const handleProjectClick = (roomId: string) => {
-    router.push(`/editor/${roomId}`);
-  };
+    router.push(`/editor/${roomId}`)
+  }
 
   if (projects === undefined) {
     return (
@@ -179,39 +195,37 @@ export function ProjectDashboard({
           <p className="text-sm text-text-muted">Loading your projects...</p>
         </div>
       </div>
-    );
+    )
   }
 
-  const allProjects = projects ? [...projects.owned, ...projects.shared] : [];
-  
-  // Extract all unique tags
-  const allTags = Array.from(new Set(
-    allProjects.flatMap(p => p.tags || [])
-  )).sort();
+  const allProjects = projects ? [...projects.owned, ...projects.shared] : []
 
-  const filteredProjects = allProjects.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTag = !activeTag || (p.tags && p.tags.includes(activeTag));
-    return matchesSearch && matchesTag;
-  });
-  
+  // Extract all unique tags
+  const allTags = Array.from(new Set(allProjects.flatMap((p) => p.tags || []))).sort()
+
+  const filteredProjects = allProjects.filter((p) => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesTag = !activeTag || (p.tags && p.tags.includes(activeTag))
+    return matchesSearch && matchesTag
+  })
+
   const recentProjects = [...filteredProjects]
     .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
-    .slice(0, 4);
+    .slice(0, 4)
 
-  const myProjects = projects?.owned ?? [];
-  const sharedProjects = projects?.shared ?? [];
-  
-  const filteredMyProjects = myProjects.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTag = !activeTag || (p.tags && p.tags.includes(activeTag));
-    return matchesSearch && matchesTag;
-  });
-  const filteredSharedProjects = sharedProjects.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTag = !activeTag || (p.tags && p.tags.includes(activeTag));
-    return matchesSearch && matchesTag;
-  });
+  const myProjects = projects?.owned ?? []
+  const sharedProjects = projects?.shared ?? []
+
+  const filteredMyProjects = myProjects.filter((p) => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesTag = !activeTag || (p.tags && p.tags.includes(activeTag))
+    return matchesSearch && matchesTag
+  })
+  const filteredSharedProjects = sharedProjects.filter((p) => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesTag = !activeTag || (p.tags && p.tags.includes(activeTag))
+    return matchesSearch && matchesTag
+  })
 
   return (
     <div className="h-full w-full flex flex-col p-8 overflow-y-auto">
@@ -223,8 +237,8 @@ export function ProjectDashboard({
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {recentProjects.map((project) => (
-              <Link 
-                key={project._id} 
+              <Link
+                key={project._id}
                 href={`/editor/${project.roomId}`}
                 prefetch={true}
                 className="p-3 bg-bg-surface border border-border-default rounded-2xl flex items-center gap-3 hover:border-accent-primary transition-colors group"
@@ -234,7 +248,9 @@ export function ProjectDashboard({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-text-primary truncate">{project.name}</p>
-                  <p className="text-[10px] text-text-muted truncate">Edited {new Date(project.updatedAt).toLocaleDateString()}</p>
+                  <p className="text-[10px] text-text-muted truncate">
+                    Edited {new Date(project.updatedAt).toLocaleDateString()}
+                  </p>
                 </div>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                   <Plus className="h-3 w-3 text-text-muted" />
@@ -253,31 +269,31 @@ export function ProjectDashboard({
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setSelectedProjects([])}
               className="h-8 text-xs text-text-secondary hover:text-text-primary"
             >
               Cancel
             </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => {
-                actions.handleBulkUpdateStatus(selectedProjects, "ARCHIVED");
-                setSelectedProjects([]);
+                actions.handleBulkUpdateStatus(selectedProjects, 'ARCHIVED')
+                setSelectedProjects([])
               }}
               className="h-8 text-xs text-text-secondary hover:text-accent-ai"
             >
               <Archive className="h-3 w-3 mr-1" /> Archive
             </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => {
-                actions.handleBulkDelete(selectedProjects);
-                setSelectedProjects([]);
+                actions.handleBulkDelete(selectedProjects)
+                setSelectedProjects([])
               }}
               className="h-8 text-xs text-text-secondary hover:text-destructive"
             >
@@ -295,10 +311,10 @@ export function ProjectDashboard({
             size="sm"
             onClick={() => setActiveTag(null)}
             className={cn(
-              "h-7 px-2.5 rounded-full text-xs transition-all",
+              'h-7 px-2.5 rounded-full text-xs transition-all',
               activeTag === null
-                ? "bg-accent-primary text-bg-base font-medium hover:bg-accent-primary/90"
-                : "bg-bg-surface border border-border-default text-text-secondary hover:text-text-primary hover:border-border-subtle"
+                ? 'bg-accent-primary text-bg-base font-medium hover:bg-accent-primary/90'
+                : 'bg-bg-surface border border-border-default text-text-secondary hover:text-text-primary hover:border-border-subtle'
             )}
           >
             All
@@ -310,10 +326,10 @@ export function ProjectDashboard({
               size="sm"
               onClick={() => setActiveTag(activeTag === tag ? null : tag)}
               className={cn(
-                "h-7 px-2.5 rounded-full text-xs transition-all",
+                'h-7 px-2.5 rounded-full text-xs transition-all',
                 activeTag === tag
-                  ? "bg-accent-primary text-bg-base font-medium hover:bg-accent-primary/90"
-                  : "bg-bg-surface border border-border-default text-text-secondary hover:text-text-primary hover:border-border-subtle"
+                  ? 'bg-accent-primary text-bg-base font-medium hover:bg-accent-primary/90'
+                  : 'bg-bg-surface border border-border-default text-text-secondary hover:text-text-primary hover:border-border-subtle'
               )}
             >
               #{tag}
@@ -336,14 +352,14 @@ export function ProjectDashboard({
 
         <TabsContent value="my-projects" className="mt-6">
           {filteredMyProjects.length > 0 ? (
-            viewMode === "grid" ? (
+            viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {filteredMyProjects.map((project) => (
-                  <ProjectCard 
+                  <ProjectCard
                     key={project._id}
                     project={project}
                     isOwner={true}
-                    onAction={(id) => actions.handleUpdateStatus(id, "ARCHIVED")}
+                    onAction={(id) => actions.handleUpdateStatus(id, 'ARCHIVED')}
                     onRename={(p) => actions.openRenameDialog(p)}
                     onDelete={(p) => actions.openDeleteDialog(p)}
                     onClick={handleProjectClick}
@@ -359,37 +375,42 @@ export function ProjectDashboard({
                   <div className="col-span-3 text-right">Modified</div>
                 </div>
                 {filteredMyProjects.map((project) => (
-                  <div 
-                    key={project._id} 
+                  <div
+                    key={project._id}
                     className="grid grid-cols-12 px-5 py-3 bg-bg-surface border-b border-border-default hover:bg-bg-subtle transition-colors cursor-pointer group items-center"
                   >
                     <div className="col-span-1">
-                      <Checkbox 
+                      <Checkbox
                         checked={selectedProjects.includes(project._id)}
                         onCheckedChange={(checked) => {
                           if (checked) {
-                            setSelectedProjects([...selectedProjects, project._id]);
+                            setSelectedProjects([...selectedProjects, project._id])
                           } else {
-                            setSelectedProjects(selectedProjects.filter(id => id !== project._id));
+                            setSelectedProjects(selectedProjects.filter((id) => id !== project._id))
                           }
                         }}
                         onClick={(e) => e.stopPropagation()}
                       />
                     </div>
-                    <div 
-                      className="col-span-5 flex items-center gap-3" 
+                    <div
+                      className="col-span-5 flex items-center gap-3"
                       onClick={() => handleProjectClick(project.roomId)}
                     >
                       <FileText className="h-4 w-4 text-text-muted" />
                       <span className="text-sm text-text-primary truncate">{project.name}</span>
                     </div>
                     <div className="col-span-3">
-                      <span className={cn(
-                        "px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider",
-                        project.status === "DRAFT" && "bg-bg-subtle border-border-subtle text-text-muted",
-                        project.status === "REVIEW" && "bg-accent-ai-dim border-accent-ai text-accent-ai-text",
-                        project.status === "ARCHIVED" && "bg-red-900/20 border-red-900/50 text-red-400",
-                      )}>
+                      <span
+                        className={cn(
+                          'px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider',
+                          project.status === 'DRAFT' &&
+                            'bg-bg-subtle border-border-subtle text-text-muted',
+                          project.status === 'REVIEW' &&
+                            'bg-accent-ai-dim border-accent-ai text-accent-ai-text',
+                          project.status === 'ARCHIVED' &&
+                            'bg-red-900/20 border-red-900/50 text-red-400'
+                        )}
+                      >
                         {project.status}
                       </span>
                     </div>
@@ -410,10 +431,10 @@ export function ProjectDashboard({
 
         <TabsContent value="shared" className="mt-6">
           {filteredSharedProjects.length > 0 ? (
-            viewMode === "grid" ? (
+            viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {filteredSharedProjects.map((project) => (
-                  <ProjectCard 
+                  <ProjectCard
                     key={project._id}
                     project={project}
                     isOwner={false}
@@ -433,37 +454,42 @@ export function ProjectDashboard({
                   <div className="col-span-3 text-right">Modified</div>
                 </div>
                 {filteredSharedProjects.map((project) => (
-                  <div 
-                    key={project._id} 
+                  <div
+                    key={project._id}
                     className="grid grid-cols-12 px-5 py-3 bg-bg-surface border-b border-border-default hover:bg-bg-subtle transition-colors cursor-pointer group items-center"
                   >
                     <div className="col-span-1">
-                      <Checkbox 
+                      <Checkbox
                         checked={selectedProjects.includes(project._id)}
                         onCheckedChange={(checked) => {
                           if (checked) {
-                            setSelectedProjects([...selectedProjects, project._id]);
+                            setSelectedProjects([...selectedProjects, project._id])
                           } else {
-                            setSelectedProjects(selectedProjects.filter(id => id !== project._id));
+                            setSelectedProjects(selectedProjects.filter((id) => id !== project._id))
                           }
                         }}
                         onClick={(e) => e.stopPropagation()}
                       />
                     </div>
-                    <div 
-                      className="col-span-5 flex items-center gap-3" 
+                    <div
+                      className="col-span-5 flex items-center gap-3"
                       onClick={() => handleProjectClick(project.roomId)}
                     >
                       <FileText className="h-4 w-4 text-text-muted" />
                       <span className="text-sm text-text-primary truncate">{project.name}</span>
                     </div>
                     <div className="col-span-3">
-                      <span className={cn(
-                        "px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider",
-                        project.status === "DRAFT" && "bg-bg-subtle border-border-subtle text-text-muted",
-                        project.status === "REVIEW" && "bg-accent-ai-dim border-accent-ai text-accent-ai-text",
-                        project.status === "ARCHIVED" && "bg-red-900/20 border-red-900/50 text-red-400",
-                      )}>
+                      <span
+                        className={cn(
+                          'px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider',
+                          project.status === 'DRAFT' &&
+                            'bg-bg-subtle border-border-subtle text-text-muted',
+                          project.status === 'REVIEW' &&
+                            'bg-accent-ai-dim border-accent-ai text-accent-ai-text',
+                          project.status === 'ARCHIVED' &&
+                            'bg-red-900/20 border-red-900/50 text-red-400'
+                        )}
+                      >
                         {project.status}
                       </span>
                     </div>
@@ -483,5 +509,5 @@ export function ProjectDashboard({
         </TabsContent>
       </Tabs>
     </div>
-  );
+  )
 }

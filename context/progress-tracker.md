@@ -72,13 +72,47 @@ Update this file whenever the current phase, active feature, or implementation s
   - Attached default arrowhead `MarkerType.ArrowClosed` on edge creation in `canvas.tsx`.
   - Rendered interactive tag filter chips in `ProjectDashboard`.
 
+- [x] Implemented AI Architecture Generation & Spec Generation Pipelines (Phase 2 & 3):
+  - Added `@google/genai` (Google Gemini 2.5 Flash) and `react-markdown` dependencies.
+  - Extended Convex schema with `taskRuns` table (for tracking durable AI workflows and real-time statuses) and `specs` table (with `by_projectId` index).
+  - Strongly typed `canvasSnapshot` in Convex schema replacing loose `v.any()`.
+  - Created `convex/ai.ts` background action module running in Node.js runtime:
+    - `generateDesign`: Prompt-to-graph synthesis validating output against canvas shapes, colors, and coordinates, saving durable task runs.
+    - `generateSpec`: Canvas graph synthesis into detailed Markdown technical specification documents with executive overview, component analysis, data flows, infrastructure, and security sections.
+  - Created `convex/taskRuns.ts` containing internal mutations and reactive queries (`getTaskRun`, `getLatestTaskRun`, `getTaskRunsByProject`).
+  - Created `convex/specs.ts` containing queries and mutations (`listByProject`, `getById`, `remove`) with strict project authorization checks.
+  - Implemented `/api/specs/upload` API route persisting Markdown specs to Vercel Blob at `specs/{projectId}/{specId}.md` with development fallback.
+  - Implemented `/api/specs/[specId]` route for authenticated spec streaming and download.
+  - Rewrote `AISidebar` (`components/editor/ai-sidebar.tsx`) to directly drive real AI actions:
+    - Wired `AI Architect` tab to `api.ai.generateDesign` with live user/assistant messages, loading states, error handling, and Liveblocks CRDT mapping (`applyGeneratedArchitecture`) plus `fitView()`.
+    - Wired `Specs` tab to `api.ai.generateSpec` with dynamic node count check, reactive spec listing, Markdown preview dialog with syntax styling, copy to clipboard, direct download, and delete.
+  - Passed `projectId` from `WorkspaceShell` to `AISidebar`.
+  - Fixed cascade deletion in `projects.remove` mutation to cleanly purge collaborators, favorites, presence, task runs, and specs.
+  - Fixed deduplication of owned vs shared projects in `projects.list`.
+  - Fixed `ConvexHttpClient` per-request auth pattern in `app/api/projects/[projectId]/collaborators/route.ts`.
+  - Removed unused import in `app/editor/page.tsx` and updated docs (`code-standards.md`, `architecture-context.md`).
+
+- [x] Migrated AI Backend to Mistral AI:
+  - Replaced `@google/genai` with `@mistralai/mistralai`.
+  - Updated `convex/ai.ts` to use Mistral SDK with `mistral-small-latest` (using JSON mode for graph generation) and `mistral-large-latest` (for technical spec drafting).
+  - Updated `MISTRAL_API_KEY` configuration and UI error hints in `components/editor/ai-sidebar.tsx`.
+  - Updated architecture context documentation.
+
+## Current Phase
+
+- Phase 2: AI Workflows & Artifact Generation
+
+## Current Goal
+
+- Verification and continuous polish of AI generation workflows with Mistral AI.
+
 ## In Progress
 
 - None.
 
 ## Next Up
 
-- AI Background Workflows (Trigger.dev integration & canvas node generation)
+- Multi-turn AI refinement on existing canvas graphs (contextual modifications).
 
 ## Open Questions
 
@@ -87,7 +121,9 @@ Update this file whenever the current phase, active feature, or implementation s
 ## Architecture Decisions
 
 - Switched from Prisma/PostgreSQL to Convex as the backend.
-- Using Vercel Blob for large canvas JSON storage, with metadata in Convex.
+- Using Convex actions (with Node runtime) for AI generation workflows instead of external Trigger.dev.
+- Using Mistral AI (`mistral-small-latest` for fast JSON graph generation, `mistral-large-latest` for technical spec writing).
+- Using Vercel Blob for large canvas JSON and Markdown spec storage, with metadata in Convex.
 - Track postmortems, bugs, and edge-case lessons in `context/lessons-learned.md`.
 
 ## Session Notes

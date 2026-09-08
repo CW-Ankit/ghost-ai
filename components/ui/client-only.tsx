@@ -1,19 +1,19 @@
-"use client";
+'use client'
 
-import React, { useSyncExternalStore } from "react";
+import React, { useSyncExternalStore } from 'react'
 
-const emptySubscribe = () => () => {};
+const emptySubscribe = () => () => {}
 
 export function ClientOnly({ children }: { children: React.ReactNode }) {
   const hasMounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
     () => false
-  );
+  )
 
   if (!hasMounted) {
-    return null;
+    return null
   }
 
-  return <>{children}</>;
+  return <>{children}</>
 }

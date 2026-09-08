@@ -17,11 +17,11 @@ export function EditorLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const projectActions = useProjectActions()
-  
+
   // Dashboard State
-  const [searchQuery, setSearchQuery] = useState("")
-  const [sortBy, setSortBy] = useState<"name-asc" | "name-desc" | "recent" | "oldest">("recent")
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'recent' | 'oldest'>('recent')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   useEffect(() => {
     setMounted(true)
@@ -33,8 +33,8 @@ export function EditorLayout() {
 
   return (
     <div className="relative h-screen w-full overflow-hidden bg-bg-canvas">
-      <EditorNavbar 
-        sidebarOpen={sidebarOpen} 
+      <EditorNavbar
+        sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -44,10 +44,10 @@ export function EditorLayout() {
         setViewMode={setViewMode}
         onNewProject={projectActions.openCreateDialog}
       />
-      
-      <ProjectSidebar 
-        isOpen={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
+
+      <ProjectSidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
         actions={projectActions}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -56,8 +56,8 @@ export function EditorLayout() {
       />
 
       <main className="relative h-[calc(100vh-3.5rem)] w-full pt-14">
-        <ProjectDashboard 
-          onNewProject={projectActions.openCreateDialog} 
+        <ProjectDashboard
+          onNewProject={projectActions.openCreateDialog}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           sortBy={sortBy}

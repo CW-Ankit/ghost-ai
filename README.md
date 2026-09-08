@@ -6,35 +6,35 @@ Ghost AI is a real-time collaborative system design workspace. It enables engine
 
 ## 🚀 Feature Matrix & Roadmap
 
-| Feature | Description | Status |
-| :--- | :--- | :---: |
-| **Real-Time Collaborative Canvas** | Shared architecture surface powered by Liveblocks & React Flow with real-time state sync. | ✅ Live |
-| **Shape Library & Drag-Drop** | Prebuilt node shapes (Rectangle, Circle, Cylinder/DB, Diamond, Cloud) with 4-side connection handles. | ✅ Live |
-| **Orthogonal Edges & Labeling** | Right-angle edge routing, directional arrowheads, and inline editable label pills. | ✅ Live |
-| **Node Styling & Color Palette** | Floating contextual color toolbar for node background and border customization. | ✅ Live |
-| **Project Dashboard** | Real-time project search, tag filtering, grid/list view toggle, bulk archive/delete, and hover snapshot previews. | ✅ Live |
-| **Auth & Collaborator Access** | User authentication via Clerk, Convex identity mapping, and multi-user project sharing. | ✅ Live |
-| **Canvas Ergonomics** | Floating canvas control bar for zoom, undo/redo history, and keyboard shortcuts. | 🚧 In Progress |
-| **Starter System Templates** | Curated library of system design patterns (Microservices, Event-driven, Serverless, etc.) importable into canvas. | 🚧 Roadmap |
-| **Multi-User Presence & Cursors** | Live user cursors, presence indicators, and collaborator avatars. | 🚧 Roadmap |
-| **AI Architecture Generation** | Durable background workflow translating natural language prompts into canvas nodes and edges. | 🚧 Roadmap |
-| **Technical Spec Generator & Export** | Compiling the canvas graph into persistent Markdown technical specifications. | 🚧 Roadmap |
+| Feature                               | Description                                                                                                       |     Status     |
+| :------------------------------------ | :---------------------------------------------------------------------------------------------------------------- | :------------: |
+| **Real-Time Collaborative Canvas**    | Shared architecture surface powered by Liveblocks & React Flow with real-time state sync.                         |    ✅ Live     |
+| **Shape Library & Drag-Drop**         | Prebuilt node shapes (Rectangle, Circle, Cylinder/DB, Diamond, Cloud) with 4-side connection handles.             |    ✅ Live     |
+| **Orthogonal Edges & Labeling**       | Right-angle edge routing, directional arrowheads, and inline editable label pills.                                |    ✅ Live     |
+| **Node Styling & Color Palette**      | Floating contextual color toolbar for node background and border customization.                                   |    ✅ Live     |
+| **Project Dashboard**                 | Real-time project search, tag filtering, grid/list view toggle, bulk archive/delete, and hover snapshot previews. |    ✅ Live     |
+| **Auth & Collaborator Access**        | User authentication via Clerk, Convex identity mapping, and multi-user project sharing.                           |    ✅ Live     |
+| **Canvas Ergonomics**                 | Floating canvas control bar for zoom, undo/redo history, and keyboard shortcuts.                                  | 🚧 In Progress |
+| **Starter System Templates**          | Curated library of system design patterns (Microservices, Event-driven, Serverless, etc.) importable into canvas. |   🚧 Roadmap   |
+| **Multi-User Presence & Cursors**     | Live user cursors, presence indicators, and collaborator avatars.                                                 |   🚧 Roadmap   |
+| **AI Architecture Generation**        | Durable background workflow translating natural language prompts into canvas nodes and edges.                     |   🚧 Roadmap   |
+| **Technical Spec Generator & Export** | Compiling the canvas graph into persistent Markdown technical specifications.                                     |   🚧 Roadmap   |
 
 ---
 
 ## 🛠 Tech Stack
 
-| Layer | Technology | Role |
-| :--- | :--- | :--- |
-| **Framework** | [Next.js 16](https://nextjs.org/) + [React 19](https://react.dev/) | Full-stack App Router architecture with strict server/client boundaries |
-| **UI & Styling** | [Tailwind CSS 4](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) | Custom dark-themed technical workspace and accessible component primitives |
-| **Database & Backend** | [Convex](https://convex.dev/) | Real-time reactive database, relational metadata, and serverless mutations/queries |
-| **Authentication** | [Clerk](https://clerk.com/) | Identity management, route protection, and Convex JWT integration |
-| **Collaboration** | [Liveblocks](https://liveblocks.io/) | Real-time room state synchronization, presence, and history |
-| **Canvas Engine** | [@xyflow/react](https://reactflow.dev/) | High-performance visual node-based graph rendering |
-| **Durable AI Workflows** *(Roadmap)* | [Trigger.dev](https://trigger.dev/) | Long-running background jobs for AI architecture & spec generation |
-| **Artifact Storage** *(Roadmap)* | [Vercel Blob](https://vercel.com/storage/blob) | Storage for large canvas snapshots and generated Markdown specs |
-| **Language** | TypeScript | Strict end-to-end type safety |
+| Layer                                | Technology                                                                       | Role                                                                               |
+| :----------------------------------- | :------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------- |
+| **Framework**                        | [Next.js 16](https://nextjs.org/) + [React 19](https://react.dev/)               | Full-stack App Router architecture with strict server/client boundaries            |
+| **UI & Styling**                     | [Tailwind CSS 4](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) | Custom dark-themed technical workspace and accessible component primitives         |
+| **Database & Backend**               | [Convex](https://convex.dev/)                                                    | Real-time reactive database, relational metadata, and serverless mutations/queries |
+| **Authentication**                   | [Clerk](https://clerk.com/)                                                      | Identity management, route protection, and Convex JWT integration                  |
+| **Collaboration**                    | [Liveblocks](https://liveblocks.io/)                                             | Real-time room state synchronization, presence, and history                        |
+| **Canvas Engine**                    | [@xyflow/react](https://reactflow.dev/)                                          | High-performance visual node-based graph rendering                                 |
+| **Durable AI Workflows** _(Roadmap)_ | [Trigger.dev](https://trigger.dev/)                                              | Long-running background jobs for AI architecture & spec generation                 |
+| **Artifact Storage** _(Roadmap)_     | [Vercel Blob](https://vercel.com/storage/blob)                                   | Storage for large canvas snapshots and generated Markdown specs                    |
+| **Language**                         | TypeScript                                                                       | Strict end-to-end type safety                                                      |
 
 ---
 
@@ -97,6 +97,7 @@ LIVEBLOCKS_SECRET_KEY=sk_...
 ### 3. Backend & Auth Setup
 
 #### A. Initialize Convex
+
 Start the local Convex development server to generate types and sync schema:
 
 ```bash
@@ -104,6 +105,7 @@ pnpm exec convex dev
 ```
 
 #### B. Configure Clerk for Convex
+
 1. In the [Clerk Dashboard](https://dashboard.clerk.com/), navigate to **Integrations** &rarr; **Convex** and activate it.
 2. Copy your Clerk **Frontend API URL** (or Issuer Domain).
 3. Set this domain in your **Convex Backend Environment** (this is required for `convex/auth.config.ts` JWT validation):
@@ -112,6 +114,7 @@ pnpm exec convex dev
    ```
 
 #### C. Configure Liveblocks
+
 1. In the [Liveblocks Dashboard](https://liveblocks.io/dashboard), create a project.
 2. Copy your **Public Key** and **Secret Key** into `.env.local`.
 
@@ -133,14 +136,14 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 📜 Available Scripts
 
-| Command | Description |
-| :--- | :--- |
-| `pnpm dev` | Starts the Next.js local development server on port 3000 |
-| `pnpm build` | Compiles the production build |
-| `pnpm start` | Runs the compiled production server |
-| `pnpm lint` | Runs Next.js ESLint checks |
-| `pnpm format` | Formats all code files using Prettier |
-| `pnpm check` | Runs both Prettier formatting and ESLint in sequence |
+| Command       | Description                                              |
+| :------------ | :------------------------------------------------------- |
+| `pnpm dev`    | Starts the Next.js local development server on port 3000 |
+| `pnpm build`  | Compiles the production build                            |
+| `pnpm start`  | Runs the compiled production server                      |
+| `pnpm lint`   | Runs Next.js ESLint checks                               |
+| `pnpm format` | Formats all code files using Prettier                    |
+| `pnpm check`  | Runs both Prettier formatting and ESLint in sequence     |
 
 ---
 
