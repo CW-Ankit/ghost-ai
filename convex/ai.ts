@@ -60,6 +60,62 @@ Generate a comprehensive but clear architecture. Aim for 6-15 nodes depending on
 
 Return ONLY the JSON object, no markdown fences, no explanation.`
 
+const REFINEMENT_SYSTEM_PROMPT = `You are Ghost AI, a system architecture design expert. You are refining an EXISTING architecture diagram on the user's canvas based on their natural language instructions.
+
+TASK:
+Analyze the current canvas graph provided by the user, their recent chat history, and their latest prompt.
+Modify, extend, or refactor the architecture according to their prompt:
+- To ADD a component: add a new node with a descriptive unique ID, appropriate shape and color, and place it at logical unoccupied coordinates (space at least 250px horizontally or 150px vertically from connected nodes). Connect it to existing nodes with edges.
+- To MODIFY a component: update the label, color, or shape of the existing node while PRESERVING its existing "id".
+- To REMOVE a component: omit that node from the returned "nodes" list, and omit any connected edges.
+- To PRESERVE unchanged components: keep their exact existing "id", label, shape, color, and "position" coordinates intact.
+- If the user explicitly asks to "clear", "start over", or "create from scratch", you may generate a completely new architecture.
+
+OUTPUT FORMAT:
+Return ONLY a valid JSON object with this exact structure:
+{
+  "summary": "Short 1-sentence explanation of what you added, changed, or removed",
+  "nodes": [
+    {
+      "id": "existing-or-new-id",
+      "label": "Node Label",
+      "shape": "rectangle|diamond|circle|pill|cylinder|hexagon",
+      "color": "default|blue|purple|orange|red|pink|green|teal",
+      "position": { "x": number, "y": number }
+    }
+  ],
+  "edges": [
+    {
+      "id": "unique-edge-id",
+      "source": "source-node-id",
+      "target": "target-node-id",
+      "sourceHandle": "bottom|top|left|right",
+      "targetHandle": "top|bottom|left|right",
+      "label": "optional edge label"
+    }
+  ]
+}
+
+SHAPE GUIDELINES:
+- "rectangle" — general-purpose services, components, modules
+- "diamond" — decision points, gateways, routers
+- "circle" — events, triggers, endpoints
+- "pill" — services, processes, microservices
+- "cylinder" — databases, storage, caches
+- "hexagon" — external systems, third-party APIs, boundaries
+
+COLOR GUIDELINES:
+- "default" (dark gray) — general nodes
+- "blue" — API layers, gateways, networking
+- "purple" — AI/ML services, processing
+- "orange" — messaging, queues, events
+- "red" — monitoring, alerting, error handling
+- "pink" — user-facing, frontend, UI
+- "green" — databases, storage, persistence
+- "teal" — infrastructure, DevOps, deployment
+
+Return ONLY the JSON object, no markdown fences, no explanation.`
+
 const SPEC_SYSTEM_PROMPT = `You are Ghost AI, a technical specification writer. Given a system architecture graph (nodes and edges), generate a comprehensive Markdown technical specification document.
 
 The spec should include:
@@ -130,6 +186,16 @@ export const generateDesign = action({
   args: {
     projectId: v.id('projects'),
     prompt: v.string(),
+    currentNodes: v.optional(v.array(v.any())),
+    currentEdges: v.optional(v.array(v.any())),
+    history: v.optional(
+      v.array(
+        v.object({
+          role: v.union(v.literal('user'), v.literal('assistant')),
+          content: v.string(),
+        })
+      )
+    ),
   },
   handler: async (ctx, args) => {
     // Create a task run record in taskRuns table
@@ -146,19 +212,52 @@ export const generateDesign = action({
         status: 'running',
       })
 
+      const hasExistingNodes = Array.isArray(args.currentNodes) && args.currentNodes.length > 0
+      const systemPrompt = hasExistingNodes ? REFINEMENT_SYSTEM_PROMPT : DESIGN_SYSTEM_PROMPT
+
+      const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+        {
+          role: 'system',
+          content: systemPrompt,
+        },
+      ]
+
+      if (hasExistingNodes) {
+        const existingGraphText = serializeGraphForRefinement(
+          args.currentNodes!,
+          args.currentEdges || []
+        )
+        messages.push({
+          role: 'user',
+          content: `Current Canvas Architecture:\n${existingGraphText}`,
+        })
+        messages.push({
+          role: 'assistant',
+          content:
+            'I understand the current system design and will refine, extend, or modify it according to your instructions while preserving unchanged components.',
+        })
+      }
+
+      if (args.history && args.history.length > 0) {
+        for (const msg of args.history.slice(-6)) {
+          if (msg.content && msg.content.trim()) {
+            messages.push({
+              role: msg.role,
+              content: msg.content.trim(),
+            })
+          }
+        }
+      }
+
+      messages.push({
+        role: 'user',
+        content: args.prompt,
+      })
+
       const text = await callMistralChat({
         model: 'mistral-small-latest',
         responseFormat: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content: DESIGN_SYSTEM_PROMPT,
-          },
-          {
-            role: 'user',
-            content: args.prompt,
-          },
-        ],
+        messages,
         temperature: 0.7,
       })
 
@@ -177,6 +276,10 @@ export const generateDesign = action({
       if (!parsed.edges || !Array.isArray(parsed.edges)) {
         throw new Error('AI response missing edges array')
       }
+
+      const summary: string =
+        parsed.summary ||
+        (hasExistingNodes ? 'Updated canvas architecture' : 'Generated initial system architecture')
 
       // Transform nodes into canvas-compatible format
       const nodes = parsed.nodes.map((node: any, index: number) => ({
@@ -211,10 +314,10 @@ export const generateDesign = action({
       await ctx.runMutation(internal.taskRuns.patchTaskRun, {
         taskRunId,
         status: 'completed',
-        result: { nodes, edges },
+        result: { nodes, edges, summary },
       })
 
-      return { taskRunId, nodes, edges }
+      return { taskRunId, nodes, edges, summary }
     } catch (error: any) {
       // Mark as failed
       await ctx.runMutation(internal.taskRuns.patchTaskRun, {
@@ -226,6 +329,31 @@ export const generateDesign = action({
     }
   },
 })
+
+// Helper: serialize graph nodes/edges for refinement context
+function serializeGraphForRefinement(nodes: any[], edges: any[]): string {
+  const simplifiedNodes = nodes.map((n: any) => ({
+    id: n.id,
+    label: n.data?.label || n.label || 'Untitled',
+    shape: n.data?.shape || 'rectangle',
+    color: n.data?.color || 'default',
+    position: {
+      x: Math.round(n.position?.x ?? 0),
+      y: Math.round(n.position?.y ?? 0),
+    },
+  }))
+
+  const simplifiedEdges = edges.map((e: any) => ({
+    id: e.id,
+    source: e.source,
+    target: e.target,
+    sourceHandle: e.sourceHandle || 'bottom',
+    targetHandle: e.targetHandle || 'top',
+    label: e.data?.label || e.label || '',
+  }))
+
+  return JSON.stringify({ nodes: simplifiedNodes, edges: simplifiedEdges }, null, 2)
+}
 
 // Spec generation action - reads canvas graph, calls Mistral, uploads to blob
 export const generateSpec = action({

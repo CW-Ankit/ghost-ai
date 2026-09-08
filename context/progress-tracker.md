@@ -98,13 +98,21 @@ Update this file whenever the current phase, active feature, or implementation s
   - Updated `MISTRAL_API_KEY` configuration and UI error hints in `components/editor/ai-sidebar.tsx`.
   - Updated architecture context documentation.
 
+- [x] Multi-Turn AI Architecture Refinement on Existing Canvas Graphs:
+  - Extended `convex/ai.ts` `generateDesign` action with `currentNodes`, `currentEdges`, and `history` arguments.
+  - Implemented `REFINEMENT_SYSTEM_PROMPT` tailored for modifying, extending, or refactoring existing canvas graphs while preserving unchanged component IDs, shapes, colors, and coordinates.
+  - Built `lib/ai-helpers.ts` utilities: `formatCurrentGraphForPrompt`, `formatConversationHistory`, and `transformAiGraphToCanvas` with `summary` delta reporting.
+  - Upgraded `AISidebar` with in-place Liveblocks CRDT reconciliation (patching existing `LiveObject`s by ID instead of clearing maps), preserving live collaborator selection and cursors.
+  - Enhanced AI sidebar chat UI with contextual indicators, `REFINEMENT_PROMPTS` suggestions on active canvases, and "Refined Graph" message badges.
+  - Added comprehensive unit test suites in `test/ai-helpers.test.ts` (50 total unit tests across starter templates, canvas autosave, and AI generation pipeline).
+
 ## Current Phase
 
 - Phase 2: AI Workflows & Artifact Generation
 
 ## Current Goal
 
-- Verification and continuous polish of AI generation workflows with Mistral AI.
+- Multi-turn AI refinement complete and verified. Moving to end-to-end polish of spec exports and collaboration workflows.
 
 ## In Progress
 
@@ -112,7 +120,8 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Multi-turn AI refinement on existing canvas graphs (contextual modifications).
+- Technical Spec download and sharing polish (direct PDF/Markdown export options).
+- Real-time performance audit and subscription optimizations for large canvas graphs.
 
 ## Open Questions
 

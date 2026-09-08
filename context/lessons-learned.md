@@ -182,3 +182,21 @@ This document serves as the project's engineering memory, recording mistakes, bu
 - **Symptom**: Build failure or runtime exception stating that queries/mutations cannot execute in the Node.js runtime, alongside TypeScript errors stating `Property 'ai' does not exist on type 'api'`.
 - **Root Cause**: Convex strictly isolates Node runtime actions from standard V8 runtime queries/mutations. Additionally, `api.*` and `internal.*` types are statically declared in `convex/_generated/api.d.ts` which must be regenerated when new backend files are added.
 - **Solution**: Keep `"use node"` actions in dedicated files (`convex/ai.ts`) and place database mutations/queries in standard runtime files (`convex/taskRuns.ts`, `convex/specs.ts`). Run `npx convex dev --once` whenever new files or functions are declared.
+
+---
+
+## 8. AI Canvas Refinement & Tooling Evolution
+
+### 8.1 Liveblocks CRDT In-Place Reconciliation vs. Full Map Overwrite
+
+- **Mistake**: Completely clearing `nodesMap` and `edgesMap` (`nodesMap.delete(key)`) every time the AI generated an updated architecture.
+- **Symptom**: Collaborator active selections, connection drags, and focus states were abruptly destroyed; visual flicker occurred during multi-turn prompting.
+- **Root Cause**: Wiping the collection drops all reactive `LiveObject` instances and forces the canvas to rebuild all React Flow nodes from scratch.
+- **Solution**: Implemented in-place reconciliation: update existing nodes/edges by ID, insert newly added nodes/edges, and prune only deleted elements.
+
+### 8.2 Next.js 16 CLI Deprecation of `next lint`
+
+- **Mistake**: Retaining `"lint": "next lint"` in `package.json` under Next.js 16.2.4.
+- **Symptom**: `pnpm lint` failed with `Invalid project directory provided, no such directory: D:\Projects\ghost-ai\lint`.
+- **Root Cause**: Next.js 16 dropped the embedded `next lint` sub-command, treating `lint` as a directory argument to `next dev/build`.
+- **Solution**: Updated `package.json` script to `"lint": "eslint ."` and registered `convex/_generated/**` in ESLint's `globalIgnores`.

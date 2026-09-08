@@ -4,6 +4,8 @@ import {
   transformAiGraphToCanvas,
   serializeGraphForLLM,
   extractSpecTitle,
+  formatCurrentGraphForPrompt,
+  formatConversationHistory,
 } from '@/lib/ai-helpers'
 
 describe('AI Generation Pipeline Helpers', () => {
@@ -113,6 +115,107 @@ describe('AI Generation Pipeline Helpers', () => {
     it('falls back to default title if no H1 heading is found', () => {
       const markdown = '### Overview\nThis spec has no top level heading.'
       expect(extractSpecTitle(markdown)).toBe('System Architecture Specification')
+    })
+  })
+
+  describe('formatCurrentGraphForPrompt', () => {
+    it('formats existing canvas nodes and edges for contextual refinement prompt', () => {
+      const nodes = [
+        {
+          id: 'auth',
+          data: { label: 'Auth Gateway', shape: 'diamond', color: 'blue' },
+          position: { x: 100.4, y: 150.8 },
+        },
+        {
+          id: 'db',
+          data: { label: 'Postgres DB', shape: 'cylinder', color: 'green' },
+          position: { x: 400, y: 150 },
+        },
+      ]
+      const edges = [
+        {
+          id: 'e1',
+          source: 'auth',
+          target: 'db',
+          sourceHandle: 'right',
+          targetHandle: 'left',
+          data: { label: 'Queries' },
+        },
+      ]
+
+      const jsonString = formatCurrentGraphForPrompt(nodes, edges)
+      const parsed = JSON.parse(jsonString)
+
+      expect(parsed.nodes).toHaveLength(2)
+      expect(parsed.edges).toHaveLength(1)
+      expect(parsed.nodes[0]).toEqual({
+        id: 'auth',
+        label: 'Auth Gateway',
+        shape: 'diamond',
+        color: 'blue',
+        position: { x: 100, y: 151 },
+      })
+      expect(parsed.edges[0]).toEqual({
+        id: 'e1',
+        source: 'auth',
+        target: 'db',
+        sourceHandle: 'right',
+        targetHandle: 'left',
+        label: 'Queries',
+      })
+    })
+
+    it('handles empty canvas elements without error', () => {
+      const jsonString = formatCurrentGraphForPrompt([], [])
+      const parsed = JSON.parse(jsonString)
+      expect(parsed.nodes).toEqual([])
+      expect(parsed.edges).toEqual([])
+    })
+  })
+
+  describe('formatConversationHistory', () => {
+    it('truncates history to the requested maximum turns', () => {
+      const history: Array<{ role: 'user' | 'assistant'; content: string }> = [
+        { role: 'user', content: 'Turn 1' },
+        { role: 'assistant', content: 'Reply 1' },
+        { role: 'user', content: 'Turn 2' },
+        { role: 'assistant', content: 'Reply 2' },
+        { role: 'user', content: 'Turn 3' },
+        { role: 'assistant', content: 'Reply 3' },
+        { role: 'user', content: 'Turn 4' },
+      ]
+
+      const formatted = formatConversationHistory(history, 4)
+      expect(formatted).toHaveLength(4)
+      expect(formatted[0].content).toBe('Reply 2')
+      expect(formatted[3].content).toBe('Turn 4')
+    })
+
+    it('filters out empty or whitespace-only messages', () => {
+      const history: Array<{ role: 'user' | 'assistant'; content: string }> = [
+        { role: 'user', content: 'Valid message' },
+        { role: 'assistant', content: '   ' },
+        { role: 'user', content: '' },
+      ]
+
+      const formatted = formatConversationHistory(history)
+      expect(formatted).toHaveLength(1)
+      expect(formatted[0].content).toBe('Valid message')
+    })
+  })
+
+  describe('transformAiGraphToCanvas summary support', () => {
+    it('passes through summary field when returned by AI refinement', () => {
+      const raw = {
+        summary: 'Added Redis Cache in front of Postgres database',
+        nodes: [{ id: 'redis', label: 'Redis Cache', shape: 'cylinder', color: 'orange' }],
+        edges: [],
+      }
+
+      const result = transformAiGraphToCanvas(raw)
+      expect(result.summary).toBe('Added Redis Cache in front of Postgres database')
+      expect(result.nodes[0].id).toBe('redis')
+      expect(result.nodes[0].data.label).toBe('Redis Cache')
     })
   })
 })

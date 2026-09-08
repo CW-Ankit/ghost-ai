@@ -55,6 +55,7 @@ interface ChatMessage {
   content: string
   timestamp: string
   isError?: boolean
+  type?: 'initial' | 'refinement'
 }
 
 const STARTER_PROMPTS = [
@@ -75,6 +76,27 @@ const STARTER_PROMPTS = [
     label: 'Build a CI/CD pipeline',
     prompt:
       'Build an automated CI/CD pipeline architecture featuring GitHub Actions, Docker container builds, staging validation, and Kubernetes rolling deployment.',
+  },
+]
+
+const REFINEMENT_PROMPTS = [
+  {
+    icon: Layers,
+    label: 'Add a Redis caching layer',
+    prompt:
+      'Add a Redis caching layer in front of the database to speed up reads and manage session caching.',
+  },
+  {
+    icon: Terminal,
+    label: 'Add authentication service',
+    prompt:
+      'Add a dedicated authentication and authorization service with JWT validation connected to the API gateway.',
+  },
+  {
+    icon: Cpu,
+    label: 'Add message queue & workers',
+    prompt:
+      'Introduce an asynchronous message broker with background worker services for decouple long-running jobs.',
   },
 ]
 
@@ -172,44 +194,84 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
       const edgesMap = flow.get('edges')
 
       if (nodesMap) {
-        // Clear existing canvas nodes or append
+        const incomingNodeIds = new Set(generated.nodes.map((n) => n.id))
+
+        // 1. Remove nodes no longer present in incoming graph
         const existingNodeKeys = Array.from(nodesMap.keys())
         for (const key of existingNodeKeys) {
-          nodesMap.delete(key)
+          if (!incomingNodeIds.has(key)) {
+            nodesMap.delete(key)
+          }
         }
+
+        // 2. Patch existing nodes or insert new ones
         for (const node of generated.nodes) {
-          nodesMap.set(
-            node.id,
-            new LiveObject<any>({
-              id: node.id,
-              type: node.type || 'canvasNode',
-              position: node.position,
-              data: new LiveObject(node.data as any),
-              ...(node.style ? { style: node.style } : {}),
-            })
-          )
+          const existing = nodesMap.get(node.id)
+          if (existing) {
+            existing.set('position', node.position)
+            const dataObj = existing.get('data')
+            if (dataObj) {
+              dataObj.set('label', node.data.label)
+              dataObj.set('shape', node.data.shape)
+              dataObj.set('color', node.data.color)
+            } else {
+              existing.set('data', new LiveObject(node.data as any))
+            }
+          } else {
+            nodesMap.set(
+              node.id,
+              new LiveObject<any>({
+                id: node.id,
+                type: node.type || 'canvasNode',
+                position: node.position,
+                data: new LiveObject(node.data as any),
+                ...(node.style ? { style: node.style } : {}),
+              })
+            )
+          }
         }
       }
 
       if (edgesMap) {
+        const incomingEdgeIds = new Set(generated.edges.map((e) => e.id))
+
+        // 1. Remove edges no longer present in incoming graph
         const existingEdgeKeys = Array.from(edgesMap.keys())
         for (const key of existingEdgeKeys) {
-          edgesMap.delete(key)
+          if (!incomingEdgeIds.has(key)) {
+            edgesMap.delete(key)
+          }
         }
+
+        // 2. Patch existing edges or insert new ones
         for (const edge of generated.edges) {
-          edgesMap.set(
-            edge.id,
-            new LiveObject<any>({
-              id: edge.id,
-              source: edge.source,
-              target: edge.target,
-              sourceHandle: edge.sourceHandle,
-              targetHandle: edge.targetHandle,
-              type: edge.type || 'canvasEdge',
-              markerEnd: edge.markerEnd,
-              data: new LiveObject((edge.data || {}) as any),
-            })
-          )
+          const existing = edgesMap.get(edge.id)
+          if (existing) {
+            existing.set('source', edge.source)
+            existing.set('target', edge.target)
+            existing.set('sourceHandle', edge.sourceHandle)
+            existing.set('targetHandle', edge.targetHandle)
+            const dataObj = existing.get('data')
+            if (dataObj) {
+              dataObj.set('label', edge.data?.label || '')
+            } else {
+              existing.set('data', new LiveObject((edge.data || {}) as any))
+            }
+          } else {
+            edgesMap.set(
+              edge.id,
+              new LiveObject<any>({
+                id: edge.id,
+                source: edge.source,
+                target: edge.target,
+                sourceHandle: edge.sourceHandle,
+                targetHandle: edge.targetHandle,
+                type: edge.type || 'canvasEdge',
+                markerEnd: edge.markerEnd,
+                data: new LiveObject((edge.data || {}) as any),
+              })
+            )
+          }
         }
       }
     },
@@ -255,20 +317,38 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
       textareaRef.current.style.height = '72px'
     }
 
+    const hasExisting = Boolean(canvasElements.nodes && canvasElements.nodes.length > 0)
+
+    const historyPayload = messages
+      .filter((m) => !m.isError)
+      .slice(-6)
+      .map((m) => ({
+        role: m.sender === 'user' ? ('user' as const) : ('assistant' as const),
+        content: m.content,
+      }))
+
     setIsGeneratingDesign(true)
 
     try {
-      toast.loading('Generating architecture graph with Ghost AI...', { id: 'generating-arch' })
+      toast.loading(
+        hasExisting
+          ? 'Refining architecture with Ghost AI...'
+          : 'Generating architecture graph with Ghost AI...',
+        { id: 'generating-arch' }
+      )
 
       const result = await generateDesignAction({
         projectId: projectId as Id<'projects'>,
         prompt: content,
+        currentNodes: hasExisting ? canvasElements.nodes : undefined,
+        currentEdges: hasExisting ? canvasElements.edges : undefined,
+        history: historyPayload.length > 0 ? historyPayload : undefined,
       })
 
       toast.dismiss('generating-arch')
 
       if (result && result.nodes && result.edges) {
-        // Apply nodes and edges to Liveblocks CRDT
+        // Apply nodes and edges to Liveblocks CRDT with in-place reconciliation
         applyGeneratedArchitecture({
           nodes: result.nodes,
           edges: result.edges,
@@ -279,14 +359,23 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
           fitView({ duration: 500, padding: 0.2 })
         }, 150)
 
+        const summaryText =
+          (result as any).summary ||
+          (hasExisting
+            ? `Updated architecture for "${content.length > 40 ? content.slice(0, 37) + '...' : content}"`
+            : `Generated architecture for "${content.length > 40 ? content.slice(0, 37) + '...' : content}"`)
+
         const assistantMessage: ChatMessage = {
           id: `msg-resp-${Date.now()}`,
           sender: 'assistant',
-          content: `I've generated the system architecture for "${content.length > 50 ? content.slice(0, 47) + '...' : content}". ${result.nodes.length} components and ${result.edges.length} relationships have been added to your canvas.`,
+          content: `${summaryText}. Canvas now features ${result.nodes.length} components with ${result.edges.length} relationships.`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          type: hasExisting ? 'refinement' : 'initial',
         }
         setMessages((prev) => [...prev, assistantMessage])
-        toast.success('Architecture generated successfully!')
+        toast.success(
+          hasExisting ? 'Architecture refined!' : 'Architecture generated successfully!'
+        )
       } else {
         throw new Error('Invalid response format from AI model')
       }
@@ -500,10 +589,15 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
 
                       <div className="space-y-2 mt-4">
                         <div className="text-[11px] font-medium text-text-faint uppercase tracking-wider px-1">
-                          Starter Blueprints
+                          {canvasElements.nodes.length > 0
+                            ? 'Refinement Suggestions'
+                            : 'Starter Blueprints'}
                         </div>
                         <div className="flex flex-col gap-2">
-                          {STARTER_PROMPTS.map((item, idx) => {
+                          {(canvasElements.nodes.length > 0
+                            ? REFINEMENT_PROMPTS
+                            : STARTER_PROMPTS
+                          ).map((item, idx) => {
                             const Icon = item.icon
                             return (
                               <button
@@ -537,6 +631,19 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
                             msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'
                           )}
                         >
+                          {msg.type && (
+                            <span
+                              className={cn(
+                                'text-[9px] px-2 py-0.5 rounded-full font-medium border inline-flex items-center gap-1 mb-0.5',
+                                msg.type === 'refinement'
+                                  ? 'bg-accent-ai-dim text-accent-ai-text border-accent-ai/30'
+                                  : 'bg-accent-primary-dim text-accent-primary border-accent-primary/30'
+                              )}
+                            >
+                              <Sparkles className="h-2.5 w-2.5" />
+                              {msg.type === 'refinement' ? 'Refined Graph' : 'Initial Architecture'}
+                            </span>
+                          )}
                           <div
                             className={cn(
                               'rounded-2xl p-3 text-xs leading-relaxed shadow-sm',
@@ -560,7 +667,11 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
                         <div className="mr-auto items-start flex flex-col gap-1 max-w-[88%]">
                           <div className="rounded-2xl p-3 text-xs bg-bg-elevated border border-accent-ai/40 text-accent-ai-text rounded-tl-sm flex items-center gap-2">
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            <span>Synthesizing system components & connections...</span>
+                            <span>
+                              {canvasElements.nodes.length > 0
+                                ? 'Refining canvas components & relationships...'
+                                : 'Synthesizing system components & connections...'}
+                            </span>
                           </div>
                         </div>
                       )}
@@ -572,13 +683,26 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
 
                 {/* Chat Input */}
                 <div className="mt-3 pt-2 border-t border-border-subtle flex-shrink-0">
+                  {canvasElements.nodes.length > 0 && (
+                    <div className="flex items-center gap-1.5 px-1 pb-1.5 text-[10px] text-accent-ai-text">
+                      <Sparkles className="h-3 w-3" />
+                      <span>
+                        Refining active canvas ({canvasElements.nodes.length} components,{' '}
+                        {canvasElements.edges.length} connections)
+                      </span>
+                    </div>
+                  )}
                   <div className="relative rounded-xl bg-bg-elevated border border-border-default focus-within:border-accent-ai/60 focus-within:ring-1 focus-within:ring-accent-ai/40 transition-all p-2 flex flex-col gap-2 shadow-inner">
                     <Textarea
                       ref={textareaRef}
                       value={inputPrompt}
                       onChange={handleInputChange}
                       onKeyDown={handleKeyDown}
-                      placeholder="Describe a system architecture..."
+                      placeholder={
+                        canvasElements.nodes.length > 0
+                          ? 'Suggest changes, additions, or refinements...'
+                          : 'Describe a system architecture...'
+                      }
                       disabled={isGeneratingDesign}
                       className="min-h-[72px] max-h-[160px] resize-none border-0 bg-transparent p-1 text-xs text-text-primary placeholder:text-text-muted focus-visible:ring-0 focus-visible:outline-none leading-relaxed disabled:opacity-50"
                     />
@@ -603,7 +727,7 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
                           <>
-                            <span>Generate</span>
+                            <span>{canvasElements.nodes.length > 0 ? 'Refine' : 'Generate'}</span>
                             <Send className="h-3 w-3" />
                           </>
                         )}

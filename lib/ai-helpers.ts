@@ -25,9 +25,15 @@ export interface RawAiEdge {
   label?: string
 }
 
+export interface ChatTurn {
+  role: 'user' | 'assistant'
+  content: string
+}
+
 export interface RawAiGraphResponse {
   nodes: RawAiNode[]
   edges: RawAiEdge[]
+  summary?: string
 }
 
 /**
@@ -52,6 +58,7 @@ export function validateAiGraphResponse(parsed: unknown): asserts parsed is RawA
 export function transformAiGraphToCanvas(raw: RawAiGraphResponse): {
   nodes: CanvasNode[]
   edges: CanvasEdge[]
+  summary?: string
 } {
   const validShapes = new Set<string>(NODE_SHAPES)
   const validColors = new Set<string>(Object.keys(NODE_COLORS))
@@ -92,7 +99,58 @@ export function transformAiGraphToCanvas(raw: RawAiGraphResponse): {
     },
   }))
 
-  return { nodes, edges }
+  return { nodes, edges, summary: raw.summary }
+}
+
+/**
+ * Formats current canvas elements into a clean JSON string for the AI prompt
+ * to enable contextual modifications and preserving existing component IDs.
+ */
+export function formatCurrentGraphForPrompt(nodes: unknown[], edges: unknown[]): string {
+  const simplifiedNodes = (nodes as any[]).map((n) => ({
+    id: n.id,
+    label: n.data?.label || n.label || 'Untitled',
+    shape: n.data?.shape || 'rectangle',
+    color: n.data?.color || 'default',
+    position: {
+      x: Math.round(n.position?.x ?? 0),
+      y: Math.round(n.position?.y ?? 0),
+    },
+  }))
+
+  const simplifiedEdges = (edges as any[]).map((e) => ({
+    id: e.id,
+    source: e.source,
+    target: e.target,
+    sourceHandle: e.sourceHandle || 'bottom-source',
+    targetHandle: e.targetHandle || 'top-target',
+    label: e.data?.label || e.label || '',
+  }))
+
+  return JSON.stringify({ nodes: simplifiedNodes, edges: simplifiedEdges }, null, 2)
+}
+
+/**
+ * Formats recent conversation turns to provide multi-turn context to LLM chat completions.
+ */
+export function formatConversationHistory(
+  messages: ChatTurn[],
+  maxTurns = 6
+): Array<{ role: 'user' | 'assistant'; content: string }> {
+  if (!Array.isArray(messages)) return []
+
+  return messages
+    .filter(
+      (m) =>
+        (m.role === 'user' || m.role === 'assistant') &&
+        typeof m.content === 'string' &&
+        m.content.trim().length > 0
+    )
+    .slice(-maxTurns)
+    .map((m) => ({
+      role: m.role,
+      content: m.content.trim(),
+    }))
 }
 
 /**
