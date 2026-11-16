@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import {
   Bot,
   X,
@@ -21,6 +21,7 @@ import {
   Check,
   AlertTriangle,
   Loader2,
+  Printer,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -42,6 +43,8 @@ import { LiveObject, LiveMap } from '@liveblocks/client'
 import { useReactFlow } from '@xyflow/react'
 import { toast } from 'sonner'
 import ReactMarkdown from 'react-markdown'
+import { printSpecDocument } from '@/lib/print-spec'
+import { computeArchitectureDiffs } from '@/lib/ai-helpers'
 
 interface AISidebarProps {
   isOpen: boolean
@@ -116,6 +119,7 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const specMarkdownRef = useRef<HTMLDivElement>(null)
 
   const { fitView } = useReactFlow()
 
@@ -214,6 +218,9 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
               dataObj.set('label', node.data.label)
               dataObj.set('shape', node.data.shape)
               dataObj.set('color', node.data.color)
+              if (node.data.diff !== undefined) {
+                dataObj.set('diff', node.data.diff)
+              }
             } else {
               existing.set('data', new LiveObject(node.data as any))
             }
@@ -277,6 +284,20 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
     },
     []
   )
+
+  // Liveblocks mutation to clear ephemeral visual diff tags after inspection
+  const clearDiffFlags = useLiveblocksMutation(({ storage }) => {
+    const flow = storage.get('flow') as any
+    const nodesMap = flow?.get('nodes')
+    if (!nodesMap) return
+    for (const nodeKey of Array.from(nodesMap.keys())) {
+      const nodeObj = nodesMap.get(nodeKey) as any
+      const dataObj = nodeObj?.get('data')
+      if (dataObj && dataObj.get('diff')) {
+        dataObj.set('diff', null)
+      }
+    }
+  }, [])
 
   // Auto-scroll chat to bottom
   useEffect(() => {
@@ -348,11 +369,23 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
       toast.dismiss('generating-arch')
 
       if (result && result.nodes && result.edges) {
+        // Compute visual architecture diffs
+        const nodesWithDiff = computeArchitectureDiffs(
+          canvasElements.nodes || [],
+          result.nodes
+        )
+
         // Apply nodes and edges to Liveblocks CRDT with in-place reconciliation
         applyGeneratedArchitecture({
-          nodes: result.nodes,
+          nodes: nodesWithDiff,
           edges: result.edges,
         })
+
+        if (hasExisting) {
+          setTimeout(() => {
+            clearDiffFlags()
+          }, 12000)
+        }
 
         // Fit view after a slight delay to allow React Flow to layout
         setTimeout(() => {
@@ -471,12 +504,13 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
     }
   }
 
-  const handleDownloadSpec = (spec: { title: string; filePath: string }) => {
+  const handleDownloadSpec = (spec: { _id?: string; title: string; filePath: string }) => {
     try {
+      const specIdentifier = spec._id || 'spec'
+      const downloadUrl = `/api/specs/${specIdentifier}?url=${encodeURIComponent(spec.filePath)}`
       const link = document.createElement('a')
-      link.href = spec.filePath
+      link.href = downloadUrl
       link.download = `${spec.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}.md`
-      link.target = '_blank'
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -502,6 +536,14 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
     setCopiedSpec(true)
     toast.success('Markdown copied to clipboard')
     setTimeout(() => setCopiedSpec(false), 2000)
+  }
+
+  const handlePrintSpec = () => {
+    if (!previewSpec || !specMarkdownRef.current) return
+    printSpecDocument({
+      title: previewSpec.title,
+      htmlContent: specMarkdownRef.current.innerHTML,
+    })
   }
 
   return (
@@ -896,6 +938,7 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
                   size="sm"
                   onClick={handleCopyMarkdown}
                   className="gap-1.5 h-8 text-xs border-border-subtle bg-bg-subtle text-text-secondary hover:text-text-primary rounded-xl"
+                  title="Copy Markdown source to clipboard"
                 >
                   {copiedSpec ? (
                     <Check className="h-3.5 w-3.5 text-state-success" />
@@ -906,15 +949,29 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
                 </Button>
 
                 {previewSpec && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDownloadSpec(previewSpec)}
-                    className="gap-1.5 h-8 text-xs border-accent-primary/40 bg-accent-primary-dim text-accent-primary hover:bg-accent-primary-dim/80 rounded-xl"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    <span>Download (.md)</span>
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePrintSpec}
+                      className="gap-1.5 h-8 text-xs border-border-subtle bg-bg-subtle text-text-secondary hover:text-text-primary rounded-xl"
+                      title="Export as PDF or print specification"
+                    >
+                      <Printer className="h-3.5 w-3.5" />
+                      <span>PDF / Print</span>
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadSpec(previewSpec)}
+                      className="gap-1.5 h-8 text-xs border-accent-primary/40 bg-accent-primary-dim text-accent-primary hover:bg-accent-primary-dim/80 rounded-xl"
+                      title="Download raw Markdown file"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      <span>Download (.md)</span>
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
@@ -927,7 +984,10 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
                 <p className="text-xs">Fetching specification artifact...</p>
               </div>
             ) : (
-              <div className="prose prose-invert prose-sm max-w-none text-text-secondary leading-relaxed space-y-4 font-sans [&>h1]:text-lg [&>h1]:font-semibold [&>h1]:text-text-primary [&>h1]:font-heading [&>h2]:text-sm [&>h2]:font-semibold [&>h2]:text-text-primary [&>h2]:mt-4 [&>h2]:font-heading [&>h3]:text-xs [&>h3]:font-semibold [&>h3]:text-accent-ai-text [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&>p]:text-xs [&>li]:text-xs [&>table]:w-full [&>table]:text-xs [&>table]:border-collapse [&>th]:border-b [&>th]:border-border-default [&>th]:pb-1 [&>td]:py-1 [&>td]:border-b [&>td]:border-border-subtle">
+              <div
+                ref={specMarkdownRef}
+                className="prose prose-invert prose-sm max-w-none text-text-secondary leading-relaxed space-y-4 font-sans [&>h1]:text-lg [&>h1]:font-semibold [&>h1]:text-text-primary [&>h1]:font-heading [&>h2]:text-sm [&>h2]:font-semibold [&>h2]:text-text-primary [&>h2]:mt-4 [&>h2]:font-heading [&>h3]:text-xs [&>h3]:font-semibold [&>h3]:text-accent-ai-text [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&>p]:text-xs [&>li]:text-xs [&>table]:w-full [&>table]:text-xs [&>table]:border-collapse [&>th]:border-b [&>th]:border-border-default [&>th]:pb-1 [&>td]:py-1 [&>td]:border-b [&>td]:border-border-subtle"
+              >
                 <ReactMarkdown>{previewSpec?.content || ''}</ReactMarkdown>
               </div>
             )}

@@ -200,3 +200,34 @@ This document serves as the project's engineering memory, recording mistakes, bu
 - **Symptom**: `pnpm lint` failed with `Invalid project directory provided, no such directory: D:\Projects\ghost-ai\lint`.
 - **Root Cause**: Next.js 16 dropped the embedded `next lint` sub-command, treating `lint` as a directory argument to `next dev/build`.
 - **Solution**: Updated `package.json` script to `"lint": "eslint ."` and registered `convex/_generated/**` in ESLint's `globalIgnores`.
+
+---
+
+## 9. Next.js 16 Middleware & Cross-Origin File Downloads
+
+### 9.1 Middleware Route Redirection on Backend AI Action Invocations
+
+- **Mistake**: Restricting `isPublicRoute` in `proxy.ts` strictly to `['/sign-in(.*)', '/sign-up(.*)']` and redirecting all unauthenticated requests to `/sign-in`.
+- **Symptom**: Backend AI actions (`convex/ai.ts` `generateSpec`) calling `/api/specs/upload` were greeted with HTTP 307 redirects to `/sign-in` HTML, failing with `SyntaxError: Unexpected token '<'` when parsing the response.
+- **Root Cause**: Convex action executions run in the Convex serverless cloud and do not carry Clerk browser session cookies.
+- **Solution**: Added `/api/specs/upload(.*)` to `isPublicRoute` in `proxy.ts`, and configured `proxy.ts` to return HTTP 401 JSON for unauthenticated API requests rather than redirecting them to the user HTML sign-in page.
+
+### 9.2 Browser Cross-Origin Download Attribute Ignoring Remote Blob URLs
+
+- **Mistake**: In `AISidebar`, triggering downloads by injecting `<a href={spec.filePath} download="...">` where `spec.filePath` is a remote Vercel Blob storage URL.
+- **Symptom**: Clicking "Download" opened the Markdown document in a new browser tab instead of triggering a local file save dialog.
+- **Root Cause**: The HTML5 `download` attribute is strictly disabled by browsers when pointing to cross-origin URLs.
+- **Solution**: Routed downloads through the authenticated internal Next.js API proxy (`/api/specs/[specId]?url=...`), which sets `Content-Disposition: attachment; filename="..."`.
+
+---
+
+## 10. Clerk Authentication & Privacy Browser Shield Traps
+
+### 10.1 Clerk JS Script Blocked by Brave Shields / Ad-Blockers
+
+- **Mistake**: Relying on unhandled client-side `<ClerkProvider>` initialization without an App Router error boundary when users access the app from privacy-focused browsers (Brave, Firefox with strict tracking prevention, or Chrome with uBlock Origin / Privacy Badger).
+- **Symptom**: Browser console throws unhandled `ClerkRuntimeError: Clerk: Failed to load Clerk JS (code="failed_to_load_clerk_js")`, crashing into a raw Next.js development error overlay.
+- **Root Cause**: Brave Shields and ad-blocker filter lists aggressively identify third-party development domains (`*.clerk.accounts.dev`) as cross-site trackers and block the `<script>` tag from loading.
+- **Solution**:
+  1. Built custom `app/error.tsx` error boundary that intercepts `failed_to_load_clerk_js` and displays an informative dark technical shield dialog explaining the issue with step-by-step instructions to toggle Shields off for `localhost:3000`.
+  2. For production environments, configure a custom domain (e.g. `auth.yourdomain.com`) in the Clerk Dashboard to route auth requests through the first-party domain, completely bypassing ad-blocker filter lists.

@@ -176,6 +176,18 @@ export function CanvasNode(props: any) {
   return (
     <div className="relative w-full h-full group" onDoubleClick={handleDoubleClick}>
       {selected && <NodeColorToolbar currentColor={data.color} onColorChange={handleColorChange} />}
+      {data.diff && (
+        <div
+          className={cn(
+            'absolute -top-3 -right-2 px-1.5 py-0.5 rounded-full text-[9px] font-semibold tracking-wider uppercase select-none shadow-md z-30 pointer-events-none transition-all duration-300 animate-in fade-in zoom-in-90',
+            data.diff === 'added'
+              ? 'bg-accent-primary-dim text-accent-primary border border-accent-primary/60 shadow-[0_0_12px_rgba(0,200,212,0.3)]'
+              : 'bg-accent-ai-dim text-accent-ai-text border border-accent-ai/60 shadow-[0_0_12px_rgba(100,87,249,0.3)]'
+          )}
+        >
+          {data.diff === 'added' ? '+ New' : 'Updated'}
+        </div>
+      )}
       <NodeResizer
         isVisible={selected}
         minWidth={100}
@@ -233,8 +245,10 @@ export function CanvasNode(props: any) {
 
       <div
         className={cn(
-          'relative w-full h-full transition-all duration-200 flex items-center justify-center text-center',
-          'px-4 py-3'
+          'relative w-full h-full transition-all duration-200 flex items-center justify-center text-center rounded-xl',
+          'px-4 py-3',
+          data.diff === 'added' && 'ring-2 ring-accent-primary/60 ring-offset-2 ring-offset-bg-base',
+          data.diff === 'modified' && 'ring-2 ring-accent-ai/60 ring-offset-2 ring-offset-bg-base'
         )}
       >
         {SHAPE_SVG[data.shape as NodeShape]({ color: color.fill, selected })}

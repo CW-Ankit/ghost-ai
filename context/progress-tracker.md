@@ -105,6 +105,25 @@ Update this file whenever the current phase, active feature, or implementation s
   - Upgraded `AISidebar` with in-place Liveblocks CRDT reconciliation (patching existing `LiveObject`s by ID instead of clearing maps), preserving live collaborator selection and cursors.
   - Enhanced AI sidebar chat UI with contextual indicators, `REFINEMENT_PROMPTS` suggestions on active canvases, and "Refined Graph" message badges.
   - Added comprehensive unit test suites in `test/ai-helpers.test.ts` (50 total unit tests across starter templates, canvas autosave, and AI generation pipeline).
+- [x] Full Codebase Audit, Verification & Bug Fixes:
+  - Verified 100% test pass rate across all 3 test files (50/50 unit tests passing in Vitest).
+  - Verified strict TypeScript compilation with zero errors across the entire repository (`tsc --noEmit`).
+  - Verified Next.js 16 (Turbopack) production build (`next build`) compiling all static pages and dynamic routes with zero errors.
+  - Fixed Next.js 16 `proxy.ts` middleware redirect bug blocking unauthenticated Convex background actions from invoking `/api/specs/upload` and ensuring API routes return 401 JSON rather than 307 HTML redirects.
+  - Fixed spec download mechanism in `components/editor/ai-sidebar.tsx` to route through `/api/specs/[specId]?url=...` with `Content-Disposition: attachment`, overcoming browser cross-origin download restrictions on remote Vercel Blob URLs.
+  - Removed obsolete/dead server file `lib/projects-server.ts`.
+  - Cleaned up unused imports in `components/editor/access-denied.tsx` and `components/editor/ai-sidebar.tsx`.
+  - Type-safe cleanup of `internal.crons.prunePresence` in `convex/crons.ts`.
+  - Aligned `README.md` feature matrix and tech stack to accurately document live implementations.
+- [x] Implemented Technical Spec PDF & Print Export:
+  - Built `lib/print-spec.ts` generating standalone formatted documents with A4 pagination, header metadata, clean white background, table styling, code formatting, and automatic trigger of native print / Save as PDF dialog.
+  - Added "PDF / Print" action in `components/editor/ai-sidebar.tsx` spec preview modal.
+  - Added unit test suite in `test/print-spec.test.ts` verifying isolated iframe rendering, style generation, and SSR window safety.
+- [x] Implemented Visual Architecture Diffs on Canvas:
+  - Implemented `computeArchitectureDiffs` in `lib/ai-helpers.ts` comparing incoming nodes with existing canvas state to tag `added` and `modified` components.
+  - Enhanced `CanvasNode` (`components/editor/canvas/nodes/canvas-node.tsx`) with animated status badges (`+ New` in brand cyan glow, `Updated` in AI purple glow) and ring highlight outlines.
+  - Integrated in-place Liveblocks CRDT diff tagging with automatic 12-second fade-out via `clearDiffFlags` mutation.
+  - Added comprehensive unit tests in `test/ai-helpers.test.ts` verifying diff computation (57 total tests passing).
 
 ## Current Phase
 
@@ -112,7 +131,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Multi-turn AI refinement complete and verified. Moving to end-to-end polish of spec exports and collaboration workflows.
+- Real-time performance audit and subscription optimizations for large canvas graphs (100+ nodes).
 
 ## In Progress
 
@@ -120,8 +139,8 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Technical Spec download and sharing polish (direct PDF/Markdown export options).
-- Real-time performance audit and subscription optimizations for large canvas graphs.
+- Real-time performance audit and subscription optimizations for large canvas graphs (100+ nodes).
+- Read-only public architecture sharing link support.
 
 ## Open Questions
 

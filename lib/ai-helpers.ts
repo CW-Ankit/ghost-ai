@@ -181,3 +181,33 @@ export function extractSpecTitle(markdown: string): string {
   if (match) return match[1].trim()
   return 'System Architecture Specification'
 }
+
+/**
+ * Computes visual architecture diff flags ('added' | 'modified') for incoming nodes
+ * compared against the existing canvas elements.
+ */
+export function computeArchitectureDiffs<
+  T extends { id: string; data?: Record<string, any> },
+>(
+  existingNodes: Array<{ id?: string; data?: { label?: string } } | any>,
+  incomingNodes: T[]
+): Array<T & { data: NonNullable<T['data']> & { diff?: 'added' | 'modified' | null } }> {
+  const existingNodeIds = new Set((existingNodes || []).map((n) => n?.id).filter(Boolean))
+  const existingLabels = new Map((existingNodes || []).map((n) => [n?.id, n?.data?.label]))
+
+  return (incomingNodes || []).map((node) => {
+    let diff: 'added' | 'modified' | null = null
+    if (!existingNodeIds.has(node.id)) {
+      diff = 'added'
+    } else if (existingLabels.get(node.id) !== node.data?.label) {
+      diff = 'modified'
+    }
+    return {
+      ...node,
+      data: {
+        ...((node.data as any) || {}),
+        diff,
+      },
+    }
+  })
+}

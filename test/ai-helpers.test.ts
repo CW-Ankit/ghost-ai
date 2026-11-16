@@ -6,6 +6,7 @@ import {
   extractSpecTitle,
   formatCurrentGraphForPrompt,
   formatConversationHistory,
+  computeArchitectureDiffs,
 } from '@/lib/ai-helpers'
 
 describe('AI Generation Pipeline Helpers', () => {
@@ -216,6 +217,53 @@ describe('AI Generation Pipeline Helpers', () => {
       expect(result.summary).toBe('Added Redis Cache in front of Postgres database')
       expect(result.nodes[0].id).toBe('redis')
       expect(result.nodes[0].data.label).toBe('Redis Cache')
+    })
+  })
+
+  describe('computeArchitectureDiffs', () => {
+    const existing = [
+      { id: 'node-1', data: { label: 'Web Server' } },
+      { id: 'node-2', data: { label: 'Database' } },
+    ]
+
+    it('identifies newly added nodes with diff="added"', () => {
+      const incoming = [
+        { id: 'node-1', data: { label: 'Web Server' } },
+        { id: 'node-2', data: { label: 'Database' } },
+        { id: 'node-3', data: { label: 'Redis Cache' } },
+      ]
+
+      const diffed = computeArchitectureDiffs(existing, incoming)
+      expect(diffed[0].data.diff).toBeNull()
+      expect(diffed[1].data.diff).toBeNull()
+      expect(diffed[2].data.diff).toBe('added')
+    })
+
+    it('identifies modified node labels with diff="modified"', () => {
+      const incoming = [
+        { id: 'node-1', data: { label: 'API Gateway (Renamed)' } },
+        { id: 'node-2', data: { label: 'Database' } },
+      ]
+
+      const diffed = computeArchitectureDiffs(existing, incoming)
+      expect(diffed[0].data.diff).toBe('modified')
+      expect(diffed[1].data.diff).toBeNull()
+    })
+
+    it('marks all nodes as "added" when existing nodes list is empty', () => {
+      const incoming = [
+        { id: 'n1', data: { label: 'Service A' } },
+        { id: 'n2', data: { label: 'Service B' } },
+      ]
+
+      const diffed = computeArchitectureDiffs([], incoming)
+      expect(diffed[0].data.diff).toBe('added')
+      expect(diffed[1].data.diff).toBe('added')
+    })
+
+    it('handles empty incoming nodes without error', () => {
+      const diffed = computeArchitectureDiffs(existing, [])
+      expect(diffed).toEqual([])
     })
   })
 })

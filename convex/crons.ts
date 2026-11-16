@@ -22,6 +22,6 @@ export const prunePresence = internalMutation({
 })
 
 const crons = cronJobs()
-crons.interval('prune-presence', { minutes: 5 }, (internal as any).crons.prunePresence)
+crons.interval('prune-presence', { minutes: 5 }, internal.crons.prunePresence)
 
 export default crons
