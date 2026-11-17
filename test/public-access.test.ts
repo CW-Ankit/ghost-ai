@@ -5,7 +5,7 @@ describe('Public Access & Read-Only Logic', () => {
     const project = {
       _id: 'proj-123',
       ownerId: 'user-alice',
-      publicAccess: 'PRIVATE' as const,
+      publicAccess: 'PRIVATE' as 'PRIVATE' | 'VIEW_ONLY',
       roomId: 'room-abc',
     }
 
@@ -27,7 +27,7 @@ describe('Public Access & Read-Only Logic', () => {
     const project = {
       _id: 'proj-123',
       ownerId: 'user-alice',
-      publicAccess: 'PRIVATE' as const,
+      publicAccess: 'PRIVATE' as 'PRIVATE' | 'VIEW_ONLY',
       roomId: 'room-abc',
     }
 
@@ -104,7 +104,7 @@ describe('Public Access & Read-Only Logic', () => {
     const project = {
       _id: 'proj-123',
       ownerId: 'user-alice',
-      publicAccess: 'PRIVATE' as const,
+      publicAccess: 'PRIVATE' as 'PRIVATE' | 'VIEW_ONLY',
       roomId: 'room-abc',
     }
 
