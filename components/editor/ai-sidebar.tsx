@@ -50,6 +50,7 @@ interface AISidebarProps {
   isOpen: boolean
   onClose: () => void
   projectId?: string
+  isReadOnly?: boolean
 }
 
 interface ChatMessage {
@@ -103,7 +104,7 @@ const REFINEMENT_PROMPTS = [
   },
 ]
 
-export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
+export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AISidebarProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputPrompt, setInputPrompt] = useState('')
   const [activeTab, setActiveTab] = useState('architect')
@@ -316,6 +317,7 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
   }
 
   const handleSendMessage = async (textToSend?: string) => {
+    if (isReadOnly) return
     const content = (textToSend || inputPrompt).trim()
     if (!content || isGeneratingDesign) return
 
@@ -439,6 +441,7 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
   }
 
   const handleSelectStarterChip = (prompt: string) => {
+    if (isReadOnly) return
     setInputPrompt(prompt)
     if (textareaRef.current) {
       textareaRef.current.focus()
@@ -452,6 +455,7 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
   }
 
   const handleGenerateSpec = async () => {
+    if (isReadOnly) return
     if (!projectId) {
       toast.error('Project not found')
       return
@@ -521,6 +525,7 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
   }
 
   const handleDeleteSpec = async (specId: Id<'specs'>) => {
+    if (isReadOnly) return
     try {
       await removeSpecMutation({ specId })
       toast.success('Specification removed')
@@ -612,6 +617,13 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
                 value="architect"
                 className="flex-1 flex flex-col overflow-hidden mt-3 p-0 data-active:flex"
               >
+                {isReadOnly && (
+                  <div className="flex items-center gap-2 p-2.5 mx-1 mb-2 rounded-xl bg-accent-primary-dim/60 border border-accent-primary/40 text-xs text-text-secondary select-none">
+                    <Eye className="h-4 w-4 text-accent-primary shrink-0" />
+                    <span>View-only mode: Architecture generation and modifications are disabled.</span>
+                  </div>
+                )}
+
                 {/* Chat messages / Empty state */}
                 <div className="flex-1 overflow-y-auto pr-1 space-y-4">
                   {messages.length === 0 ? (
@@ -645,8 +657,12 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
                               <button
                                 key={idx}
                                 type="button"
+                                disabled={isReadOnly}
                                 onClick={() => handleSelectStarterChip(item.prompt)}
-                                className="group flex items-center justify-between p-2.5 rounded-xl bg-bg-subtle hover:bg-bg-elevated border border-border-subtle hover:border-accent-ai/30 text-left transition-all text-xs cursor-pointer shadow-sm"
+                                className={cn(
+                                  "group flex items-center justify-between p-2.5 rounded-xl bg-bg-subtle hover:bg-bg-elevated border border-border-subtle hover:border-accent-ai/30 text-left transition-all text-xs shadow-sm",
+                                  isReadOnly ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                                )}
                               >
                                 <div className="flex items-center gap-2.5">
                                   <div className="p-1.5 rounded-lg bg-bg-surface border border-border-subtle group-hover:border-accent-ai/30 group-hover:text-accent-ai-text text-text-muted transition-colors">
@@ -741,11 +757,13 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
                       onChange={handleInputChange}
                       onKeyDown={handleKeyDown}
                       placeholder={
-                        canvasElements.nodes.length > 0
-                          ? 'Suggest changes, additions, or refinements...'
-                          : 'Describe a system architecture...'
+                        isReadOnly
+                          ? 'Architecture is view-only...'
+                          : canvasElements.nodes.length > 0
+                            ? 'Suggest changes, additions, or refinements...'
+                            : 'Describe a system architecture...'
                       }
-                      disabled={isGeneratingDesign}
+                      disabled={isGeneratingDesign || isReadOnly}
                       className="min-h-[72px] max-h-[160px] resize-none border-0 bg-transparent p-1 text-xs text-text-primary placeholder:text-text-muted focus-visible:ring-0 focus-visible:outline-none leading-relaxed disabled:opacity-50"
                     />
                     <div className="flex items-center justify-between pt-1 border-t border-border-subtle/50">
@@ -762,7 +780,7 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
                       <Button
                         size="sm"
                         onClick={() => handleSendMessage()}
-                        disabled={!inputPrompt.trim() || isGeneratingDesign}
+                        disabled={!inputPrompt.trim() || isGeneratingDesign || isReadOnly}
                         className="h-7 px-3 gap-1.5 bg-accent-ai hover:bg-accent-ai/90 text-white rounded-lg text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
                       >
                         {isGeneratingDesign ? (
@@ -802,7 +820,7 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
                       <Button
                         size="sm"
                         onClick={handleGenerateSpec}
-                        disabled={isGeneratingSpec || canvasElements.nodes.length === 0}
+                        disabled={isGeneratingSpec || canvasElements.nodes.length === 0 || isReadOnly}
                         className="w-full gap-2 bg-accent-ai hover:bg-accent-ai/90 text-white text-xs font-medium rounded-xl h-8 shadow-sm transition-all disabled:opacity-50"
                       >
                         {isGeneratingSpec ? (
@@ -813,7 +831,11 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
                         ) : (
                           <>
                             <Sparkles className="h-3.5 w-3.5" />
-                            <span>Generate Spec ({canvasElements.nodes.length} nodes)</span>
+                            <span>
+                              {isReadOnly
+                                ? 'Spec Generation Disabled (View Only)'
+                                : `Generate Spec (${canvasElements.nodes.length} nodes)`}
+                            </span>
                           </>
                         )}
                       </Button>
@@ -872,15 +894,17 @@ export function AISidebar({ isOpen, onClose, projectId }: AISidebarProps) {
                                   </div>
                                 </div>
 
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDeleteSpec(spec._id)}
-                                  className="h-6 w-6 text-text-muted hover:text-state-error hover:bg-state-error/10 rounded-md flex-shrink-0"
-                                  title="Delete specification"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
+                                {!isReadOnly && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDeleteSpec(spec._id)}
+                                    className="h-6 w-6 text-text-muted hover:text-state-error hover:bg-state-error/10 rounded-md flex-shrink-0"
+                                    title="Delete specification"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                )}
                               </div>
 
                               {/* Actions */}

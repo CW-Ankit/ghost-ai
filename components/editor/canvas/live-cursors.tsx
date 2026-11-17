@@ -5,7 +5,7 @@ import { useOthers } from '@liveblocks/react'
 import { useUser } from '@clerk/nextjs'
 import { useViewport } from '@xyflow/react'
 
-export function LiveCursors() {
+function LiveCursorsComponent() {
   const { user } = useUser()
   const others = useOthers()
   const { x: viewportX, y: viewportY, zoom } = useViewport()
@@ -63,3 +63,5 @@ export function LiveCursors() {
     </div>
   )
 }
+
+export const LiveCursors = React.memo(LiveCursorsComponent)

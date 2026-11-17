@@ -24,13 +24,12 @@ export async function getCurrentUserIdentity() {
 export async function checkProjectAccess(roomId: string) {
   try {
     const identity = await getCurrentUserIdentity()
-    if (!identity) return null
 
     const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL
     if (!convexUrl) return null
 
     const convexHttpClient = new ConvexHttpClient(convexUrl)
-    if (identity.token) {
+    if (identity?.token) {
       convexHttpClient.setAuth(identity.token)
     }
 

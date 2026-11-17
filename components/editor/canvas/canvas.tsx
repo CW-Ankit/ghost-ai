@@ -20,6 +20,7 @@ import { CanvasControlBar } from './canvas-control-bar'
 import { DragPreview } from './drag-preview'
 import { PresenceAvatars } from './presence-avatars'
 import { LiveCursors } from './live-cursors'
+import { CanvasContextProvider, useCanvasContext } from './canvas-context'
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts'
 import { useCanvasAutosave } from '@/hooks/use-canvas-autosave'
 import { useSaveContext } from './save-context'
@@ -40,6 +41,7 @@ const edgeTypes = {
 function CanvasInner({ projectId }: { projectId: string }) {
   const params = useParams()
   const roomId = params?.roomId as string
+  const { isReadOnly } = useCanvasContext()
 
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect } = useLiveblocksFlow() as any
 
@@ -91,10 +93,10 @@ function CanvasInner({ projectId }: { projectId: string }) {
   useKeyboardShortcuts({
     zoomIn: handleZoomIn,
     zoomOut: handleZoomOut,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
+    undo: isReadOnly ? () => {} : undo,
+    redo: isReadOnly ? () => {} : redo,
+    canUndo: !isReadOnly && canUndo,
+    canRedo: !isReadOnly && canRedo,
   })
 
   // Hook for debounced autosave to Vercel Blob and Convex
@@ -104,6 +106,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
     nodes,
     edges,
     debounceMs: 2500,
+    enabled: !isReadOnly,
   })
 
   const { setSaveStatus, setLastSavedAt, registerSaveHandler } = useSaveContext()
@@ -244,6 +247,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
+      if (isReadOnly) return
       event.preventDefault()
       setDragPreview(null)
 
@@ -274,10 +278,11 @@ function CanvasInner({ projectId }: { projectId: string }) {
         console.error('Failed to parse drop data', e)
       }
     },
-    [screenToFlowPosition, onNodesChange]
+    [isReadOnly, screenToFlowPosition, onNodesChange]
   )
 
   const onDragOver = useCallback((event: React.DragEvent) => {
+    if (isReadOnly) return
     event.preventDefault()
     event.dataTransfer.dropEffect = 'move'
 
@@ -291,7 +296,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
         })
       } catch {}
     }
-  }, [])
+  }, [isReadOnly])
 
   if (!nodes || !edges) {
     return (
@@ -316,9 +321,16 @@ function CanvasInner({ projectId }: { projectId: string }) {
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
+        onNodesChange={isReadOnly ? undefined : onNodesChange}
+        onEdgesChange={isReadOnly ? undefined : onEdgesChange}
+        onConnect={isReadOnly ? undefined : onConnect}
+        nodesDraggable={!isReadOnly}
+        nodesConnectable={!isReadOnly}
+        elementsSelectable={true}
+        deleteKeyCode={isReadOnly ? null : ['Backspace', 'Delete']}
+        onlyRenderVisibleElements={true}
+        minZoom={0.05}
+        maxZoom={2}
         nodeTypes={nodeTypes as any}
         edgeTypes={edgeTypes as any}
         defaultEdgeOptions={{
@@ -343,22 +355,34 @@ function CanvasInner({ projectId }: { projectId: string }) {
         onRedo={redo}
         canUndo={canUndo}
         canRedo={canRedo}
+        isReadOnly={isReadOnly}
       />
       <ShapePanel />
-      {dragPreview && <DragPreview shape={dragPreview.shape} position={dragPreview.position} />}
+      {dragPreview && !isReadOnly && (
+        <DragPreview shape={dragPreview.shape} position={dragPreview.position} />
+      )}
     </div>
   )
 }
 
-export function Canvas({ projectId: propProjectId }: { projectId?: string }) {
+export function Canvas({
+  projectId: propProjectId,
+  isReadOnly: propIsReadOnly,
+}: {
+  projectId?: string
+  isReadOnly?: boolean
+}) {
   const params = useParams()
   const roomId = (Array.isArray(params?.roomId) ? params?.roomId[0] : params?.roomId) as string
   const project = useQuery(api.projects.getByRoomId, { roomId: roomId ?? '' })
   const projectId = propProjectId || (project?._id as string)
+  const isReadOnly = propIsReadOnly ?? Boolean((project as any)?.isReadOnly)
 
   return (
-    <div className="h-full w-full">
-      <CanvasInner projectId={projectId} />
-    </div>
+    <CanvasContextProvider isReadOnly={isReadOnly}>
+      <div className="h-full w-full">
+        <CanvasInner projectId={projectId} />
+      </div>
+    </CanvasContextProvider>
   )
 }

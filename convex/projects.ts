@@ -448,13 +448,35 @@ export const updateTags = mutation({
   },
 })
 
+export const setPublicAccess = mutation({
+  args: {
+    projectId: v.id('projects'),
+    publicAccess: v.union(v.literal('PRIVATE'), v.literal('VIEW_ONLY')),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) {
+      throw new ConvexError('Unauthenticated')
+    }
+
+    const project = await ctx.db.get(args.projectId)
+    if (!project || project.ownerId !== identity.tokenIdentifier) {
+      throw new ConvexError('Only the project owner can change sharing settings')
+    }
+
+    await ctx.db.patch(args.projectId, {
+      publicAccess: args.publicAccess,
+      updatedAt: Date.now(),
+    })
+
+    return true
+  },
+})
+
 export const getByRoomId = query({
   args: { roomId: v.string() },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
-      return null
-    }
 
     const project = await ctx.db
       .query('projects')
@@ -465,28 +487,43 @@ export const getByRoomId = query({
       return null
     }
 
-    // Check ownership
-    if (project.ownerId === identity.tokenIdentifier) {
-      return project
+    // 1. Owner access
+    if (identity && project.ownerId === identity.tokenIdentifier) {
+      return {
+        ...project,
+        role: 'owner' as const,
+        isReadOnly: false,
+      }
     }
 
-    // Check collaborator access by email
-    const userEmail = identity.email
-    if (!userEmail) {
-      return null
+    // 2. Collaborator access
+    if (identity?.email) {
+      const collaborator = await ctx.db
+        .query('projectCollaborators')
+        .withIndex('by_projectId_and_email', (q) =>
+          q.eq('projectId', project._id).eq('email', identity.email!)
+        )
+        .unique()
+
+      if (collaborator) {
+        return {
+          ...project,
+          role: 'editor' as const,
+          isReadOnly: false,
+        }
+      }
     }
 
-    const collaborator = await ctx.db
-      .query('projectCollaborators')
-      .withIndex('by_projectId_and_email', (q) =>
-        q.eq('projectId', project._id).eq('email', userEmail)
-      )
-      .unique()
-
-    if (collaborator) {
-      return project
+    // 3. Public view access
+    if (project.publicAccess === 'VIEW_ONLY') {
+      return {
+        ...project,
+        role: 'viewer' as const,
+        isReadOnly: true,
+      }
     }
 
+    // 4. Denied
     return null
   },
 })
@@ -543,19 +580,16 @@ export const getCanvasUrl = query({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
-      return null
-    }
 
     const project = await ctx.db.get(args.projectId)
     if (!project) {
       return null
     }
 
-    const userId = identity.tokenIdentifier
-    const userEmail = identity.email
+    const userId = identity?.tokenIdentifier
+    const userEmail = identity?.email
 
-    const isOwner = project.ownerId === userId
+    const isOwner = Boolean(userId && project.ownerId === userId)
     let isCollaborator = false
 
     if (userEmail) {
@@ -568,7 +602,9 @@ export const getCanvasUrl = query({
       if (collaboration) isCollaborator = true
     }
 
-    if (!isOwner && !isCollaborator) {
+    const isPublicView = project.publicAccess === 'VIEW_ONLY'
+
+    if (!isOwner && !isCollaborator && !isPublicView) {
       return null
     }
 

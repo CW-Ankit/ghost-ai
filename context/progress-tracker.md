@@ -125,13 +125,43 @@ Update this file whenever the current phase, active feature, or implementation s
   - Integrated in-place Liveblocks CRDT diff tagging with automatic 12-second fade-out via `clearDiffFlags` mutation.
   - Added comprehensive unit tests in `test/ai-helpers.test.ts` verifying diff computation (57 total tests passing).
 
+- [x] Implemented Read-Only Public Architecture Sharing Links & Access Denied Guards:
+  - Extended Convex schema (`convex/schema.ts`) with `publicAccess: v.optional(v.union(v.literal('PRIVATE'), v.literal('VIEW_ONLY')))`.
+  - Added `setPublicAccess` mutation in `convex/projects.ts` allowing project owners to toggle public sharing.
+  - Enhanced `getByRoomId` in `convex/projects.ts` resolving fine-grained `role` (`owner` | `editor` | `viewer`) and `isReadOnly` flags across authenticated members, public viewers, and unauthenticated guests.
+  - Enhanced `getCanvasUrl` and `specs` queries (`listByProject`, `getById`) to support public read-only viewers.
+  - Updated `lib/project-access.ts` to allow anonymous/guest access checking for public rooms.
+  - Updated `/api/liveblocks-auth` to issue `session.allow(roomId, session.READ_ACCESS)` for read-only rooms and `FULL_ACCESS` for editors.
+  - Integrated `<AccessDenied />` in `CanvasProvider` and `WorkspaceShell` when projects are missing or inaccessible, preventing unauthorized Liveblocks connections.
+  - Built `CanvasContextProvider` (`components/editor/canvas/canvas-context.tsx`) broadcasting `isReadOnly` state to all canvas subcomponents.
+  - Updated `ShareDialog` (`components/editor/share-dialog.tsx`) with a dedicated "Public Link Sharing" card, accessible `Switch` toggle (`components/ui/switch.tsx`), permission indicator pills, and copy link action.
+  - Adapted `WorkspaceShell`:
+    - Shows "View Only" badge in header next to project title.
+    - Displays disabled "View Only" indicator in place of Save trigger.
+    - Hides "Templates" button to prevent canvas overwrites.
+  - Adapted `Canvas`:
+    - Disables node dragging, connection creation, drop actions, and keyboard deletion when `isReadOnly`.
+    - Hides `ShapePanel` and disables undo/redo controls in `CanvasControlBar`.
+    - Disables `useCanvasAutosave` in read-only mode to prevent unnecessary network overhead.
+  - Adapted `AISidebar`:
+    - Displays prominent read-only notification banner.
+    - Disables architecture generation/refinement inputs and starter prompts.
+    - Disables spec generation and delete actions while preserving Markdown preview, copy, download, and PDF/print export.
+- [x] Real-Time Performance Audit & Optimization for Large Canvas Graphs (100+ Nodes):
+  - Memoized `CanvasNode` (`components/editor/canvas/nodes/canvas-node.tsx`) with `React.memo` preventing cascading re-renders across 100+ nodes on single-node movements.
+  - Memoized `CanvasEdge` (`components/editor/canvas/edges/canvas-edge.tsx`) with `React.memo`.
+  - Memoized `LiveCursors` (`components/editor/canvas/live-cursors.tsx`) with `React.memo` avoiding unnecessary repaints during multi-user collaboration.
+  - Configured `onlyRenderVisibleElements={true}` on `ReactFlow` in `components/editor/canvas/canvas.tsx` for dynamic viewport element culling.
+  - Configured `minZoom={0.05}` and `maxZoom={2}` for smooth high-scale canvas pan/zoom across complex system diagrams.
+  - Added comprehensive test suite in `test/public-access.test.ts` (65 / 65 unit tests passing across 5 test suites).
+
 ## Current Phase
 
 - Phase 2: AI Workflows & Artifact Generation
 
 ## Current Goal
 
-- Real-time performance audit and subscription optimizations for large canvas graphs (100+ nodes).
+- Deploy and verify end-to-end multi-user collaboration and view-only sharing flows.
 
 ## In Progress
 
@@ -139,8 +169,8 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Real-time performance audit and subscription optimizations for large canvas graphs (100+ nodes).
-- Read-only public architecture sharing link support.
+- Interactive multi-user end-to-end verification.
+- Advanced export options (PNG/SVG canvas export alongside Markdown/PDF specs).
 
 ## Open Questions
 

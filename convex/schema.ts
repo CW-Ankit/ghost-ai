@@ -7,6 +7,7 @@ export default defineSchema({
     name: v.string(),
     description: v.optional(v.string()),
     status: v.union(v.literal('DRAFT'), v.literal('ARCHIVED'), v.literal('REVIEW')),
+    publicAccess: v.optional(v.union(v.literal('PRIVATE'), v.literal('VIEW_ONLY'))),
     roomId: v.string(),
     canvasJsonPath: v.optional(v.string()),
     createdAt: v.number(),

@@ -14,6 +14,7 @@ interface UseCanvasAutosaveProps {
   nodes: any[]
   edges: any[]
   debounceMs?: number
+  enabled?: boolean
 }
 
 export function useCanvasAutosave({
@@ -22,6 +23,7 @@ export function useCanvasAutosave({
   nodes,
   edges,
   debounceMs = 2500,
+  enabled = true,
 }: UseCanvasAutosaveProps) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
@@ -33,7 +35,7 @@ export function useCanvasAutosave({
   const isInitialMount = useRef(true)
 
   const saveNow = useCallback(async (): Promise<boolean> => {
-    if (!projectId || !nodes) return false
+    if (!enabled || !projectId || !nodes) return false
 
     try {
       setSaveStatus('saving')
@@ -96,8 +98,8 @@ export function useCanvasAutosave({
   }, [projectId, roomId, nodes, edges, saveCanvasMutation])
 
   useEffect(() => {
-    // Skip before initialization or when nodes aren't loaded yet
-    if (!projectId || !nodes) return
+    // Skip before initialization, when disabled, or when nodes aren't loaded yet
+    if (!enabled || !projectId || !nodes) return
 
     const currentFingerprint = getCanvasFingerprint(nodes, edges)
 

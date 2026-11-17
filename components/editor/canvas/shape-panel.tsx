@@ -5,6 +5,7 @@ import { Square, Circle, Diamond, Pill, Database, Hexagon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { NodeShape } from '@/types/canvas'
+import { useCanvasContext } from './canvas-context'
 
 interface ShapeItemProps {
   shape: NodeShape
@@ -42,6 +43,12 @@ function ShapeItem({ shape, icon, label }: ShapeItemProps) {
 }
 
 export function ShapePanel() {
+  const { isReadOnly } = useCanvasContext()
+
+  if (isReadOnly) {
+    return null
+  }
+
   const shapes: { shape: NodeShape; icon: React.ReactNode; label: string }[] = [
     { shape: 'rectangle', icon: <Square className="h-5 w-5" />, label: 'Process' },
     { shape: 'diamond', icon: <Diamond className="h-5 w-5" />, label: 'Decision' },

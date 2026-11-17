@@ -6,9 +6,6 @@ export const listByProject = query({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
-      return []
-    }
 
     const project = await ctx.db.get(args.projectId)
     if (!project) {
@@ -16,10 +13,10 @@ export const listByProject = query({
     }
 
     // Verify access
-    const isOwner = project.ownerId === identity.tokenIdentifier
+    const isOwner = Boolean(identity && project.ownerId === identity.tokenIdentifier)
     let isCollaborator = false
 
-    if (identity.email) {
+    if (identity?.email) {
       const collaboration = await ctx.db
         .query('projectCollaborators')
         .withIndex('by_projectId_and_email', (q) =>
@@ -29,7 +26,9 @@ export const listByProject = query({
       if (collaboration) isCollaborator = true
     }
 
-    if (!isOwner && !isCollaborator) {
+    const isPublicView = project.publicAccess === 'VIEW_ONLY'
+
+    if (!isOwner && !isCollaborator && !isPublicView) {
       return []
     }
 
@@ -45,9 +44,6 @@ export const getById = query({
   args: { specId: v.id('specs') },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
-      return null
-    }
 
     const spec = await ctx.db.get(args.specId)
     if (!spec) {
@@ -59,10 +55,10 @@ export const getById = query({
       return null
     }
 
-    const isOwner = project.ownerId === identity.tokenIdentifier
+    const isOwner = Boolean(identity && project.ownerId === identity.tokenIdentifier)
     let isCollaborator = false
 
-    if (identity.email) {
+    if (identity?.email) {
       const collaboration = await ctx.db
         .query('projectCollaborators')
         .withIndex('by_projectId_and_email', (q) =>
@@ -72,7 +68,9 @@ export const getById = query({
       if (collaboration) isCollaborator = true
     }
 
-    if (!isOwner && !isCollaborator) {
+    const isPublicView = project.publicAccess === 'VIEW_ONLY'
+
+    if (!isOwner && !isCollaborator && !isPublicView) {
       return null
     }
 

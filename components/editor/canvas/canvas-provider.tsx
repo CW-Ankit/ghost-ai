@@ -6,6 +6,7 @@ import { ReactFlowProvider } from '@xyflow/react'
 import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Canvas } from './canvas'
+import { AccessDenied } from '../access-denied'
 
 interface CanvasProviderProps {
   roomId: string
@@ -20,6 +21,21 @@ export function CanvasProvider({
 }: CanvasProviderProps) {
   const project = useQuery(api.projects.getByRoomId, { roomId })
   const projectId = initialProjectId || project?._id
+
+  if (project === null) {
+    return <AccessDenied />
+  }
+
+  if (project === undefined) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-base text-text-muted">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 border-2 border-accent-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-medium text-text-secondary">Connecting to workspace...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <LiveblocksProvider authEndpoint="/api/liveblocks-auth">

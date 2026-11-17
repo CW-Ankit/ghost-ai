@@ -15,6 +15,7 @@ import {
   Loader2,
   Save,
   AlertCircle,
+  Eye,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -31,13 +32,26 @@ import { StarterTemplatesModal } from './starter-templates-modal'
 import { CanvasTemplate } from './starter-templates'
 import { AISidebar } from './ai-sidebar'
 import { SaveProvider, useSaveContext } from './canvas/save-context'
+import { AccessDenied } from './access-denied'
 
 interface WorkspaceShellProps {
   children: React.ReactNode
 }
 
-function SaveStatusIndicator() {
+function SaveStatusIndicator({ isReadOnly }: { isReadOnly?: boolean }) {
   const { saveStatus, triggerSave } = useSaveContext()
+
+  if (isReadOnly) {
+    return (
+      <div
+        className="gap-1.5 h-8 px-2.5 rounded-lg border border-border-subtle bg-bg-subtle/50 text-text-muted text-xs font-medium inline-flex items-center select-none"
+        title="Project is view-only. Changes cannot be saved."
+      >
+        <Eye className="h-3.5 w-3.5 text-accent-primary" />
+        <span className="hidden sm:inline">View Only</span>
+      </div>
+    )
+  }
 
   return (
     <Button
@@ -229,6 +243,23 @@ function WorkspaceShellInner({ children }: WorkspaceShellProps) {
     )
   }
 
+  if (project === null) {
+    return <AccessDenied />
+  }
+
+  if (project === undefined) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-base text-text-muted">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 text-accent-primary animate-spin" />
+          <p className="text-sm font-medium text-text-secondary">Loading workspace...</p>
+        </div>
+      </div>
+    )
+  }
+
+  const isReadOnly = Boolean((project as any)?.isReadOnly)
+
   return (
     <div className="flex h-screen w-full bg-base overflow-hidden">
       {/* Left Sidebar */}
@@ -270,20 +301,29 @@ function WorkspaceShellInner({ children }: WorkspaceShellProps) {
             <h1 className="text-sm font-medium text-text-primary truncate max-w-md">
               {project?.name || 'Loading...'}
             </h1>
+
+            {isReadOnly && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-accent-primary-dim text-accent-primary border border-accent-primary/40 shrink-0">
+                <Eye className="h-3 w-3" />
+                View Only
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
-            <SaveStatusIndicator />
+            <SaveStatusIndicator isReadOnly={isReadOnly} />
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setTemplatesModalOpen(true)}
-              className="gap-2 border-border-subtle bg-bg-subtle text-text-primary hover:bg-bg-elevated hover:text-accent-primary transition-colors h-8"
-            >
-              <LayoutTemplate className="h-4 w-4" />
-              <span className="hidden sm:inline">Templates</span>
-            </Button>
+            {!isReadOnly && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setTemplatesModalOpen(true)}
+                className="gap-2 border-border-subtle bg-bg-subtle text-text-primary hover:bg-bg-elevated hover:text-accent-primary transition-colors h-8"
+              >
+                <LayoutTemplate className="h-4 w-4" />
+                <span className="hidden sm:inline">Templates</span>
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -321,15 +361,18 @@ function WorkspaceShellInner({ children }: WorkspaceShellProps) {
             isOpen={aiSidebarOpen}
             onClose={() => setAiSidebarOpen(false)}
             projectId={project?._id}
+            isReadOnly={isReadOnly}
           />
         </main>
       </div>
 
       <ShareDialog
-        projectId={actions.selectedProject?._id ?? ''}
+        projectId={actions.selectedProject?._id ?? project?._id ?? ''}
         ownerId={project?.ownerId ?? ''}
         open={actions.activeDialog === 'share'}
         onOpenChange={(open) => !open && actions.closeDialog()}
+        publicAccess={(project as any)?.publicAccess}
+        roomId={roomId}
       />
       <ProjectDialogsComponent state={actions} />
       <StarterTemplatesModal

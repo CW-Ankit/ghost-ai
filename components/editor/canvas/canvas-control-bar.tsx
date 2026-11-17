@@ -13,6 +13,7 @@ interface CanvasControlBarProps {
   onRedo: () => void
   canUndo: boolean
   canRedo: boolean
+  isReadOnly?: boolean
 }
 
 export function CanvasControlBar({
@@ -23,6 +24,7 @@ export function CanvasControlBar({
   onRedo,
   canUndo,
   canRedo,
+  isReadOnly = false,
 }: CanvasControlBarProps) {
   return (
     <div className="fixed bottom-8 left-8 z-40">
@@ -58,42 +60,44 @@ export function CanvasControlBar({
           </Button>
         </div>
 
-        {/* Divider */}
-        <div className="h-5 w-[1px] bg-border-subtle mx-1" />
-
-        {/* History Controls */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onUndo}
-            disabled={!canUndo}
-            className={cn(
-              'h-9 w-9 rounded-xl transition-colors',
-              canUndo
-                ? 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'
-                : 'text-text-muted/40 cursor-not-allowed'
-            )}
-            title="Undo (Ctrl+Z)"
-          >
-            <Undo2 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onRedo}
-            disabled={!canRedo}
-            className={cn(
-              'h-9 w-9 rounded-xl transition-colors',
-              canRedo
-                ? 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'
-                : 'text-text-muted/40 cursor-not-allowed'
-            )}
-            title="Redo (Ctrl+Shift+Z / Ctrl+Y)"
-          >
-            <Redo2 className="h-4 w-4" />
-          </Button>
-        </div>
+        {/* History Controls (only in editable mode) */}
+        {!isReadOnly && (
+          <>
+            <div className="h-5 w-[1px] bg-border-subtle mx-1" />
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onUndo}
+                disabled={!canUndo}
+                className={cn(
+                  'h-9 w-9 rounded-xl transition-colors',
+                  canUndo
+                    ? 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'
+                    : 'text-text-muted/40 cursor-not-allowed'
+                )}
+                title="Undo (Ctrl+Z)"
+              >
+                <Undo2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onRedo}
+                disabled={!canRedo}
+                className={cn(
+                  'h-9 w-9 rounded-xl transition-colors',
+                  canRedo
+                    ? 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'
+                    : 'text-text-muted/40 cursor-not-allowed'
+                )}
+                title="Redo (Ctrl+Shift+Z / Ctrl+Y)"
+              >
+                <Redo2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

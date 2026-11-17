@@ -231,3 +231,24 @@ This document serves as the project's engineering memory, recording mistakes, bu
 - **Solution**:
   1. Built custom `app/error.tsx` error boundary that intercepts `failed_to_load_clerk_js` and displays an informative dark technical shield dialog explaining the issue with step-by-step instructions to toggle Shields off for `localhost:3000`.
   2. For production environments, configure a custom domain (e.g. `auth.yourdomain.com`) in the Clerk Dashboard to route auth requests through the first-party domain, completely bypassing ad-blocker filter lists.
+
+---
+
+## 11. Public Link Sharing & Multi-User Permission Stratification
+
+### 11.1 Liveblocks Token Permissions (`session.READ_ACCESS` vs. `session.FULL_ACCESS`)
+
+- **Mistake**: Issuing `session.allow(roomId, session.FULL_ACCESS)` indiscriminately to any user whose presence was approved by token auth.
+- **Symptom**: Unauthorized visitors or view-only link recipients could still mutate the collaborative Liveblocks CRDT storage (`room:write`).
+- **Root Cause**: Liveblocks permission enforcement is declared server-side in the auth endpoint (`/api/liveblocks-auth`). If the session grants `FULL_ACCESS`, the client can dispatch storage mutations regardless of client-side UI flags.
+- **Solution**: Evaluated `project.isReadOnly` in `/api/liveblocks-auth`. If `isReadOnly === true`, call `session.allow(roomId, session.READ_ACCESS)` which assigns `['room:read', 'room:presence:write', 'comments:read']` but denies `room:write`. Client-side mutations are rejected at the protocol layer.
+
+### 11.2 React Flow Node Memoization & Viewport Culling for 100+ Node Graphs
+
+- **Mistake**: Rendering unmemoized custom `CanvasNode`, `CanvasEdge`, and `LiveCursors` components in `ReactFlow` without element culling.
+- **Symptom**: In large architectures (100+ nodes), dragging a single node or receiving rapid collaborator cursor moves dropped framerates down to 15-20fps due to full graph re-renders.
+- **Root Cause**: Every node movement in React Flow dispatches updated node position props to the entire node collection. Without `React.memo` and viewport culling, hundreds of React components and SVG paths re-render on every animation frame.
+- **Solution**:
+  1. Wrapped `CanvasNode`, `CanvasEdge`, and `LiveCursors` in `React.memo`.
+  2. Configured `onlyRenderVisibleElements={true}` on `<ReactFlow />`, dynamically unmounting out-of-viewport nodes and edges from the DOM tree.
+  3. Added `CanvasContextProvider` to distribute read-only status without re-triggering storage listeners.

@@ -14,31 +14,44 @@ export async function POST(req: Request) {
       return new NextResponse('Room ID is required', { status: 400 })
     }
 
-    // 1. Verify Clerk authentication & project access
+    // 1. Verify project access & permission
     const project = await checkProjectAccess(roomId)
     if (!project) {
       return new NextResponse('Unauthorized access to project', { status: 403 })
     }
 
-    // 2. Get current user details for metadata
+    const isReadOnly = Boolean(project.isReadOnly)
+
+    // 2. Get current user details for metadata (support guest viewer if read-only)
     const user = await currentUser()
-    if (!user) {
+    if (!user && !isReadOnly) {
       return new NextResponse('User not found', { status: 401 })
     }
 
     const client = getLiveblocksClient()
 
+    const userId = user?.id || `guest-${Math.random().toString(36).slice(2, 9)}`
+    const displayName = user
+      ? user.fullName || user.username || 'Collaborator'
+      : 'Guest Viewer'
+    const avatar = user?.imageUrl || ''
+    const cursorColor = user ? getCursorColor(user.id) : '#00c8d4'
+
     // 3. Prepare session with user metadata and permissions
-    const session = client.prepareSession(user.id, {
+    const session = client.prepareSession(userId, {
       userInfo: {
-        displayName: user.fullName || user.username || 'Unknown User',
-        avatar: user.imageUrl,
-        cursorColor: getCursorColor(user.id),
+        displayName,
+        avatar,
+        cursorColor,
       },
     })
 
-    // Grant write access to the specific room
-    session.allow(roomId, session.FULL_ACCESS)
+    // Grant read-only or full access based on permission
+    if (isReadOnly) {
+      session.allow(roomId, session.READ_ACCESS)
+    } else {
+      session.allow(roomId, session.FULL_ACCESS)
+    }
 
     // 4. Authorize the session to get the access token
     const { status, body: authBody } = await session.authorize()

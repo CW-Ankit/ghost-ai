@@ -10,6 +10,7 @@ import {
 } from '@/types/canvas'
 import { cn } from '@/lib/utils'
 import { NodeColorToolbar } from './node-color-toolbar'
+import { useCanvasContext } from '../canvas-context'
 
 const SHAPE_SVG: Record<
   NodeShape,
@@ -112,9 +113,10 @@ const SHAPE_SVG: Record<
   ),
 }
 
-export function CanvasNode(props: any) {
+function CanvasNodeComponent(props: any) {
   const { id, data, selected } = props
   const { setNodes } = useReactFlow()
+  const { isReadOnly } = useCanvasContext()
   const [isEditing, setIsEditing] = useState(false)
   const [text, setText] = useState(data.label)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -133,6 +135,7 @@ export function CanvasNode(props: any) {
   }, [isEditing])
 
   const handleDoubleClick = (e: React.MouseEvent) => {
+    if (isReadOnly) return
     e.stopPropagation()
     setIsEditing(true)
   }
@@ -152,6 +155,7 @@ export function CanvasNode(props: any) {
   }
 
   const handleColorChange = (newColor: string) => {
+    if (isReadOnly) return
     setNodes((nds) =>
       nds.map((node) => {
         if (node.id === id) {
@@ -174,8 +178,13 @@ export function CanvasNode(props: any) {
   }
 
   return (
-    <div className="relative w-full h-full group" onDoubleClick={handleDoubleClick}>
-      {selected && <NodeColorToolbar currentColor={data.color} onColorChange={handleColorChange} />}
+    <div
+      className="relative w-full h-full group"
+      onDoubleClick={isReadOnly ? undefined : handleDoubleClick}
+    >
+      {selected && !isReadOnly && (
+        <NodeColorToolbar currentColor={data.color} onColorChange={handleColorChange} />
+      )}
       {data.diff && (
         <div
           className={cn(
@@ -189,7 +198,7 @@ export function CanvasNode(props: any) {
         </div>
       )}
       <NodeResizer
-        isVisible={selected}
+        isVisible={selected && !isReadOnly}
         minWidth={100}
         minHeight={50}
         handleClassName="border-accent-primary bg-accent-primary"
@@ -198,48 +207,56 @@ export function CanvasNode(props: any) {
         id="top-target"
         type="target"
         position={Position.Top}
+        isConnectable={!isReadOnly}
         className="w-2 h-2 bg-border-subtle border-none opacity-0 group-hover:opacity-100 transition-opacity"
       />
       <Handle
         id="top-source"
         type="source"
         position={Position.Top}
+        isConnectable={!isReadOnly}
         className="w-2 h-2 bg-border-subtle border-none opacity-0 group-hover:opacity-100 transition-opacity"
       />
       <Handle
         id="right-target"
         type="target"
         position={Position.Right}
+        isConnectable={!isReadOnly}
         className="w-2 h-2 bg-border-subtle border-none opacity-0 group-hover:opacity-100 transition-opacity"
       />
       <Handle
         id="right-source"
         type="source"
         position={Position.Right}
+        isConnectable={!isReadOnly}
         className="w-2 h-2 bg-border-subtle border-none opacity-0 group-hover:opacity-100 transition-opacity"
       />
       <Handle
         id="bottom-target"
         type="target"
         position={Position.Bottom}
+        isConnectable={!isReadOnly}
         className="w-2 h-2 bg-border-subtle border-none opacity-0 group-hover:opacity-100 transition-opacity"
       />
       <Handle
         id="bottom-source"
         type="source"
         position={Position.Bottom}
+        isConnectable={!isReadOnly}
         className="w-2 h-2 bg-border-subtle border-none opacity-0 group-hover:opacity-100 transition-opacity"
       />
       <Handle
         id="left-target"
         type="target"
         position={Position.Left}
+        isConnectable={!isReadOnly}
         className="w-2 h-2 bg-border-subtle border-none opacity-0 group-hover:opacity-100 transition-opacity"
       />
       <Handle
         id="left-source"
         type="source"
         position={Position.Left}
+        isConnectable={!isReadOnly}
         className="w-2 h-2 bg-border-subtle border-none opacity-0 group-hover:opacity-100 transition-opacity"
       />
 
@@ -282,3 +299,5 @@ export function CanvasNode(props: any) {
     </div>
   )
 }
+
+export const CanvasNode = React.memo(CanvasNodeComponent)

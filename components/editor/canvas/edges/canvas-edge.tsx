@@ -9,8 +9,9 @@ import {
   useReactFlow,
 } from '@xyflow/react'
 import { cn } from '@/lib/utils'
+import { useCanvasContext } from '../canvas-context'
 
-export function CanvasEdge({
+function CanvasEdgeComponent({
   id,
   sourceX,
   sourceY,
@@ -23,6 +24,7 @@ export function CanvasEdge({
   markerEnd,
 }: EdgeProps) {
   const { setEdges } = useReactFlow()
+  const { isReadOnly } = useCanvasContext()
   const [isEditing, setIsEditing] = useState(false)
   const [label, setLabel] = useState<string>((data as any)?.label || '')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -48,6 +50,7 @@ export function CanvasEdge({
   })
 
   const handleDoubleClick = (e: React.MouseEvent) => {
+    if (isReadOnly) return
     e.stopPropagation()
     setIsEditing(true)
   }
@@ -94,7 +97,7 @@ export function CanvasEdge({
       <path
         className="invisible stroke-transparent stroke-[10px]"
         d={edgePath}
-        onDoubleClick={handleDoubleClick}
+        onDoubleClick={isReadOnly ? undefined : handleDoubleClick}
       />
 
       <EdgeLabelRenderer>
@@ -119,12 +122,13 @@ export function CanvasEdge({
           ) : (
             <div
               className={cn(
-                'px-2 py-0.5 rounded-full text-[10px] font-medium transition-all cursor-pointer',
+                'px-2 py-0.5 rounded-full text-[10px] font-medium transition-all',
+                isReadOnly ? 'cursor-default' : 'cursor-pointer',
                 label
                   ? 'bg-bg-surface border border-border-default text-text-primary shadow-sm'
                   : 'bg-transparent text-text-secondary opacity-0 hover:opacity-40 italic'
               )}
-              onDoubleClick={handleDoubleClick}
+              onDoubleClick={isReadOnly ? undefined : handleDoubleClick}
             >
               {label || 'label'}
             </div>
@@ -134,3 +138,5 @@ export function CanvasEdge({
     </>
   )
 }
+
+export const CanvasEdge = React.memo(CanvasEdgeComponent)
