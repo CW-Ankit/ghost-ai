@@ -38,7 +38,12 @@ import { cn } from '@/lib/utils'
 import { useAction, useQuery, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
-import { useMutation as useLiveblocksMutation, useStorage } from '@liveblocks/react'
+import {
+  useMutation as useLiveblocksMutation,
+  useStorage,
+  useUpdateMyPresence,
+  useOthers,
+} from '@liveblocks/react'
 import { LiveObject, LiveMap } from '@liveblocks/client'
 import { useReactFlow } from '@xyflow/react'
 import { toast } from 'sonner'
@@ -123,6 +128,14 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
   const specMarkdownRef = useRef<HTMLDivElement>(null)
 
   const { fitView } = useReactFlow()
+  const updateMyPresence = useUpdateMyPresence()
+  const others = useOthers()
+
+  // Track if any collaborator is running AI generation
+  const thinkingCollaborator = others.find((other) => other.presence?.thinking)
+  const isSomeoneElseThinking = Boolean(thinkingCollaborator)
+  const collaboratorThinkingName =
+    thinkingCollaborator?.info?.displayName || 'A collaborator'
 
   // Convex actions and queries
   const generateDesignAction = useAction(api.ai.generateDesign)
@@ -350,6 +363,7 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
         content: m.content,
       }))
 
+    updateMyPresence({ thinking: true })
     setIsGeneratingDesign(true)
 
     try {
@@ -430,6 +444,7 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
       setMessages((prev) => [...prev, assistantError])
     } finally {
       setIsGeneratingDesign(false)
+      updateMyPresence({ thinking: false })
     }
   }
 
@@ -469,6 +484,7 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
       return
     }
 
+    updateMyPresence({ thinking: true })
     setIsGeneratingSpec(true)
     toast.loading('Analyzing canvas graph and writing specification...', { id: 'spec-gen' })
 
@@ -488,6 +504,7 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
       toast.error(error?.message || 'Failed to generate specification')
     } finally {
       setIsGeneratingSpec(false)
+      updateMyPresence({ thinking: false })
     }
   }
 
@@ -641,6 +658,13 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                   </div>
                 )}
 
+                {isSomeoneElseThinking && (
+                  <div className="flex items-center gap-2 p-2.5 mx-1 mb-2 rounded-xl bg-accent-ai/10 border border-accent-ai/30 text-xs text-accent-ai-text animate-pulse select-none">
+                    <Loader2 className="h-4 w-4 animate-spin text-accent-ai shrink-0" />
+                    <span>{collaboratorThinkingName} is actively designing the architecture...</span>
+                  </div>
+                )}
+
                 {/* Chat messages / Empty state */}
                 <div className="flex-1 overflow-y-auto pr-1 space-y-4">
                   {messages.length === 0 ? (
@@ -776,11 +800,13 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                       placeholder={
                         isReadOnly
                           ? 'Architecture is view-only...'
-                          : canvasElements.nodes.length > 0
-                            ? 'Suggest changes, additions, or refinements...'
-                            : 'Describe a system architecture...'
+                          : isSomeoneElseThinking
+                            ? `${collaboratorThinkingName} is generating...`
+                            : canvasElements.nodes.length > 0
+                              ? 'Suggest changes, additions, or refinements...'
+                              : 'Describe a system architecture...'
                       }
-                      disabled={isGeneratingDesign || isReadOnly}
+                      disabled={isGeneratingDesign || isSomeoneElseThinking || isReadOnly}
                       className="min-h-[72px] max-h-[160px] resize-none border-0 bg-transparent p-1 text-xs text-text-primary placeholder:text-text-muted focus-visible:ring-0 focus-visible:outline-none leading-relaxed disabled:opacity-50"
                     />
                     <div className="flex items-center justify-between pt-1 border-t border-border-subtle/50">
@@ -797,7 +823,7 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                       <Button
                         size="sm"
                         onClick={() => handleSendMessage()}
-                        disabled={!inputPrompt.trim() || isGeneratingDesign || isReadOnly}
+                        disabled={!inputPrompt.trim() || isGeneratingDesign || isSomeoneElseThinking || isReadOnly}
                         className="h-7 px-3 gap-1.5 bg-accent-ai hover:bg-accent-ai/90 text-white rounded-lg text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
                       >
                         {isGeneratingDesign ? (
@@ -837,13 +863,23 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                       <Button
                         size="sm"
                         onClick={handleGenerateSpec}
-                        disabled={isGeneratingSpec || canvasElements.nodes.length === 0 || isReadOnly}
+                        disabled={
+                          isGeneratingSpec ||
+                          isSomeoneElseThinking ||
+                          canvasElements.nodes.length === 0 ||
+                          isReadOnly
+                        }
                         className="w-full gap-2 bg-accent-ai hover:bg-accent-ai/90 text-white text-xs font-medium rounded-xl h-8 shadow-sm transition-all disabled:opacity-50"
                       >
                         {isGeneratingSpec ? (
                           <>
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             <span>Writing Technical Spec...</span>
+                          </>
+                        ) : isSomeoneElseThinking ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            <span>{collaboratorThinkingName} is generating...</span>
                           </>
                         ) : (
                           <>

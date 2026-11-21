@@ -19,6 +19,7 @@ interface CollaboratorInfo {
   name: string
   avatar?: string
   color: string
+  isThinking?: boolean
 }
 
 export function PresenceAvatars() {
@@ -49,6 +50,7 @@ export function PresenceAvatars() {
         name: other.info?.displayName || 'Collaborator',
         avatar: other.info?.avatar,
         color: other.info?.cursorColor || '#00c8d4',
+        isThinking: Boolean(other.presence?.thinking),
       })
     }
 
@@ -65,20 +67,35 @@ export function PresenceAvatars() {
       {visibleCollaborators.length > 0 && (
         <div className="flex items-center -space-x-2">
           {visibleCollaborators.map((collab) => (
-            <div key={collab.id} className="relative inline-block select-none" title={collab.name}>
+            <div
+              key={collab.id}
+              className="relative inline-block select-none"
+              title={collab.isThinking ? `${collab.name} (thinking...)` : collab.name}
+            >
               {collab.avatar ? (
                 <img
                   src={collab.avatar}
                   alt={collab.name}
-                  className="h-8 w-8 rounded-full object-cover ring-2 ring-bg-surface border border-border-subtle"
+                  className={`h-8 w-8 rounded-full object-cover ring-2 ring-bg-surface border ${
+                    collab.isThinking ? 'border-accent-ai shadow-[0_0_8px_rgba(168,85,247,0.5)]' : 'border-border-subtle'
+                  }`}
                 />
               ) : (
                 <div
-                  className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold text-bg-base ring-2 ring-bg-surface border border-border-subtle"
+                  className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold text-bg-base ring-2 ring-bg-surface border ${
+                    collab.isThinking ? 'border-accent-ai shadow-[0_0_8px_rgba(168,85,247,0.5)]' : 'border-border-subtle'
+                  }`}
                   style={{ backgroundColor: collab.color }}
                 >
                   {getInitials(collab.name)}
                 </div>
+              )}
+
+              {collab.isThinking && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3" title="AI Generation in progress">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-ai opacity-75" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-accent-ai border-2 border-bg-surface" />
+                </span>
               )}
             </div>
           ))}
