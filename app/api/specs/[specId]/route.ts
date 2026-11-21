@@ -15,16 +15,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ spec
       return NextResponse.json({ error: 'Missing spec url parameter' }, { status: 400 })
     }
 
-    // Fetch the markdown from Blob URL
-    const response = await fetch(url)
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: `Failed to fetch spec content: ${response.statusText}` },
-        { status: response.status }
-      )
+    // Fetch the markdown from Blob URL or decode from data URI
+    let content = ''
+    if (url.startsWith('data:')) {
+      const commaIndex = url.indexOf(',')
+      content = decodeURIComponent(url.slice(commaIndex + 1))
+    } else {
+      const response = await fetch(url)
+      if (!response.ok) {
+        return NextResponse.json(
+          { error: `Failed to fetch spec content: ${response.statusText}` },
+          { status: response.status }
+        )
+      }
+      content = await response.text()
     }
-
-    const content = await response.text()
     return new NextResponse(content, {
       headers: {
         'Content-Type': 'text/markdown; charset=utf-8',

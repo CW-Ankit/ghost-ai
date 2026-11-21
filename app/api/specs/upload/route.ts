@@ -38,8 +38,8 @@ export async function POST(req: NextRequest) {
         blobUrl: blob.url,
       })
     } else {
-      // Local development fallback
-      const fallbackUrl = `https://blob.vercel-storage.com/${filename}`
+      // Local development fallback: encode markdown in data URL so client preview & download work reliably
+      const fallbackUrl = `data:text/markdown;charset=utf-8,${encodeURIComponent(content)}`
       return NextResponse.json({
         success: true,
         blobUrl: fallbackUrl,

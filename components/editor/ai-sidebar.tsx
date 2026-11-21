@@ -496,6 +496,12 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
     setPreviewSpec({ title: spec.title, content: '', filePath: spec.filePath })
 
     try {
+      if (spec.filePath.startsWith('data:')) {
+        const commaIndex = spec.filePath.indexOf(',')
+        const text = decodeURIComponent(spec.filePath.slice(commaIndex + 1))
+        setPreviewSpec({ title: spec.title, content: text, filePath: spec.filePath })
+        return
+      }
       const res = await fetch(spec.filePath)
       if (!res.ok) throw new Error('Failed to load specification content')
       const text = await res.text()
@@ -510,6 +516,17 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
 
   const handleDownloadSpec = (spec: { _id?: string; title: string; filePath: string }) => {
     try {
+      if (spec.filePath.startsWith('data:')) {
+        const link = document.createElement('a')
+        link.href = spec.filePath
+        link.download = `${spec.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}.md`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        toast.success('Download started')
+        return
+      }
+
       const specIdentifier = spec._id || 'spec'
       const downloadUrl = `/api/specs/${specIdentifier}?url=${encodeURIComponent(spec.filePath)}`
       const link = document.createElement('a')

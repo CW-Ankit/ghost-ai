@@ -130,6 +130,365 @@ The spec should include:
 Format the output as clean Markdown with proper headings, bullet points, and tables where appropriate.
 Do NOT include any JSON or code fences around the entire output. Return ONLY the Markdown content.`
 
+// Fallback offline architectures when MISTRAL_API_KEY is not set
+function generateOfflineArchitecture(
+  prompt: string,
+  currentNodes?: any[],
+  currentEdges?: any[]
+): { nodes: any[]; edges: any[]; summary: string } {
+  const cleanPrompt = prompt.trim()
+  const lowerPrompt = cleanPrompt.toLowerCase()
+  const hasExisting = Array.isArray(currentNodes) && currentNodes.length > 0
+
+  if (hasExisting) {
+    // Refinement mode: Add, modify, or remove components
+    const nodes = [...currentNodes!]
+    const edges = [...(currentEdges || [])]
+
+    if (lowerPrompt.includes('remove') || lowerPrompt.includes('delete')) {
+      const matchWord = lowerPrompt.replace(/(?:remove|delete)\s+(?:the\s+)?/i, '').trim().split(' ')[0]
+      const targetIndex = nodes.findIndex((n) => {
+        const label = (n.data?.label || n.label || '').toLowerCase()
+        return label.includes(matchWord) || n.id.toLowerCase().includes(matchWord)
+      })
+
+      if (targetIndex >= 0) {
+        const removedId = nodes[targetIndex].id
+        const removedLabel = nodes[targetIndex].data?.label || removedId
+        nodes.splice(targetIndex, 1)
+        const updatedEdges = edges.filter((e) => e.source !== removedId && e.target !== removedId)
+        return {
+          nodes,
+          edges: updatedEdges,
+          summary: `[Demo Mode] Removed "${removedLabel}" from the architecture. Note: Configure MISTRAL_API_KEY in Convex ('npx convex env set MISTRAL_API_KEY <key>') for full LLM-driven generation.`,
+        }
+      }
+    }
+
+    // Addition mode: determine component type from prompt
+    let newLabel = 'New Service'
+    let newShape = 'pill'
+    let newColor = 'blue'
+    let edgeLabel = 'Integrates'
+
+    if (lowerPrompt.includes('redis') || lowerPrompt.includes('cache')) {
+      newLabel = 'Redis Cache'
+      newShape = 'cylinder'
+      newColor = 'red'
+      edgeLabel = 'Cache Read/Write'
+    } else if (lowerPrompt.includes('auth') || lowerPrompt.includes('clerk') || lowerPrompt.includes('jwt')) {
+      newLabel = 'Auth Service'
+      newShape = 'pill'
+      newColor = 'purple'
+      edgeLabel = 'Validate Auth'
+    } else if (
+      lowerPrompt.includes('database') ||
+      lowerPrompt.includes('postgres') ||
+      lowerPrompt.includes('mongo') ||
+      lowerPrompt.includes('db')
+    ) {
+      newLabel = 'Database'
+      newShape = 'cylinder'
+      newColor = 'green'
+      edgeLabel = 'Persist Data'
+    } else if (
+      lowerPrompt.includes('queue') ||
+      lowerPrompt.includes('kafka') ||
+      lowerPrompt.includes('rabbitmq') ||
+      lowerPrompt.includes('sqs')
+    ) {
+      newLabel = 'Message Queue (Kafka)'
+      newShape = 'rectangle'
+      newColor = 'orange'
+      edgeLabel = 'Publish Events'
+    } else if (
+      lowerPrompt.includes('monitor') ||
+      lowerPrompt.includes('prometheus') ||
+      lowerPrompt.includes('datadog') ||
+      lowerPrompt.includes('log')
+    ) {
+      newLabel = 'Monitoring & Logs'
+      newShape = 'rectangle'
+      newColor = 'red'
+      edgeLabel = 'Telemetry'
+    } else if (lowerPrompt.includes('worker') || lowerPrompt.includes('cron') || lowerPrompt.includes('job')) {
+      newLabel = 'Background Worker'
+      newShape = 'pill'
+      newColor = 'orange'
+      edgeLabel = 'Async Task'
+    } else if (lowerPrompt.includes('cdn') || lowerPrompt.includes('cloudflare')) {
+      newLabel = 'Edge CDN'
+      newShape = 'hexagon'
+      newColor = 'teal'
+      edgeLabel = 'Edge Cache'
+    } else {
+      const extracted = cleanPrompt.replace(/^add\s+(?:a\s+|an\s+)?/i, '').replace(/\s+(?:to|into)\s+.*$/i, '').trim()
+      newLabel = extracted ? extracted.charAt(0).toUpperCase() + extracted.slice(1) : 'Additional Service'
+    }
+
+    // Determine position: offset from max coordinates
+    let maxX = 100
+    let maxY = 100
+    for (const n of nodes) {
+      const x = n.position?.x ?? 100
+      const y = n.position?.y ?? 100
+      if (x > maxX) maxX = x
+      if (y > maxY) maxY = y
+    }
+
+    const newNodeId = `node-added-${Date.now()}`
+    const newNode = {
+      id: newNodeId,
+      type: 'canvasNode',
+      position: { x: maxX + 260, y: Math.max(100, maxY - 80) },
+      data: {
+        label: newLabel,
+        shape: newShape,
+        color: newColor,
+      },
+    }
+
+    // Find nearest or primary node to attach to
+    const primaryNode =
+      nodes.find((n) => {
+        const label = (n.data?.label || '').toLowerCase()
+        return label.includes('gateway') || label.includes('service') || label.includes('core')
+      }) || nodes[nodes.length - 1]
+
+    const newEdge = {
+      id: `edge-added-${Date.now()}`,
+      source: primaryNode.id,
+      target: newNodeId,
+      sourceHandle: 'right',
+      targetHandle: 'left',
+      type: 'canvasEdge',
+      markerEnd: { type: 'arrowclosed' },
+      data: { label: edgeLabel },
+    }
+
+    return {
+      nodes: [...nodes, newNode],
+      edges: [...edges, newEdge],
+      summary: `[Demo Mode] Added "${newLabel}" and connected it to "${primaryNode.data?.label || primaryNode.id}". Note: Configure MISTRAL_API_KEY in Convex ('npx convex env set MISTRAL_API_KEY <key>') for full LLM-driven generation.`,
+    }
+  }
+
+  // Initial generation mode: classify prompt keywords into curated architectures
+  if (
+    lowerPrompt.includes('ai') ||
+    lowerPrompt.includes('llm') ||
+    lowerPrompt.includes('agent') ||
+    lowerPrompt.includes('rag') ||
+    lowerPrompt.includes('vector') ||
+    lowerPrompt.includes('model')
+  ) {
+    return {
+      nodes: [
+        { id: 'client-ui', type: 'canvasNode', position: { x: 80, y: 180 }, data: { label: 'Web & Chat Interface', shape: 'rectangle', color: 'pink' } },
+        { id: 'api-gw', type: 'canvasNode', position: { x: 340, y: 180 }, data: { label: 'API Gateway & Router', shape: 'diamond', color: 'blue' } },
+        { id: 'agent-core', type: 'canvasNode', position: { x: 600, y: 180 }, data: { label: 'AI Orchestrator Agent', shape: 'pill', color: 'purple' } },
+        { id: 'vector-db', type: 'canvasNode', position: { x: 860, y: 60 }, data: { label: 'Vector Store (pgvector)', shape: 'cylinder', color: 'green' } },
+        { id: 'llm-provider', type: 'canvasNode', position: { x: 860, y: 280 }, data: { label: 'LLM Engine (Mistral)', shape: 'hexagon', color: 'purple' } },
+        { id: 'cache-svc', type: 'canvasNode', position: { x: 600, y: 360 }, data: { label: 'Prompt & Context Cache', shape: 'cylinder', color: 'red' } },
+        { id: 'eval-trace', type: 'canvasNode', position: { x: 1100, y: 180 }, data: { label: 'Observability & Evals', shape: 'rectangle', color: 'orange' } },
+      ],
+      edges: [
+        { id: 'e1', source: 'client-ui', target: 'api-gw', sourceHandle: 'right', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Prompt' } },
+        { id: 'e2', source: 'api-gw', target: 'agent-core', sourceHandle: 'right', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Inference' } },
+        { id: 'e3', source: 'agent-core', target: 'vector-db', sourceHandle: 'top', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Similarity Search' } },
+        { id: 'e4', source: 'agent-core', target: 'llm-provider', sourceHandle: 'bottom', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Chat Completion' } },
+        { id: 'e5', source: 'agent-core', target: 'cache-svc', sourceHandle: 'bottom', targetHandle: 'top', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Session Cache' } },
+        { id: 'e6', source: 'llm-provider', target: 'eval-trace', sourceHandle: 'right', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Trace Spans' } },
+      ],
+      summary: `[Demo Mode] Generated AI & Agentic system architecture. Note: Configure MISTRAL_API_KEY in Convex ('npx convex env set MISTRAL_API_KEY <key>') for full LLM-driven generation.`,
+    }
+  }
+
+  if (
+    lowerPrompt.includes('shop') ||
+    lowerPrompt.includes('ecommerce') ||
+    lowerPrompt.includes('store') ||
+    lowerPrompt.includes('order') ||
+    lowerPrompt.includes('cart') ||
+    lowerPrompt.includes('product') ||
+    lowerPrompt.includes('retail') ||
+    lowerPrompt.includes('payment')
+  ) {
+    return {
+      nodes: [
+        { id: 'client', type: 'canvasNode', position: { x: 380, y: 40 }, data: { label: 'Web & Mobile Clients', shape: 'rectangle', color: 'pink' } },
+        { id: 'cdn', type: 'canvasNode', position: { x: 380, y: 160 }, data: { label: 'Cloudflare CDN / Edge', shape: 'hexagon', color: 'teal' } },
+        { id: 'gateway', type: 'canvasNode', position: { x: 380, y: 280 }, data: { label: 'API Gateway', shape: 'diamond', color: 'blue' } },
+        { id: 'auth-service', type: 'canvasNode', position: { x: 120, y: 420 }, data: { label: 'Auth Service', shape: 'pill', color: 'purple' } },
+        { id: 'order-service', type: 'canvasNode', position: { x: 380, y: 420 }, data: { label: 'Order Service', shape: 'pill', color: 'green' } },
+        { id: 'product-service', type: 'canvasNode', position: { x: 640, y: 420 }, data: { label: 'Product Service', shape: 'pill', color: 'blue' } },
+        { id: 'auth-db', type: 'canvasNode', position: { x: 120, y: 560 }, data: { label: 'Auth DB (Postgres)', shape: 'cylinder', color: 'purple' } },
+        { id: 'order-db', type: 'canvasNode', position: { x: 380, y: 560 }, data: { label: 'Order DB (Postgres)', shape: 'cylinder', color: 'green' } },
+        { id: 'cache', type: 'canvasNode', position: { x: 640, y: 560 }, data: { label: 'Redis Cache', shape: 'cylinder', color: 'red' } },
+        { id: 'event-bus', type: 'canvasNode', position: { x: 380, y: 700 }, data: { label: 'Event Bus (Kafka)', shape: 'rectangle', color: 'orange' } },
+        { id: 'notification-svc', type: 'canvasNode', position: { x: 120, y: 700 }, data: { label: 'Notification Svc', shape: 'pill', color: 'pink' } },
+        { id: 'analytics-svc', type: 'canvasNode', position: { x: 640, y: 700 }, data: { label: 'Analytics Engine', shape: 'pill', color: 'teal' } },
+      ],
+      edges: [
+        { id: 'e1', source: 'client', target: 'cdn', sourceHandle: 'bottom', targetHandle: 'top', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'HTTPS' } },
+        { id: 'e2', source: 'cdn', target: 'gateway', sourceHandle: 'bottom', targetHandle: 'top', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Reverse Proxy' } },
+        { id: 'e3', source: 'gateway', target: 'auth-service', sourceHandle: 'left', targetHandle: 'top', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Validate' } },
+        { id: 'e4', source: 'gateway', target: 'order-service', sourceHandle: 'bottom', targetHandle: 'top', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Orders API' } },
+        { id: 'e5', source: 'gateway', target: 'product-service', sourceHandle: 'right', targetHandle: 'top', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Catalog API' } },
+        { id: 'e6', source: 'auth-service', target: 'auth-db', sourceHandle: 'bottom', targetHandle: 'top', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'User Data' } },
+        { id: 'e7', source: 'order-service', target: 'order-db', sourceHandle: 'bottom', targetHandle: 'top', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Transactions' } },
+        { id: 'e8', source: 'product-service', target: 'cache', sourceHandle: 'bottom', targetHandle: 'top', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Read / Cache' } },
+        { id: 'e9', source: 'order-service', target: 'event-bus', sourceHandle: 'bottom', targetHandle: 'top', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'OrderPlaced' } },
+        { id: 'e10', source: 'event-bus', target: 'notification-svc', sourceHandle: 'left', targetHandle: 'right', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Subscribe' } },
+        { id: 'e11', source: 'event-bus', target: 'analytics-svc', sourceHandle: 'right', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Telemetry' } },
+      ],
+      summary: `[Demo Mode] Generated Microservices E-Commerce architecture. Note: Configure MISTRAL_API_KEY in Convex ('npx convex env set MISTRAL_API_KEY <key>') for full LLM-driven generation.`,
+    }
+  }
+
+  if (
+    lowerPrompt.includes('stream') ||
+    lowerPrompt.includes('event') ||
+    lowerPrompt.includes('kafka') ||
+    lowerPrompt.includes('pipeline') ||
+    lowerPrompt.includes('analytics') ||
+    lowerPrompt.includes('telemetry')
+  ) {
+    return {
+      nodes: [
+        { id: 'producers', type: 'canvasNode', position: { x: 60, y: 180 }, data: { label: 'Event Producers', shape: 'circle', color: 'pink' } },
+        { id: 'ingest-api', type: 'canvasNode', position: { x: 280, y: 180 }, data: { label: 'Ingestion Gateway', shape: 'pill', color: 'blue' } },
+        { id: 'message-broker', type: 'canvasNode', position: { x: 520, y: 180 }, data: { label: 'Apache Kafka Cluster', shape: 'rectangle', color: 'orange' } },
+        { id: 'stream-proc', type: 'canvasNode', position: { x: 780, y: 180 }, data: { label: 'Stream Processor (Flink)', shape: 'diamond', color: 'purple' } },
+        { id: 'realtime-db', type: 'canvasNode', position: { x: 1040, y: 80 }, data: { label: 'Time Series DB (ClickHouse)', shape: 'cylinder', color: 'green' } },
+        { id: 'data-lake', type: 'canvasNode', position: { x: 1040, y: 300 }, data: { label: 'Data Lake (S3 Storage)', shape: 'cylinder', color: 'teal' } },
+        { id: 'dashboard', type: 'canvasNode', position: { x: 1280, y: 80 }, data: { label: 'Live Grafana Dashboard', shape: 'rectangle', color: 'pink' } },
+        { id: 'bi-analytics', type: 'canvasNode', position: { x: 1280, y: 300 }, data: { label: 'BI & Batch Query Engine', shape: 'rectangle', color: 'blue' } },
+      ],
+      edges: [
+        { id: 'ed1', source: 'producers', target: 'ingest-api', sourceHandle: 'right', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Produce Events' } },
+        { id: 'ed2', source: 'ingest-api', target: 'message-broker', sourceHandle: 'right', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Write Topic' } },
+        { id: 'ed3', source: 'message-broker', target: 'stream-proc', sourceHandle: 'right', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Consume Stream' } },
+        { id: 'ed4', source: 'stream-proc', target: 'realtime-db', sourceHandle: 'top', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Aggregations' } },
+        { id: 'ed5', source: 'stream-proc', target: 'data-lake', sourceHandle: 'bottom', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Parquet Snapshots' } },
+        { id: 'ed6', source: 'realtime-db', target: 'dashboard', sourceHandle: 'right', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Live Telemetry' } },
+        { id: 'ed7', source: 'data-lake', target: 'bi-analytics', sourceHandle: 'right', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Batch Processing' } },
+      ],
+      summary: `[Demo Mode] Generated Event-Driven Streaming & Analytics architecture. Note: Configure MISTRAL_API_KEY in Convex ('npx convex env set MISTRAL_API_KEY <key>') for full LLM-driven generation.`,
+    }
+  }
+
+  if (
+    lowerPrompt.includes('serverless') ||
+    lowerPrompt.includes('lambda') ||
+    lowerPrompt.includes('vercel') ||
+    lowerPrompt.includes('cloud') ||
+    lowerPrompt.includes('saas')
+  ) {
+    return {
+      nodes: [
+        { id: 'users', type: 'canvasNode', position: { x: 60, y: 180 }, data: { label: 'Web & Mobile Clients', shape: 'circle', color: 'pink' } },
+        { id: 'dns-cdn', type: 'canvasNode', position: { x: 280, y: 180 }, data: { label: 'Edge CDN & Firewall', shape: 'hexagon', color: 'purple' } },
+        { id: 'frontend-host', type: 'canvasNode', position: { x: 520, y: 60 }, data: { label: 'Static Hosting & Edge', shape: 'rectangle', color: 'teal' } },
+        { id: 'api-gw', type: 'canvasNode', position: { x: 520, y: 280 }, data: { label: 'API Gateway', shape: 'diamond', color: 'orange' } },
+        { id: 'auth-provider', type: 'canvasNode', position: { x: 520, y: 440 }, data: { label: 'Auth Service (Clerk)', shape: 'diamond', color: 'pink' } },
+        { id: 'serverless-compute', type: 'canvasNode', position: { x: 760, y: 280 }, data: { label: 'Serverless Handlers', shape: 'pill', color: 'green' } },
+        { id: 'serverless-db', type: 'canvasNode', position: { x: 1000, y: 200 }, data: { label: 'Serverless Postgres (Neon)', shape: 'cylinder', color: 'red' } },
+        { id: 'object-store', type: 'canvasNode', position: { x: 1000, y: 360 }, data: { label: 'Vercel Blob Storage', shape: 'cylinder', color: 'teal' } },
+      ],
+      edges: [
+        { id: 's1', source: 'users', target: 'dns-cdn', sourceHandle: 'right', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'HTTPS' } },
+        { id: 's2', source: 'dns-cdn', target: 'frontend-host', sourceHandle: 'top', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Edge Cache' } },
+        { id: 's3', source: 'dns-cdn', target: 'api-gw', sourceHandle: 'bottom', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'API Routes' } },
+        { id: 's4', source: 'api-gw', target: 'auth-provider', sourceHandle: 'bottom', targetHandle: 'top', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Verify Session' } },
+        { id: 's5', source: 'api-gw', target: 'serverless-compute', sourceHandle: 'right', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Invoke Functions' } },
+        { id: 's6', source: 'serverless-compute', target: 'serverless-db', sourceHandle: 'top', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'SQL Queries' } },
+        { id: 's7', source: 'serverless-compute', target: 'object-store', sourceHandle: 'bottom', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Store Assets' } },
+      ],
+      summary: `[Demo Mode] Generated Serverless Cloud Application architecture. Note: Configure MISTRAL_API_KEY in Convex ('npx convex env set MISTRAL_API_KEY <key>') for full LLM-driven generation.`,
+    }
+  }
+
+  // Default: General Modern Microservices
+  return {
+    nodes: [
+      { id: 'client-apps', type: 'canvasNode', position: { x: 360, y: 50 }, data: { label: 'Web & Client Apps', shape: 'rectangle', color: 'pink' } },
+      { id: 'edge-cdn', type: 'canvasNode', position: { x: 360, y: 170 }, data: { label: 'Edge CDN & WAF', shape: 'hexagon', color: 'teal' } },
+      { id: 'api-gateway', type: 'canvasNode', position: { x: 360, y: 290 }, data: { label: 'API Gateway', shape: 'diamond', color: 'blue' } },
+      { id: 'auth-service', type: 'canvasNode', position: { x: 120, y: 430 }, data: { label: 'Identity & Auth Service', shape: 'pill', color: 'purple' } },
+      { id: 'core-service', type: 'canvasNode', position: { x: 360, y: 430 }, data: { label: 'Core Business Service', shape: 'pill', color: 'green' } },
+      { id: 'worker-service', type: 'canvasNode', position: { x: 600, y: 430 }, data: { label: 'Background Worker', shape: 'pill', color: 'orange' } },
+      { id: 'auth-db', type: 'canvasNode', position: { x: 120, y: 570 }, data: { label: 'Auth Database', shape: 'cylinder', color: 'purple' } },
+      { id: 'main-db', type: 'canvasNode', position: { x: 360, y: 570 }, data: { label: 'Primary Relational DB', shape: 'cylinder', color: 'green' } },
+      { id: 'cache-store', type: 'canvasNode', position: { x: 600, y: 570 }, data: { label: 'In-Memory Cache (Redis)', shape: 'cylinder', color: 'red' } },
+    ],
+    edges: [
+      { id: 'g1', source: 'client-apps', target: 'edge-cdn', sourceHandle: 'bottom', targetHandle: 'top', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'HTTPS' } },
+      { id: 'g2', source: 'edge-cdn', target: 'api-gateway', sourceHandle: 'bottom', targetHandle: 'top', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Proxy Request' } },
+      { id: 'g3', source: 'api-gateway', target: 'auth-service', sourceHandle: 'left', targetHandle: 'top', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Validate JWT' } },
+      { id: 'g4', source: 'api-gateway', target: 'core-service', sourceHandle: 'bottom', targetHandle: 'top', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Route Traffic' } },
+      { id: 'g5', source: 'api-gateway', target: 'worker-service', sourceHandle: 'right', targetHandle: 'top', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Dispatch Job' } },
+      { id: 'g6', source: 'auth-service', target: 'auth-db', sourceHandle: 'bottom', targetHandle: 'top', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Verify Credentials' } },
+      { id: 'g7', source: 'core-service', target: 'main-db', sourceHandle: 'bottom', targetHandle: 'top', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'CRUD Operations' } },
+      { id: 'g8', source: 'core-service', target: 'cache-store', sourceHandle: 'right', targetHandle: 'left', type: 'canvasEdge', markerEnd: { type: 'arrowclosed' }, data: { label: 'Query Cache' } },
+    ],
+    summary: `[Demo Mode] Generated system architecture based on "${cleanPrompt.length > 35 ? cleanPrompt.slice(0, 32) + '...' : cleanPrompt}". Note: Configure MISTRAL_API_KEY in Convex ('npx convex env set MISTRAL_API_KEY <key>') for full LLM-driven generation.`,
+  }
+}
+
+// Helper: Synthesize structured Markdown technical specification from graph nodes & edges
+function generateOfflineSpecMarkdown(nodes: any[], edges: any[]): string {
+  const primaryService = nodes.find((n) => n.data?.color === 'purple' || n.data?.color === 'blue')
+  const systemTitle = primaryService?.data?.label ? `${primaryService.data.label} Architecture` : 'Distributed System Architecture'
+
+  return `# ${systemTitle} Specification
+
+## 1. Executive Overview
+This document specifies the technical architecture for the **${systemTitle}**. The system comprises **${nodes.length} structural components** interconnected via **${edges.length} communication channels**. It is designed for horizontal scalability, fault tolerance, low latency, and secure zero-trust operational boundaries.
+
+## 2. System Components & Topology
+The architecture consists of the following key nodes:
+
+| Component | Shape / Role | Classification | Technology Stack Recommendations |
+| :--- | :--- | :--- | :--- |
+${nodes.map((n) => `| **${n.data?.label || n.label || 'Component'}** | ${n.data?.shape || 'Service'} | ${n.data?.color || 'General'} | Modern cloud-native container / microservice |`).join('\n')}
+
+### Component Responsibilities:
+${nodes.map((n) => `- **${n.data?.label || n.label || 'Component'}**: Responsible for core domain execution, isolated data validation, and bounded lifecycle management within the topology.`).join('\n')}
+
+## 3. Data Flow & Communication Patterns
+Inter-service communication is structured along directed event channels and remote procedure calls:
+
+| Source | Target | Channel Label | Interaction Pattern |
+| :--- | :--- | :--- | :--- |
+${edges.map((e) => {
+  const srcNode = nodes.find((n) => n.id === e.source)
+  const tgtNode = nodes.find((n) => n.id === e.target)
+  const srcName = srcNode?.data?.label || e.source
+  const tgtName = tgtNode?.data?.label || e.target
+  const label = e.data?.label || e.label || 'Data Transfer'
+  return `| ${srcName} | ${tgtName} | ${label} | Asynchronous / REST / gRPC |`
+}).join('\n')}
+
+## 4. Security & Access Boundaries
+1. **Authentication & Authorization**: Identity tokens (JWT / OIDC) are validated at ingress gateways before requests are forwarded to internal microservices.
+2. **Transport Encryption**: All transit traffic enforces TLS 1.3 encryption. Internal microservice mesh communications use mutual TLS (mTLS).
+3. **Data Protection at Rest**: Persistent stores and cache layers enforce AES-256 encryption with automated key rotation.
+4. **Least Privilege**: Role-based access control (RBAC) is enforced across all internal interfaces and administrative endpoints.
+
+## 5. Non-Functional Requirements & Scalability
+- **Availability Target**: 99.99% uptime through multi-AZ redundant deployments and automated health probing.
+- **Latency SLAs**: P95 response times under 150ms for synchronous queries; background event ingestion under 50ms.
+- **Auto-Scaling**: Horizontal Pod Autoscaling (HPA) triggers on CPU > 70% or queue depth thresholds.
+- **Disaster Recovery**: Automated multi-region database backups with RPO < 5 minutes and RTO < 15 minutes.
+
+## 6. Observability & Monitoring
+- **Distributed Tracing**: OpenTelemetry spans propagated across all HTTP and event boundaries.
+- **Metrics Collection**: Prometheus scraper targeting /metrics endpoints, surfaced through centralized Grafana dashboards.
+- **Structured Logging**: JSON-formatted logs with unified trace IDs ingested into centralized log indexing.
+`
+}
+
 async function callMistralChat({
   model,
   messages,
@@ -213,102 +572,118 @@ export const generateDesign = action({
       })
 
       const hasExistingNodes = Array.isArray(args.currentNodes) && args.currentNodes.length > 0
-      const systemPrompt = hasExistingNodes ? REFINEMENT_SYSTEM_PROMPT : DESIGN_SYSTEM_PROMPT
+      let nodes: any[] = []
+      let edges: any[] = []
+      let summary = ''
 
-      const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-      ]
-
-      if (hasExistingNodes) {
-        const existingGraphText = serializeGraphForRefinement(
-          args.currentNodes!,
-          args.currentEdges || []
+      if (!process.env.MISTRAL_API_KEY) {
+        // Fallback to deterministic offline generator
+        const offlineResult = generateOfflineArchitecture(
+          args.prompt,
+          args.currentNodes,
+          args.currentEdges
         )
-        messages.push({
-          role: 'user',
-          content: `Current Canvas Architecture:\n${existingGraphText}`,
-        })
-        messages.push({
-          role: 'assistant',
-          content:
-            'I understand the current system design and will refine, extend, or modify it according to your instructions while preserving unchanged components.',
-        })
-      }
+        nodes = offlineResult.nodes
+        edges = offlineResult.edges
+        summary = offlineResult.summary
+      } else {
+        const systemPrompt = hasExistingNodes ? REFINEMENT_SYSTEM_PROMPT : DESIGN_SYSTEM_PROMPT
 
-      if (args.history && args.history.length > 0) {
-        for (const msg of args.history.slice(-6)) {
-          if (msg.content && msg.content.trim()) {
-            messages.push({
-              role: msg.role,
-              content: msg.content.trim(),
-            })
+        const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+          {
+            role: 'system',
+            content: systemPrompt,
+          },
+        ]
+
+        if (hasExistingNodes) {
+          const existingGraphText = serializeGraphForRefinement(
+            args.currentNodes!,
+            args.currentEdges || []
+          )
+          messages.push({
+            role: 'user',
+            content: `Current Canvas Architecture:\n${existingGraphText}`,
+          })
+          messages.push({
+            role: 'assistant',
+            content:
+              'I understand the current system design and will refine, extend, or modify it according to your instructions while preserving unchanged components.',
+          })
+        }
+
+        if (args.history && args.history.length > 0) {
+          for (const msg of args.history.slice(-6)) {
+            if (msg.content && msg.content.trim()) {
+              messages.push({
+                role: msg.role,
+                content: msg.content.trim(),
+              })
+            }
           }
         }
+
+        messages.push({
+          role: 'user',
+          content: args.prompt,
+        })
+
+        const text = await callMistralChat({
+          model: 'mistral-small-latest',
+          responseFormat: { type: 'json_object' },
+          messages,
+          temperature: 0.7,
+        })
+
+        // Strip markdown code fences if present
+        let jsonText = text
+        if (jsonText.startsWith('```')) {
+          jsonText = jsonText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+        }
+
+        const parsed = JSON.parse(jsonText)
+
+        // Validate basic structure
+        if (!parsed.nodes || !Array.isArray(parsed.nodes)) {
+          throw new Error('AI response missing nodes array')
+        }
+        if (!parsed.edges || !Array.isArray(parsed.edges)) {
+          throw new Error('AI response missing edges array')
+        }
+
+        summary =
+          parsed.summary ||
+          (hasExistingNodes ? 'Updated canvas architecture' : 'Generated initial system architecture')
+
+        // Transform nodes into canvas-compatible format
+        nodes = parsed.nodes.map((node: any, index: number) => ({
+          id: node.id || `node-${index}-${Date.now()}`,
+          type: 'canvasNode',
+          position: node.position || {
+            x: 100 + (index % 4) * 300,
+            y: 100 + Math.floor(index / 4) * 200,
+          },
+          data: {
+            label: node.label || 'Untitled',
+            shape: node.shape || 'rectangle',
+            color: node.color || 'default',
+          },
+        }))
+
+        // Transform edges into canvas-compatible format
+        edges = parsed.edges.map((edge: any, index: number) => ({
+          id: edge.id || `edge-${index}-${Date.now()}`,
+          source: edge.source,
+          target: edge.target,
+          sourceHandle: edge.sourceHandle || 'bottom',
+          targetHandle: edge.targetHandle || 'top',
+          type: 'canvasEdge',
+          markerEnd: { type: 'arrowclosed' },
+          data: {
+            label: edge.label || '',
+          },
+        }))
       }
-
-      messages.push({
-        role: 'user',
-        content: args.prompt,
-      })
-
-      const text = await callMistralChat({
-        model: 'mistral-small-latest',
-        responseFormat: { type: 'json_object' },
-        messages,
-        temperature: 0.7,
-      })
-
-      // Strip markdown code fences if present
-      let jsonText = text
-      if (jsonText.startsWith('```')) {
-        jsonText = jsonText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-      }
-
-      const parsed = JSON.parse(jsonText)
-
-      // Validate basic structure
-      if (!parsed.nodes || !Array.isArray(parsed.nodes)) {
-        throw new Error('AI response missing nodes array')
-      }
-      if (!parsed.edges || !Array.isArray(parsed.edges)) {
-        throw new Error('AI response missing edges array')
-      }
-
-      const summary: string =
-        parsed.summary ||
-        (hasExistingNodes ? 'Updated canvas architecture' : 'Generated initial system architecture')
-
-      // Transform nodes into canvas-compatible format
-      const nodes = parsed.nodes.map((node: any, index: number) => ({
-        id: node.id || `node-${index}-${Date.now()}`,
-        type: 'canvasNode',
-        position: node.position || {
-          x: 100 + (index % 4) * 300,
-          y: 100 + Math.floor(index / 4) * 200,
-        },
-        data: {
-          label: node.label || 'Untitled',
-          shape: node.shape || 'rectangle',
-          color: node.color || 'default',
-        },
-      }))
-
-      // Transform edges into canvas-compatible format
-      const edges = parsed.edges.map((edge: any, index: number) => ({
-        id: edge.id || `edge-${index}-${Date.now()}`,
-        source: edge.source,
-        target: edge.target,
-        sourceHandle: edge.sourceHandle || 'bottom',
-        targetHandle: edge.targetHandle || 'top',
-        type: 'canvasEdge',
-        markerEnd: { type: 'arrowclosed' },
-        data: {
-          label: edge.label || '',
-        },
-      }))
 
       // Mark as completed with the result
       await ctx.runMutation(internal.taskRuns.patchTaskRun, {
@@ -377,45 +752,58 @@ export const generateSpec = action({
         status: 'running',
       })
 
-      // Serialize graph for the LLM
-      const graphDescription = serializeGraphForLLM(args.nodes, args.edges)
+      let markdown = ''
+      if (!process.env.MISTRAL_API_KEY) {
+        markdown = generateOfflineSpecMarkdown(args.nodes, args.edges)
+      } else {
+        // Serialize graph for the LLM
+        const graphDescription = serializeGraphForLLM(args.nodes, args.edges)
 
-      const markdown = await callMistralChat({
-        model: 'mistral-large-latest',
-        messages: [
-          {
-            role: 'system',
-            content: SPEC_SYSTEM_PROMPT,
-          },
-          {
-            role: 'user',
-            content: `Architecture Graph:\n${graphDescription}`,
-          },
-        ],
-        temperature: 0.5,
-      })
+        markdown = await callMistralChat({
+          model: 'mistral-large-latest',
+          messages: [
+            {
+              role: 'system',
+              content: SPEC_SYSTEM_PROMPT,
+            },
+            {
+              role: 'user',
+              content: `Architecture Graph:\n${graphDescription}`,
+            },
+          ],
+          temperature: 0.5,
+        })
+      }
 
       // Generate spec ID and title
       const specId = `spec-${Date.now()}`
       const title = extractSpecTitle(markdown)
 
-      // Upload to Vercel Blob via Next.js API route
-      const uploadResponse = await fetch(`${args.siteUrl}/api/specs/upload`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId: args.projectId,
-          specId,
-          content: markdown,
-        }),
-      })
+      let blobUrl = `data:text/markdown;charset=utf-8,${encodeURIComponent(markdown)}`
 
-      if (!uploadResponse.ok) {
-        const err = await uploadResponse.text()
-        throw new Error(`Failed to upload spec: ${err}`)
+      // Upload to Vercel Blob via Next.js API route if reachable
+      try {
+        if (args.siteUrl && !args.siteUrl.includes('localhost') && !args.siteUrl.includes('127.0.0.1')) {
+          const uploadResponse = await fetch(`${args.siteUrl}/api/specs/upload`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              projectId: args.projectId,
+              specId,
+              content: markdown,
+            }),
+          })
+
+          if (uploadResponse.ok) {
+            const { blobUrl: uploadedUrl } = await uploadResponse.json()
+            if (uploadedUrl) {
+              blobUrl = uploadedUrl
+            }
+          }
+        }
+      } catch (uploadErr) {
+        console.warn('Spec upload to siteUrl failed, using data URI fallback:', uploadErr)
       }
-
-      const { blobUrl } = await uploadResponse.json()
 
       // Create spec record in Convex
       await ctx.runMutation(internal.taskRuns.insertSpec, {

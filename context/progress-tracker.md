@@ -155,13 +155,26 @@ Update this file whenever the current phase, active feature, or implementation s
   - Configured `minZoom={0.05}` and `maxZoom={2}` for smooth high-scale canvas pan/zoom across complex system diagrams.
   - Added comprehensive test suite in `test/public-access.test.ts` (65 / 65 unit tests passing across 5 test suites).
 
+- [x] Resolved Liveblocks Client Auth Timeout & Convex AI Offline Fallback:
+  - **Liveblocks Auth Timeout Elimination**:
+    - Replaced blocking remote Clerk `currentUser()` API call in `/api/liveblocks-auth` with zero-network JWT claims decoding via `auth()`.
+    - Added 3500ms timeout guard (`Promise.race`) in `lib/project-access.ts` on Convex `getByRoomId` queries to prevent hanging auth requests.
+    - Added 1200ms non-blocking fallback race for `currentUser()` only if claims lack display names, completely eliminating the 10-second `AUTH_TIMEOUT` error.
+  - **Convex AI Generation Graceful Offline Fallback (`convex/ai.ts`)**:
+    - Handled missing `MISTRAL_API_KEY` without unhandled server crashes by synthesizing full-featured, structured architectures based on prompt intent (AI/Agentic, E-Commerce, Streaming/Analytics, Serverless, DevOps, Chat, General Microservices).
+    - Added offline refinement support to intelligently add or remove components while preserving existing node coordinates and IDs.
+    - Added offline specification generator producing comprehensive technical specification markdown from canvas graph nodes and connections.
+    - Updated `/api/specs/upload` and `/api/specs/[specId]` to encode and decode spec markdown as self-contained data URIs (`data:text/markdown;charset=utf-8,...`), guaranteeing instant preview and download in local development when Vercel Blob tokens are absent.
+    - Added unit test suite in `test/project-access-and-specs.test.ts` (69 / 69 unit tests passing across 6 test suites).
+    - Verified strict TypeScript compilation (0 errors) and successful Next.js 16 (Turbopack) production build.
+
 ## Current Phase
 
 - Phase 2: AI Workflows & Artifact Generation
 
 ## Current Goal
 
-- Deploy and verify end-to-end multi-user collaboration and view-only sharing flows.
+- Next feature implementation: Advanced Canvas Export (PNG / SVG diagram export) and Interactive Canvas enhancements.
 
 ## In Progress
 

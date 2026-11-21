@@ -252,3 +252,33 @@ This document serves as the project's engineering memory, recording mistakes, bu
   1. Wrapped `CanvasNode`, `CanvasEdge`, and `LiveCursors` in `React.memo`.
   2. Configured `onlyRenderVisibleElements={true}` on `<ReactFlow />`, dynamically unmounting out-of-viewport nodes and edges from the DOM tree.
   3. Added `CanvasContextProvider` to distribute read-only status without re-triggering storage listeners.
+
+---
+
+## 12. Network Resiliency & Graceful Degradation in Hybrid Cloud Runtimes
+
+### 12.1 Liveblocks Client Auth Timeout from Serialized Server Hops
+
+- **Mistake**: Serially chaining three remote HTTP round-trips (`Convex query` -> Clerk `currentUser()` API -> Liveblocks `session.authorize()`) inside `/api/liveblocks-auth`.
+- **Symptom**: `@liveblocks/client` threw `Authentication failed: Timed out during auth` in browser consoles when network latency or cold-start overhead exceeded `@liveblocks/core`'s 10,000ms `AUTH_TIMEOUT`.
+- **Root Cause**: Calling `await currentUser()` executes an outbound HTTP request to `https://api.clerk.com/v1/users/{id}`, whereas `await auth()` decodes identity and user claims directly from the request JWT with zero network overhead. Additionally, `checkProjectAccess` had no bounded query timeout against Convex.
+- **Solution**:
+  1. Extracted `userId` and decoded claims directly from `auth()` without remote network requests.
+  2. Added a 3500ms timeout guard (`Promise.race`) in `checkProjectAccess` to prevent hanging Convex queries.
+  3. Added an optional 1200ms `Promise.race` timeout fallback for `currentUser()` only if claims lacked display names.
+
+### 12.2 Missing External LLM Provider Key Unhandled Exception in Serverless Actions
+
+- **Mistake**: Throwing an unhandled server error in `convex/ai.ts` when `process.env.MISTRAL_API_KEY` was missing from the Convex cloud environment.
+- **Symptom**: User canvas chat crashed with `[CONVEX A(ai:generateDesign)] Server Error: Uncaught Error: MISTRAL_API_KEY environment variable is not set`, locking the UI in an error state.
+- **Root Cause**: Expecting third-party API keys to always be pre-configured before allowing any AI features to execute.
+- **Solution**:
+  1. Implemented a deterministic offline generator in `convex/ai.ts` that synthesizes valid graph architectures matching user prompt intent (AI/Agentic, E-Commerce, Streaming/Analytics, Serverless, DevOps, Chat, or General Microservices) with layout coordinates and connections.
+  2. Added contextual refinement support in offline mode to add/remove components while preserving existing nodes.
+  3. Returned an informative user note explaining how to add `MISTRAL_API_KEY` to unlock live LLM reasoning via `npx convex env set MISTRAL_API_KEY <key>`.
+
+### 12.3 Data URL Fallback for Local Development Asset Storage
+
+- **Mistake**: Pointing `filePath` to unresolvable remote placeholder URLs (e.g. `https://blob.vercel-storage.com/...`) when `BLOB_READ_WRITE_TOKEN` was absent in local development.
+- **Symptom**: Clicking "Preview" or "Download" on generated specifications returned HTTP 404 or failed network fetches.
+- **Solution**: Encoded spec markdown content as a self-contained data URL (`data:text/markdown;charset=utf-8,...`), enabling client preview dialogs and downloads to resolve instantly with zero external storage dependency.

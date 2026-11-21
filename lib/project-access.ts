@@ -21,9 +21,12 @@ export async function getCurrentUserIdentity() {
   }
 }
 
-export async function checkProjectAccess(roomId: string) {
+export async function checkProjectAccess(
+  roomId: string,
+  authContext?: { userId: string | null; token: string | null }
+) {
   try {
-    const identity = await getCurrentUserIdentity()
+    const identity = authContext !== undefined ? authContext : await getCurrentUserIdentity()
 
     const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL
     if (!convexUrl) return null
@@ -33,9 +36,18 @@ export async function checkProjectAccess(roomId: string) {
       convexHttpClient.setAuth(identity.token)
     }
 
-    const project = await (convexHttpClient.query as any)(api.projects.getByRoomId, {
+    const queryPromise = (convexHttpClient.query as any)(api.projects.getByRoomId, {
       roomId,
     })
+
+    const timeoutPromise = new Promise<null>((resolve) => {
+      setTimeout(() => {
+        console.warn(`[checkProjectAccess] Query timed out after 3500ms for room: ${roomId}`)
+        resolve(null)
+      }, 3500)
+    })
+
+    const project = await Promise.race([queryPromise, timeoutPromise])
     return project
   } catch (error) {
     console.error('Error checking project access:', error)
