@@ -58,3 +58,9 @@ Progress state must reflect the actual state of the implementation, not the inte
 1. The current unit works end to end within its defined scope.
 2. No invariant defined in `architecture-context.md` was violated.
 3. `progress-tracker.md` reflects the completed work.
+
+## Git Branching & Remote Sync
+
+- Always implement and commit work on feature branches (never commit unrequested changes directly to `main`).
+- Push feature branch commits to `origin` as work completes.
+- Only merge into `main` and push `main` to `origin` when the app/milestone is completed or the user explicitly instructs to merge.
