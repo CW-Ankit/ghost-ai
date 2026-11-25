@@ -1,9 +1,11 @@
+import { HeroBackground } from '@/components/landing/hero-background'
 import { LandingNav } from '@/components/landing/landing-nav'
 
 export default function Home() {
   return (
-    <main className="relative flex min-h-screen w-full items-center justify-center bg-bg-base px-6 pb-24">
-      <h1 className="font-heading text-6xl font-bold tracking-tight text-text-primary sm:text-7xl md:text-8xl">
+    <main className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-bg-base px-6 pb-24">
+      <HeroBackground />
+      <h1 className="pointer-events-none relative z-10 select-none font-heading text-6xl font-bold tracking-tight text-text-primary drop-shadow-[0_4px_24px_rgba(8,8,9,0.85)] sm:text-7xl md:text-8xl">
         Ghost AI
       </h1>
       <LandingNav />
