@@ -167,7 +167,7 @@
     stroke 0.18s ease-out;
 }
 
-@media (pointer: fine) {
+@media (pointer: fine), (any-pointer: fine) {
   html.has-custom-cursor,
   html.has-custom-cursor
     *:not(input):not(textarea):not(select):not([contenteditable='true']):not([data-cursor-native]) {

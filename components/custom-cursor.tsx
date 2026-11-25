@@ -123,6 +123,13 @@ function analyzeColor(colorStr: string): ColorAnalysis {
   return { brightness: 0, isTransparent: true }
 }
 
+function resolveEventElement(event: MouseEvent): Element | null {
+  const raw = event.target
+  if (raw instanceof Element) return raw
+  if (raw instanceof Node && raw.parentElement) return raw.parentElement
+  return document.elementFromPoint(event.clientX, event.clientY)
+}
+
 function isTextInputElement(el: Element | null): boolean {
   if (!el) return false
   const tag = el.tagName?.toLowerCase()
@@ -201,7 +208,9 @@ export function CustomCursor({
   const pathRef = useRef<SVGPathElement>(null)
 
   useEffect(() => {
-    const isFinePointer = window.matchMedia('(pointer: fine)').matches
+    const isFinePointer =
+      window.matchMedia('(pointer: fine)').matches ||
+      window.matchMedia('(any-pointer: fine)').matches
     if (disabledOnTouch && !isFinePointer) return
 
     const cursorEl = cursorRef.current
@@ -323,8 +332,8 @@ export function CustomCursor({
     }
 
     const handleMove = (event: MouseEvent) => {
-      const target = (event.target as Element | null) || null
-      const inScope = scope === 'body' || (!!target && !!target.closest(scope))
+      const target = resolveEventElement(event)
+      const inScope = scope === 'body' || (!!target && !!target.closest?.(scope))
       const onTextInput = isTextInputElement(target)
       const ignored = !!target?.closest?.('[data-cursor-ignore]')
       const hiddenAtTop = hideOnTop && event.clientY < topOffset
@@ -374,7 +383,7 @@ export function CustomCursor({
       const clickableNow = target
         ? target === lastTarget
           ? lastClickable
-          : ((lastClickable = !!target.closest(clickableSelector)), lastClickable)
+          : ((lastClickable = !!target.closest?.(clickableSelector)), lastClickable)
         : false
 
       lastTarget = target
@@ -431,11 +440,19 @@ export function CustomCursor({
       scheduleTick()
     }
 
+    const handleTouchPointer = (event: PointerEvent) => {
+      if (event.pointerType === 'touch') {
+        isVisible = false
+        cursorEl.style.opacity = '0'
+      }
+    }
+
     document.addEventListener('mousemove', handleMove, { passive: true })
     document.addEventListener('mousedown', handleMouseDown, { passive: true })
     document.addEventListener('mouseup', handleMouseUp, { passive: true })
     document.addEventListener('mouseleave', handleMouseLeave, { passive: true })
     document.addEventListener('mouseenter', handleMouseEnter, { passive: true })
+    document.addEventListener('pointerdown', handleTouchPointer, { passive: true })
     window.addEventListener('blur', handleBlur, { passive: true })
     window.addEventListener('scroll', handleScroll, { passive: true })
     scheduleTick()
@@ -446,6 +463,7 @@ export function CustomCursor({
       document.removeEventListener('mouseup', handleMouseUp)
       document.removeEventListener('mouseleave', handleMouseLeave)
       document.removeEventListener('mouseenter', handleMouseEnter)
+      document.removeEventListener('pointerdown', handleTouchPointer)
       window.removeEventListener('blur', handleBlur)
       window.removeEventListener('scroll', handleScroll)
       if (hideNativeCursor) {

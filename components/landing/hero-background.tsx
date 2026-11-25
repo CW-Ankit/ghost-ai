@@ -10,13 +10,15 @@ export function HeroBackground() {
 
   return (
     <>
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 h-full w-full overflow-hidden">
         <GhostFibers
           glowColor="var(--accent-primary)"
           lineColor="var(--text-primary)"
           secondaryColor="var(--accent-ai)"
           gradient="along"
           layers={3}
+          scale={0.76}
+          spread={0.85}
           twist={1.2}
           threads={72}
           fiberStyle="lines"
@@ -32,6 +34,7 @@ export function HeroBackground() {
           flow={0.25}
           sparkle={0.3}
           brightness={0.7}
+          vignette={0.65}
           paused={paused}
         />
       </div>
