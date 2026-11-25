@@ -1,8 +1,16 @@
 import type { Metadata } from 'next'
+import localFont from 'next/font/local'
 import './globals.css'
 import { ClerkProvider } from '@clerk/nextjs'
 import { shadcn } from '@clerk/ui/themes'
 import ConvexClientProvider from '@/components/convex-client-provider'
+
+const googleSansFlex = localFont({
+  src: './fonts/GoogleSansFlex-Variable.woff2',
+  variable: '--font-google-sans-flex',
+  weight: '100 900',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'GHOST AI — Collaborative Architecture Canvas',
@@ -15,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="en" className={`${googleSansFlex.variable} h-full antialiased`}>
       <body
         className="min-h-full flex flex-col font-sans selection:bg-accent-primary/20 selection:text-accent-primary"
         suppressHydrationWarning

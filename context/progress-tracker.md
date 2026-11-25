@@ -178,7 +178,11 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## In Progress
 
-- None.
+- UI & Landing Page Overhaul:
+  - [x] Step 1: Added public `/` landing page placeholder with centered `Ghost AI` heading (`app/page.tsx`) and whitelisted `/` in `proxy.ts`.
+  - [x] Step 2: Downloaded `GoogleSansFlex-Variable.woff2` into `app/fonts/` and configured `next/font/local` across `app/layout.tsx` and `app/globals.css`.
+  - [ ] Step 3 & 4: Configure React Bits registry (`@react-bits`) in `components.json` / shadcn MCP and install needed animated components.
+  - [ ] Step 5: Align Clerk UI layout and styling with app design system.
 
 ## Next Up
 
