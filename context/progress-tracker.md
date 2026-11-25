@@ -185,6 +185,7 @@ Update this file whenever the current phase, active feature, or implementation s
   - [x] Step 5: Align Clerk UI layout and styling with app design system.
   - [x] Step 6: Integrated React Bits `PillNav` (`components/pill-nav.tsx`) and `LandingNav` (`components/landing/landing-nav.tsx`) centered at the bottom of `/` with Ghost AI brand tokens.
   - [x] Step 7: Integrated React Bits `GhostFibers` (`components/ghost-fibers.tsx`) and `HeroBackground` (`components/landing/hero-background.tsx`) as the interactive WebGL hero background on `/` with brand color tokens and pause control.
+  - [x] Step 8: Added global `CustomCursor` (`components/custom-cursor.tsx`, `app/globals.css`, `app/layout.tsx`) matching `ankitsahu.indevs.in` across the entire app.
 
 ## Next Up
 

@@ -135,3 +135,49 @@
     font-family: var(--font-mono);
   }
 }
+
+.custom-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0;
+  transform-origin: 4px 4px;
+  will-change: transform, opacity;
+  transition: opacity 0.12s ease-out;
+  contain: layout style size;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.35));
+}
+
+.custom-cursor svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.custom-cursor path {
+  fill: #ffffff;
+  stroke: rgba(0, 0, 0, 0.4);
+  transition:
+    fill 0.18s ease-out,
+    stroke 0.18s ease-out;
+}
+
+@media (pointer: fine) {
+  html.has-custom-cursor,
+  html.has-custom-cursor
+    *:not(input):not(textarea):not(select):not([contenteditable='true']):not([data-cursor-native]) {
+    cursor: none !important;
+  }
+
+  html.has-custom-cursor input:not([type='button']):not([type='submit']):not([type='reset']),
+  html.has-custom-cursor textarea,
+  html.has-custom-cursor [contenteditable='true'],
+  html.has-custom-cursor [data-cursor-native] {
+    cursor: auto !important;
+  }
+}
