@@ -7,7 +7,7 @@ export default function SignInPage() {
       title="Sign In"
       subtitle="The definitive AI-powered workspace for system architecture and technical design."
     >
-      <SignIn />
+      <SignIn appearance={{ elements: { rootBox: 'w-full' } }} />
     </AuthLayout>
   )
 }

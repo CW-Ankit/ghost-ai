@@ -19,7 +19,7 @@ export default clerkMiddleware(async (auth, req) => {
       const editorUrl = new URL('/editor', req.url)
       return NextResponse.redirect(editorUrl)
     }
-    return // Allow public access to sign-in/up, upload API, and liveblocks-auth
+    return // Allow public access to /, sign-in/up, upload API, and liveblocks-auth
   }
 
   // Allow editor room route through so public view access can be verified per room

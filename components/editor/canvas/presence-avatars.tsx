@@ -117,14 +117,7 @@ export function PresenceAvatars() {
       {/* Clerk UserButton for Current User */}
       <ClientOnly>
         <div className="flex items-center">
-          <UserButton
-            appearance={{
-              elements: {
-                avatarBox: 'h-8 w-8',
-                userButtonAvatarBox: 'h-8 w-8',
-              },
-            }}
-          />
+          <UserButton />
         </div>
       </ClientOnly>
     </div>

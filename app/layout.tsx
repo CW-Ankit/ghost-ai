@@ -44,7 +44,7 @@ export default function RootLayout({
               colorInput: 'var(--bg-elevated)',
               colorInputForeground: 'var(--text-primary)',
               colorRing: 'var(--accent-primary)',
-              colorModalBackdrop: 'rgba(8, 8, 9, 0.78)',
+              colorModalBackdrop: 'color-mix(in srgb, var(--bg-base) 78%, transparent)',
               colorDanger: 'var(--state-error)',
               colorSuccess: 'var(--state-success)',
               borderRadius: '0.75rem',
@@ -54,7 +54,7 @@ export default function RootLayout({
             elements: {
               rootBox: 'bg-transparent',
               cardBox:
-                'w-full bg-bg-surface/90 backdrop-blur-xl border border-border-default rounded-2xl shadow-2xl overflow-hidden',
+                'w-full bg-bg-surface/90! backdrop-blur-xl border border-border-default! rounded-2xl shadow-2xl! overflow-hidden',
               card: 'bg-transparent shadow-none border-0 p-6 sm:p-8',
               headerTitle: 'font-heading text-xl font-semibold tracking-tight text-text-primary',
               headerSubtitle: 'text-sm text-text-muted',
@@ -63,15 +63,15 @@ export default function RootLayout({
               dividerLine: 'bg-border-default',
               dividerText: 'text-xs text-text-muted uppercase tracking-wider',
               formFieldLabel: 'text-xs font-medium text-text-secondary',
-              formFieldInput:
-                'bg-bg-base/80 border border-border-default text-text-primary placeholder:text-text-faint rounded-xl h-10 focus:border-accent-primary focus:ring-1 focus:ring-accent-primary',
+              input:
+                'bg-bg-base/80! dark:bg-bg-base/80! border border-border-default! text-text-primary placeholder:text-text-faint rounded-xl h-10 focus:border-accent-primary focus:ring-1 focus:ring-accent-primary',
               formButtonPrimary:
                 'bg-accent-primary hover:bg-accent-primary/90 text-bg-base font-medium rounded-xl h-10 shadow-none transition-colors',
               footer: 'bg-bg-elevated/50 border-t border-border-default',
               footerActionText: 'text-text-muted text-xs',
               footerActionLink: 'text-accent-primary hover:text-accent-primary/80 font-medium',
-              userButtonPopoverCard:
-                'bg-bg-surface border border-border-default rounded-2xl shadow-2xl overflow-hidden',
+              popoverBox:
+                'bg-bg-surface! border border-border-default! rounded-2xl shadow-2xl! overflow-hidden',
               userButtonPopoverMain: 'bg-bg-surface',
               userButtonPopoverActions: 'border-t border-border-default',
               userButtonPopoverActionButton:

@@ -138,14 +138,7 @@ export function EditorNavbar({
         )}
         <ClientOnly>
           <div className="flex items-center">
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: 'h-8 w-8',
-                  userButtonAvatarBox: 'h-8 w-8',
-                },
-              }}
-            />
+            <UserButton />
           </div>
         </ClientOnly>
       </div>

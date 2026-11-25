@@ -7,7 +7,7 @@ export default function SignUpPage() {
       title="Sign Up"
       subtitle="Join the future of system architecture. Start building your AI-driven technical specifications today."
     >
-      <SignUp />
+      <SignUp appearance={{ elements: { rootBox: 'w-full' } }} />
     </AuthLayout>
   )
 }
