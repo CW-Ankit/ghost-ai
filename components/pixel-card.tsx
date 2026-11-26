@@ -15,13 +15,13 @@ const CARD =
   'group relative grid place-items-center w-[300px] h-[400px] overflow-hidden rounded-[var(--pixel-card-radius,24px)] isolate outline-none select-none [-webkit-tap-highlight-color:transparent] [&>:not(canvas):not([data-rim])]:relative [&>:not(canvas):not([data-rim])]:z-[1]'
 
 const SURFACE: Record<Tone, string> = {
-  dark: 'bg-[linear-gradient(180deg,var(--bg-elevated)_0%,var(--bg-surface)_100%)] shadow-[0_24px_48px_-24px_rgba(0,0,0,0.85),0_8px_18px_-10px_rgba(0,0,0,0.6)] focus-visible:shadow-[0_24px_48px_-24px_rgba(0,0,0,0.85),0_8px_18px_-10px_rgba(0,0,0,0.6),0_0_0_3px_color-mix(in_srgb,var(--accent-primary)_45%,transparent)]',
+  dark: 'bg-[linear-gradient(180deg,color-mix(in_srgb,var(--bg-elevated)_94%,#262630)_0%,var(--bg-surface)_52%,var(--bg-base)_100%)] shadow-[0_28px_56px_-22px_rgba(0,0,0,0.92),0_10px_24px_-12px_rgba(0,0,0,0.75)] transition-transform duration-300 ease-out hover:-translate-y-0.5 focus-visible:shadow-[0_28px_56px_-22px_rgba(0,0,0,0.92),0_10px_24px_-12px_rgba(0,0,0,0.75),0_0_0_3px_color-mix(in_srgb,var(--accent-primary)_45%,transparent)]',
   light:
     'bg-[linear-gradient(180deg,#ffffff_0%,#f6f6f8_100%)] shadow-[0_24px_48px_-26px_rgba(24,24,27,0.32),0_8px_18px_-12px_rgba(24,24,27,0.18)] focus-visible:shadow-[0_24px_48px_-26px_rgba(24,24,27,0.32),0_8px_18px_-12px_rgba(24,24,27,0.18),0_0_0_3px_rgba(127,127,140,0.45)]',
 }
 
 const RIM: Record<Tone, string> = {
-  dark: 'pointer-events-none absolute inset-0 z-[2] rounded-[inherit] transition-shadow duration-[260ms] shadow-[inset_0_0_0_1px_var(--border-default),inset_0_1px_0_rgba(255,255,255,0.06)] group-data-[active]:shadow-[inset_0_0_0_1px_var(--border-subtle),inset_0_1px_0_rgba(255,255,255,0.08)]',
+  dark: 'pointer-events-none absolute inset-0 z-[2] rounded-[inherit] transition-shadow duration-[260ms] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.09),inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-1px_0_rgba(0,0,0,0.65)] group-data-[active]:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16),inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-1px_0_rgba(0,0,0,0.65)]',
   light:
     'pointer-events-none absolute inset-0 z-[2] rounded-[inherit] transition-shadow duration-[260ms] shadow-[inset_0_0_0_1px_rgba(24,24,27,0.08),inset_0_1px_0_rgba(255,255,255,1)] group-data-[active]:shadow-[inset_0_0_0_1px_rgba(24,24,27,0.16),inset_0_1px_0_rgba(255,255,255,1)]',
 }

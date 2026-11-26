@@ -7,6 +7,7 @@
 - Do not mix unrelated concerns in one component or route.
 - Respect the system boundaries defined in `architecture-context.md`.
 - Never use emojis in the codebase.
+- Never add pill-shaped badges, chips, or pill options (`rounded-full` status pills, tag chips, or pill toggles) anywhere in the app unless explicitly requested by the user.
 
 ## TypeScript
 

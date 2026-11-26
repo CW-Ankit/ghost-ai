@@ -30,6 +30,12 @@ const SHARED_PIXEL_PROPS = {
   theme: 'dark' as const,
 }
 
+const ICON_SOCKET_CLASS =
+  'inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#2a2a33_0%,#16161c_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.16),inset_0_0_0_1px_rgba(255,255,255,0.08),0_8px_18px_-6px_rgba(0,0,0,0.85)] transition-transform duration-300 group-hover:-translate-y-0.5'
+
+const ASSET_WELL_CLASS =
+  'pointer-events-none relative my-5 flex-1 overflow-hidden rounded-2xl bg-[linear-gradient(180deg,rgba(8,8,9,0.52)_0%,rgba(17,17,20,0.28)_100%)] shadow-[inset_0_2px_10px_rgba(0,0,0,0.68),inset_0_0_0_1px_rgba(255,255,255,0.04)]'
+
 export function FeaturesBento() {
   return (
     <div className="mx-auto w-full max-w-6xl space-y-12 px-6 pt-24 pb-16">
@@ -59,16 +65,12 @@ export function FeaturesBento() {
             className="h-full min-h-[340px] w-full md:col-span-4"
           >
             <div className="relative flex h-full w-full flex-col justify-between p-6 sm:p-8">
-              <div className="w-fit transition-transform duration-300 group-hover:-translate-y-0.5">
-                <Canvas3DIcon className="h-12 w-12" />
+              <div className={ICON_SOCKET_CLASS}>
+                <Canvas3DIcon className="h-8 w-8" />
               </div>
 
-              {/* Reserved asset whitespace with subtle ambient blur gradient */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none relative my-4 flex-1 overflow-hidden rounded-2xl"
-              >
-                <div className="absolute inset-0 bg-[radial-gradient(60%_70%_at_50%_50%,color-mix(in_srgb,var(--accent-primary)_14%,transparent)_0%,transparent_75%)] blur-2xl" />
+              <div aria-hidden="true" className={ASSET_WELL_CLASS}>
+                <div className="absolute inset-0 bg-[radial-gradient(60%_70%_at_50%_50%,color-mix(in_srgb,var(--accent-primary)_16%,transparent)_0%,transparent_75%)] blur-2xl" />
               </div>
 
               <div className="space-y-1.5">
@@ -93,16 +95,12 @@ export function FeaturesBento() {
             className="h-full min-h-[340px] w-full md:col-span-2"
           >
             <div className="relative flex h-full w-full flex-col justify-between p-6 sm:p-8">
-              <div className="w-fit transition-transform duration-300 group-hover:-translate-y-0.5">
-                <Templates3DIcon className="h-12 w-12" />
+              <div className={ICON_SOCKET_CLASS}>
+                <Templates3DIcon className="h-8 w-8" />
               </div>
 
-              {/* Reserved asset whitespace with subtle ambient blur gradient */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none relative my-4 flex-1 overflow-hidden rounded-2xl"
-              >
-                <div className="absolute inset-0 bg-[radial-gradient(65%_70%_at_50%_50%,color-mix(in_srgb,var(--state-success)_13%,transparent)_0%,transparent_75%)] blur-2xl" />
+              <div aria-hidden="true" className={ASSET_WELL_CLASS}>
+                <div className="absolute inset-0 bg-[radial-gradient(65%_70%_at_50%_50%,color-mix(in_srgb,var(--state-success)_14%,transparent)_0%,transparent_75%)] blur-2xl" />
               </div>
 
               <div className="space-y-1.5">
@@ -132,16 +130,12 @@ export function FeaturesBento() {
             className="h-full min-h-[320px] w-full md:col-span-2"
           >
             <div className="relative flex h-full w-full flex-col justify-between p-6 sm:p-8">
-              <div className="w-fit transition-transform duration-300 group-hover:-translate-y-0.5">
-                <AiSpark3DIcon className="h-12 w-12" />
+              <div className={ICON_SOCKET_CLASS}>
+                <AiSpark3DIcon className="h-8 w-8" />
               </div>
 
-              {/* Reserved asset whitespace with subtle ambient blur gradient */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none relative my-4 flex-1 overflow-hidden rounded-2xl"
-              >
-                <div className="absolute inset-0 bg-[radial-gradient(65%_70%_at_50%_50%,color-mix(in_srgb,var(--accent-ai)_16%,transparent)_0%,transparent_75%)] blur-2xl" />
+              <div aria-hidden="true" className={ASSET_WELL_CLASS}>
+                <div className="absolute inset-0 bg-[radial-gradient(65%_70%_at_50%_50%,color-mix(in_srgb,var(--accent-ai)_18%,transparent)_0%,transparent_75%)] blur-2xl" />
               </div>
 
               <div className="space-y-1.5">
@@ -166,16 +160,12 @@ export function FeaturesBento() {
             className="h-full min-h-[320px] w-full md:col-span-2"
           >
             <div className="relative flex h-full w-full flex-col justify-between p-6 sm:p-8">
-              <div className="w-fit transition-transform duration-300 group-hover:-translate-y-0.5">
-                <Specs3DIcon className="h-12 w-12" />
+              <div className={ICON_SOCKET_CLASS}>
+                <Specs3DIcon className="h-8 w-8" />
               </div>
 
-              {/* Reserved asset whitespace with subtle ambient blur gradient */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none relative my-4 flex-1 overflow-hidden rounded-2xl"
-              >
-                <div className="absolute inset-0 bg-[radial-gradient(65%_70%_at_50%_50%,color-mix(in_srgb,var(--accent-primary)_14%,transparent)_0%,transparent_75%)] blur-2xl" />
+              <div aria-hidden="true" className={ASSET_WELL_CLASS}>
+                <div className="absolute inset-0 bg-[radial-gradient(65%_70%_at_50%_50%,color-mix(in_srgb,var(--accent-primary)_16%,transparent)_0%,transparent_75%)] blur-2xl" />
               </div>
 
               <div className="space-y-1.5">
@@ -200,16 +190,12 @@ export function FeaturesBento() {
             className="h-full min-h-[320px] w-full md:col-span-2"
           >
             <div className="relative flex h-full w-full flex-col justify-between p-6 sm:p-8">
-              <div className="w-fit transition-transform duration-300 group-hover:-translate-y-0.5">
-                <Share3DIcon className="h-12 w-12" />
+              <div className={ICON_SOCKET_CLASS}>
+                <Share3DIcon className="h-8 w-8" />
               </div>
 
-              {/* Reserved asset whitespace with subtle ambient blur gradient */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none relative my-4 flex-1 overflow-hidden rounded-2xl"
-              >
-                <div className="absolute inset-0 bg-[radial-gradient(65%_70%_at_50%_50%,color-mix(in_srgb,var(--state-success)_13%,transparent)_0%,transparent_75%)] blur-2xl" />
+              <div aria-hidden="true" className={ASSET_WELL_CLASS}>
+                <div className="absolute inset-0 bg-[radial-gradient(65%_70%_at_50%_50%,color-mix(in_srgb,var(--state-success)_14%,transparent)_0%,transparent_75%)] blur-2xl" />
               </div>
 
               <div className="space-y-1.5">
