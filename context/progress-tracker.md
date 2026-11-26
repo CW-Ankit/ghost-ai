@@ -205,6 +205,7 @@ Update this file whenever the current phase, active feature, or implementation s
   - [x] Step 9: Integrated React Bits `PixelCard` (`components/pixel-card.tsx`) and built a clean Bento Features Showcase (`components/landing/features-bento.tsx`) with 3D beveled Lucide icon sockets, ambient blur-gradient asset slots, and scrollspy navigation (`#hero`, `#canvas`, `#specs`).
   - [x] Step 10: Updated Bento & Pricing sections (`components/landing/features-bento.tsx`, `components/landing/pricing-section.tsx`, `components/pixel-card.tsx`) with 3D specular surfaces, raised 3D icon sockets (`Sparkles`, `Rocket`, `Users`), 3D tactile CTA buttons, tighter copywriting, and zero unsolicited pills.
   - [x] Step 11: Fixed `LandingNav` active-dot scroll-spy (replaced `-45%` midpoint `IntersectionObserver` with deterministic viewport scroll-spy + smooth-scroll click lock, plus `scroll-mt-8` on section targets), integrated the `Get Started` / `Open Studio` CTA directly inside `PillNav` (`action` slot with synchronized intro animation and exact `44px` vertical alignment), and merged `feat/ui-foundation-and-clerk` into `feat/backend-architecture-and-testing`.
+  - [x] Step 12: Replaced `CustomCursor` (`components/custom-cursor.tsx`) with the provided component implementation and removed the duplicate `.custom-cursor` / `.has-custom-cursor` styles from `app/globals.css`.
 
 ## Next Up
 
