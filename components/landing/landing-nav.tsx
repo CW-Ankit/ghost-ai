@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@clerk/nextjs'
 import PillNav, { type PillNavItem } from '@/components/pill-nav'
@@ -20,6 +20,29 @@ export function LandingNav({ initialSignedIn = false }: LandingNavProps) {
   const [activeHref, setActiveHref] = useState('#hero')
   const { isLoaded, isSignedIn } = useAuth()
   const showOpenStudio = isLoaded ? Boolean(isSignedIn) : initialSignedIn
+
+  useEffect(() => {
+    const sections = NAV_ITEMS.map((item) => item.href)
+      .filter((href): href is string => Boolean(href?.startsWith('#')))
+      .map((href) => document.getElementById(href.slice(1)))
+      .filter((el): el is HTMLElement => el !== null)
+
+    if (!sections.length) return undefined
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting && entry.target.id) {
+            setActiveHref(`#${entry.target.id}`)
+          }
+        }
+      },
+      { rootMargin: '-45% 0px -45% 0px', threshold: 0 }
+    )
+
+    sections.forEach((section) => observer.observe(section))
+    return () => observer.disconnect()
+  }, [])
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">

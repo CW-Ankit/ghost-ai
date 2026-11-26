@@ -186,6 +186,7 @@ Update this file whenever the current phase, active feature, or implementation s
   - [x] Step 6: Integrated React Bits `PillNav` (`components/pill-nav.tsx`) and `LandingNav` (`components/landing/landing-nav.tsx`) centered at the bottom of `/` with Option A section items (`Overview`, `Canvas`, `Specs`) and an auth-aware separate pill CTA (`Open Studio` when signed in, `Get Started` when signed out).
   - [x] Step 7: Integrated React Bits `GhostFibers` (`components/ghost-fibers.tsx`) and `HeroBackground` (`components/landing/hero-background.tsx`) as the interactive WebGL hero background on `/` with brand color tokens and pause control.
   - [x] Step 8: Added global `CustomCursor` (`components/custom-cursor.tsx`, `app/globals.css`, `app/layout.tsx`) matching `ankitsahu.indevs.in` across the entire app.
+  - [x] Step 9: Integrated React Bits `PixelCard` (`components/pixel-card.tsx`) and built the Bento Features Showcase (`components/landing/features-bento.tsx`) on `/` with scrollspy navigation (`#hero`, `#canvas`, `#specs`).
 
 ## Next Up
 
