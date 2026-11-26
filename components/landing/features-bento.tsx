@@ -1,15 +1,13 @@
 'use client'
 
-import {
-  FileText,
-  GitCompareArrows,
-  Globe,
-  Layers,
-  MousePointerClick,
-  Sparkles,
-  Workflow,
-} from 'lucide-react'
 import PixelCard from '@/components/pixel-card'
+import {
+  AiSpark3DIcon,
+  Canvas3DIcon,
+  Share3DIcon,
+  Specs3DIcon,
+  Templates3DIcon,
+} from '@/components/landing/bento-3d-icons'
 
 const CYAN_PIXELS = ['var(--text-primary)', 'var(--accent-primary)', 'var(--accent-ai-text)']
 const AI_PIXELS = ['var(--text-primary)', 'var(--accent-ai-text)', 'var(--accent-ai)']
@@ -51,48 +49,33 @@ export function FeaturesBento() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
-          {/* Card 1: Real-Time Multiplayer Canvas (Wide) */}
+          {/* Card 1: Real-Time Multiplayer Canvas */}
           <PixelCard
             {...SHARED_PIXEL_PROPS}
             colors={CYAN_PIXELS}
             glowColor="var(--accent-primary)"
             shape="square"
             introDelay={0}
-            className="h-full min-h-[300px] w-full md:col-span-4"
+            className="h-full min-h-[340px] w-full md:col-span-4"
           >
-            <div className="flex h-full w-full flex-col justify-between gap-6 p-6 sm:p-8">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border-default bg-bg-base/70 text-accent-primary">
-                  <MousePointerClick className="h-5 w-5" />
-                </div>
-                <span className="rounded-full border border-accent-primary/30 bg-accent-primary-dim px-2.5 py-1 font-mono text-[11px] font-medium text-accent-primary">
-                  Live
-                </span>
+            <div className="relative flex h-full w-full flex-col justify-between p-6 sm:p-8">
+              <div className="w-fit transition-transform duration-300 group-hover:-translate-y-0.5">
+                <Canvas3DIcon className="h-12 w-12" />
               </div>
 
-              {/* Architectural Mini-Graph Preview */}
-              <div className="grid grid-cols-3 items-center gap-2 rounded-2xl border border-border-default/80 bg-bg-base/70 p-3.5 backdrop-blur-sm sm:gap-3 sm:p-4">
-                <div className="rounded-xl border border-border-subtle bg-bg-surface px-3 py-2">
-                  <div className="font-mono text-[10px] text-text-muted">GATEWAY</div>
-                  <div className="truncate text-xs font-medium text-text-primary">Edge Router</div>
-                </div>
-                <div className="relative flex items-center justify-center">
-                  <div className="h-px w-full bg-border-subtle" />
-                  <span className="absolute rounded-full border border-accent-primary/40 bg-bg-elevated px-2 py-0.5 font-mono text-[10px] text-accent-primary">
-                    gRPC
-                  </span>
-                </div>
-                <div className="rounded-xl border border-accent-ai/40 bg-bg-surface px-3 py-2">
-                  <div className="font-mono text-[10px] text-accent-ai-text">WORKER</div>
-                  <div className="truncate text-xs font-medium text-text-primary">AI Engine</div>
-                </div>
+              {/* Reserved asset whitespace with subtle ambient blur gradient */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none relative my-4 flex-1 overflow-hidden rounded-2xl"
+              >
+                <div className="absolute inset-0 bg-[radial-gradient(60%_70%_at_50%_50%,color-mix(in_srgb,var(--accent-primary)_14%,transparent)_0%,transparent_75%)] blur-2xl" />
               </div>
 
               <div className="space-y-1.5">
                 <h3 className="font-heading text-lg font-semibold text-text-primary">
                   Real-Time Multiplayer Canvas
                 </h3>
-                <p className="text-sm leading-relaxed text-text-secondary">
+                <p className="max-w-lg text-sm leading-relaxed text-text-secondary">
                   Liveblocks CRDT state sync, live collaborator cursors, 6 custom node shapes,
                   orthogonal edge routing, and viewport-culled 100+ node performance.
                 </p>
@@ -100,34 +83,26 @@ export function FeaturesBento() {
             </div>
           </PixelCard>
 
-          {/* Card 2: Starter System Blueprints */}
+          {/* Card 2: Starter System Templates */}
           <PixelCard
             {...SHARED_PIXEL_PROPS}
             colors={EMERALD_PIXELS}
             glowColor="var(--state-success)"
             shape="circle"
             introDelay={90}
-            className="h-full min-h-[300px] w-full md:col-span-2"
+            className="h-full min-h-[340px] w-full md:col-span-2"
           >
-            <div className="flex h-full w-full flex-col justify-between gap-6 p-6 sm:p-8">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border-default bg-bg-base/70 text-state-success">
-                  <Layers className="h-5 w-5" />
-                </div>
-                <span className="rounded-full border border-border-default bg-bg-base/70 px-2.5 py-1 font-mono text-[11px] text-text-secondary">
-                  4 Blueprints
-                </span>
+            <div className="relative flex h-full w-full flex-col justify-between p-6 sm:p-8">
+              <div className="w-fit transition-transform duration-300 group-hover:-translate-y-0.5">
+                <Templates3DIcon className="h-12 w-12" />
               </div>
 
-              <div className="flex flex-wrap gap-1.5">
-                {['Microservices', 'Event-Driven', 'Serverless', 'CI/CD'].map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-lg border border-border-default bg-bg-base/75 px-2.5 py-1 font-mono text-[11px] text-text-secondary"
-                  >
-                    {tag}
-                  </span>
-                ))}
+              {/* Reserved asset whitespace with subtle ambient blur gradient */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none relative my-4 flex-1 overflow-hidden rounded-2xl"
+              >
+                <div className="absolute inset-0 bg-[radial-gradient(65%_70%_at_50%_50%,color-mix(in_srgb,var(--state-success)_13%,transparent)_0%,transparent_75%)] blur-2xl" />
               </div>
 
               <div className="space-y-1.5">
@@ -135,8 +110,8 @@ export function FeaturesBento() {
                   Starter System Templates
                 </h3>
                 <p className="text-sm leading-relaxed text-text-secondary">
-                  Drop prebuilt production topologies directly into active rooms with instant
-                  auto-fit and full editability.
+                  Drop prebuilt microservices, event-driven, serverless, and CI/CD blueprints
+                  directly into active rooms.
                 </p>
               </div>
             </div>
@@ -154,37 +129,28 @@ export function FeaturesBento() {
             glowColor="var(--accent-ai)"
             shape="diamond"
             introDelay={160}
-            className="h-full min-h-[280px] w-full md:col-span-2"
+            className="h-full min-h-[320px] w-full md:col-span-2"
           >
-            <div className="flex h-full w-full flex-col justify-between gap-6 p-6 sm:p-8">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border-default bg-bg-base/70 text-accent-ai-text">
-                  <Sparkles className="h-5 w-5" />
-                </div>
-                <div className="flex items-center gap-1.5 font-mono text-[10px]">
-                  <span className="rounded-full border border-accent-primary/40 bg-accent-primary-dim px-2 py-0.5 text-accent-primary">
-                    + New
-                  </span>
-                  <span className="rounded-full border border-accent-ai/40 bg-accent-ai/15 px-2 py-0.5 text-accent-ai-text">
-                    Updated
-                  </span>
-                </div>
+            <div className="relative flex h-full w-full flex-col justify-between p-6 sm:p-8">
+              <div className="w-fit transition-transform duration-300 group-hover:-translate-y-0.5">
+                <AiSpark3DIcon className="h-12 w-12" />
               </div>
 
-              <div className="rounded-xl border border-border-default bg-bg-base/75 px-3 py-2.5 font-mono text-[11px] text-text-secondary">
-                &ldquo;Add Redis rate-limiting in front of the checkout service&rdquo;
+              {/* Reserved asset whitespace with subtle ambient blur gradient */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none relative my-4 flex-1 overflow-hidden rounded-2xl"
+              >
+                <div className="absolute inset-0 bg-[radial-gradient(65%_70%_at_50%_50%,color-mix(in_srgb,var(--accent-ai)_16%,transparent)_0%,transparent_75%)] blur-2xl" />
               </div>
 
               <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <GitCompareArrows className="h-4 w-4 text-accent-ai-text" />
-                  <h3 className="font-heading text-lg font-semibold text-text-primary">
-                    AI Synthesis &amp; Diffs
-                  </h3>
-                </div>
+                <h3 className="font-heading text-lg font-semibold text-text-primary">
+                  AI Synthesis &amp; Diffs
+                </h3>
                 <p className="text-sm leading-relaxed text-text-secondary">
-                  Generate and refine architectures in place while preserving existing IDs and
-                  highlighting changed nodes.
+                  Generate and refine architectures from plain English while preserving existing IDs
+                  and highlighting changed nodes.
                 </p>
               </div>
             </div>
@@ -197,22 +163,19 @@ export function FeaturesBento() {
             glowColor="var(--accent-primary)"
             shape="square"
             introDelay={220}
-            className="h-full min-h-[280px] w-full md:col-span-2"
+            className="h-full min-h-[320px] w-full md:col-span-2"
           >
-            <div className="flex h-full w-full flex-col justify-between gap-6 p-6 sm:p-8">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border-default bg-bg-base/70 text-accent-primary">
-                  <FileText className="h-5 w-5" />
-                </div>
-                <span className="rounded-full border border-accent-ai/35 bg-accent-ai/15 px-2.5 py-1 font-mono text-[11px] text-accent-ai-text">
-                  PNG/SVG Soon
-                </span>
+            <div className="relative flex h-full w-full flex-col justify-between p-6 sm:p-8">
+              <div className="w-fit transition-transform duration-300 group-hover:-translate-y-0.5">
+                <Specs3DIcon className="h-12 w-12" />
               </div>
 
-              <div className="space-y-1.5 rounded-xl border border-border-default bg-bg-base/75 p-3 font-mono text-[11px]">
-                <div className="text-accent-primary"># Architecture Spec</div>
-                <div className="text-text-muted">## 1. Component Topology</div>
-                <div className="text-text-muted">## 2. Data Flows &amp; Security</div>
+              {/* Reserved asset whitespace with subtle ambient blur gradient */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none relative my-4 flex-1 overflow-hidden rounded-2xl"
+              >
+                <div className="absolute inset-0 bg-[radial-gradient(65%_70%_at_50%_50%,color-mix(in_srgb,var(--accent-primary)_14%,transparent)_0%,transparent_75%)] blur-2xl" />
               </div>
 
               <div className="space-y-1.5">
@@ -234,22 +197,19 @@ export function FeaturesBento() {
             glowColor="var(--state-success)"
             shape="circle"
             introDelay={280}
-            className="h-full min-h-[280px] w-full md:col-span-2"
+            className="h-full min-h-[320px] w-full md:col-span-2"
           >
-            <div className="flex h-full w-full flex-col justify-between gap-6 p-6 sm:p-8">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border-default bg-bg-base/70 text-state-success">
-                  <Globe className="h-5 w-5" />
-                </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-state-success/30 bg-state-success/10 px-2.5 py-1 font-mono text-[11px] text-state-success">
-                  <Workflow className="h-3 w-3" />
-                  Synced
-                </span>
+            <div className="relative flex h-full w-full flex-col justify-between p-6 sm:p-8">
+              <div className="w-fit transition-transform duration-300 group-hover:-translate-y-0.5">
+                <Share3DIcon className="h-12 w-12" />
               </div>
 
-              <div className="flex items-center justify-between rounded-xl border border-border-default bg-bg-base/75 px-3 py-2.5 font-mono text-[11px] text-text-secondary">
-                <span className="truncate">/editor/room-8f2a</span>
-                <span className="ml-2 shrink-0 text-state-success">VIEW_ONLY</span>
+              {/* Reserved asset whitespace with subtle ambient blur gradient */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none relative my-4 flex-1 overflow-hidden rounded-2xl"
+              >
+                <div className="absolute inset-0 bg-[radial-gradient(65%_70%_at_50%_50%,color-mix(in_srgb,var(--state-success)_13%,transparent)_0%,transparent_75%)] blur-2xl" />
               </div>
 
               <div className="space-y-1.5">
