@@ -10,6 +10,7 @@
 
 import type * as ai from "../ai.js";
 import type * as crons from "../crons.js";
+import type * as lib_access from "../lib/access.js";
 import type * as presence from "../presence.js";
 import type * as projects from "../projects.js";
 import type * as specs from "../specs.js";
@@ -24,6 +25,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
   crons: typeof crons;
+  "lib/access": typeof lib_access;
   presence: typeof presence;
   projects: typeof projects;
   specs: typeof specs;
