@@ -39,7 +39,7 @@ yarn-error.log*
 *.tsbuildinfo
 
 # Convex
-convex/_generated
+convex/_generated/ai
 
 # Issues
 /context/issues/*
