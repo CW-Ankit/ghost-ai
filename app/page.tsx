@@ -2,9 +2,11 @@ import { auth } from '@clerk/nextjs/server'
 import { FeaturesBento } from '@/components/landing/features-bento'
 import { HeroBackground } from '@/components/landing/hero-background'
 import { LandingNav } from '@/components/landing/landing-nav'
+import { PricingSection } from '@/components/landing/pricing-section'
 
 export default async function Home() {
   const { userId } = await auth()
+  const isSignedIn = Boolean(userId)
 
   return (
     <main className="relative min-h-screen w-full overflow-x-hidden bg-bg-base">
@@ -21,7 +23,9 @@ export default async function Home() {
 
       <FeaturesBento />
 
-      <LandingNav initialSignedIn={Boolean(userId)} />
+      <PricingSection isSignedIn={isSignedIn} />
+
+      <LandingNav initialSignedIn={isSignedIn} />
     </main>
   )
 }

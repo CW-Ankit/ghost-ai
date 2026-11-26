@@ -34,7 +34,7 @@ const SHARED_PIXEL_PROPS = {
 
 export function FeaturesBento() {
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-12 px-6 pt-24 pb-32">
+    <div className="mx-auto w-full max-w-6xl space-y-12 px-6 pt-24 pb-16">
       {/* Canvas & Workspace Section */}
       <section id="canvas" tabIndex={-1} className="space-y-8 outline-none">
         <div className="max-w-2xl space-y-3">

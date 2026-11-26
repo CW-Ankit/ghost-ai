@@ -187,6 +187,7 @@ Update this file whenever the current phase, active feature, or implementation s
   - [x] Step 7: Integrated React Bits `GhostFibers` (`components/ghost-fibers.tsx`) and `HeroBackground` (`components/landing/hero-background.tsx`) as the interactive WebGL hero background on `/` with brand color tokens and pause control.
   - [x] Step 8: Added global `CustomCursor` (`components/custom-cursor.tsx`, `app/globals.css`, `app/layout.tsx`) matching `ankitsahu.indevs.in` across the entire app.
   - [x] Step 9: Integrated React Bits `PixelCard` (`components/pixel-card.tsx`) and built the Bento Features Showcase (`components/landing/features-bento.tsx`) on `/` with scrollspy navigation (`#hero`, `#canvas`, `#specs`).
+  - [x] Step 10: Created the `PixelCard`-powered Pricing section (`components/landing/pricing-section.tsx`) on `/` with Monthly/Annual toggle and auth-aware CTAs.
 
 ## Next Up
 
