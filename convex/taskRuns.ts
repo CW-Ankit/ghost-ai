@@ -1,5 +1,6 @@
 import { v } from 'convex/values'
 import { internalMutation, query } from './_generated/server'
+import { resolveProjectAccess } from './lib/access'
 
 // --- Internal mutations for task run management ---
 
@@ -33,7 +34,13 @@ export const patchTaskRun = internalMutation({
     error: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const updates: any = { status: args.status }
+    const updates: {
+      status: 'pending' | 'running' | 'completed' | 'failed'
+      result?: unknown
+      error?: string
+      completedAt?: number
+    } = { status: args.status }
+
     if (args.result !== undefined) updates.result = args.result
     if (args.error !== undefined) updates.error = args.error
     if (args.status === 'completed' || args.status === 'failed') {
@@ -62,14 +69,24 @@ export const insertSpec = internalMutation({
   },
 })
 
-// --- Public queries for task runs ---
+// --- Public queries for task runs (project access enforced) ---
 
 export const getTaskRun = query({
   args: { taskRunId: v.id('taskRuns') },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity()
     if (!identity) return null
-    return await ctx.db.get(args.taskRunId)
+
+    const taskRun = await ctx.db.get(args.taskRunId)
+    if (!taskRun) return null
+
+    const project = await ctx.db.get(taskRun.projectId)
+    if (!project) return null
+
+    const access = await resolveProjectAccess(ctx, project, identity)
+    if (!access) return null
+
+    return taskRun
   },
 })
 
@@ -82,13 +99,21 @@ export const getLatestTaskRun = query({
     const identity = await ctx.auth.getUserIdentity()
     if (!identity) return null
 
+    const project = await ctx.db.get(args.projectId)
+    if (!project) return null
+
+    const access = await resolveProjectAccess(ctx, project, identity)
+    if (!access) return null
+
     const runs = await ctx.db
       .query('taskRuns')
-      .withIndex('by_projectId', (q) => q.eq('projectId', args.projectId))
+      .withIndex('by_projectId_and_type', (q) =>
+        q.eq('projectId', args.projectId).eq('type', args.type)
+      )
       .order('desc')
-      .take(10)
+      .take(1)
 
-    return runs.find((r) => r.type === args.type) ?? null
+    return runs[0] ?? null
   },
 })
 
@@ -97,6 +122,12 @@ export const getTaskRunsByProject = query({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity()
     if (!identity) return null
+
+    const project = await ctx.db.get(args.projectId)
+    if (!project) return null
+
+    const access = await resolveProjectAccess(ctx, project, identity)
+    if (!access) return null
 
     return await ctx.db
       .query('taskRuns')

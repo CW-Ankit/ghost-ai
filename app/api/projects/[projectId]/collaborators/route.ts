@@ -1,52 +1,70 @@
-import { auth, clerkClient } from '@clerk/nextjs/server'
-import { ConvexHttpClient } from 'convex/browser'
-import { api } from '@/convex/_generated/api'
-import { Id } from '@/convex/_generated/dataModel'
+import { clerkClient } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
+import { api } from '@/convex/_generated/api'
+import type { Id } from '@/convex/_generated/dataModel'
+import { getAuthenticatedConvex, handleApiError, parseJsonBody } from '@/lib/api-auth'
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
-  const { userId, getToken } = await auth()
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
-  }
+  const authResult = await getAuthenticatedConvex()
+  if (!authResult.ok) return authResult.response
 
   try {
     const { projectId } = await params
-    const token = await getToken({ template: 'convex' })
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
-    }
-
-    const convexHttpClient = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
-    convexHttpClient.setAuth(token)
-
-    const collaborators = await (convexHttpClient.query as any)(api.projects.getCollaborators, {
+    const collaborators = await authResult.ctx.convex.query(api.projects.getCollaborators, {
       projectId: projectId as Id<'projects'>,
     })
 
-    const enrichedCollaborators = await Promise.all(
-      collaborators.map(async (collab: { email: string }) => {
-        const client = await clerkClient()
-        const users = await client.users.getUserList({
-          emailAddress: [collab.email],
-        })
-        const user = users.data[0]
+    if (!collaborators) {
+      return NextResponse.json({ error: 'Project not found or unauthorized' }, { status: 403 })
+    }
 
-        return {
-          email: collab.email,
-          name: user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : null,
-          avatarUrl: user?.imageUrl || null,
-        }
+    if (collaborators.length === 0) {
+      return NextResponse.json([])
+    }
+
+    const emails = collaborators.map((c) => c.email)
+    const usersByEmail = new Map<string, { name: string | null; avatarUrl: string | null }>()
+
+    try {
+      const client = await clerkClient()
+      const users = await client.users.getUserList({
+        emailAddress: emails,
+        limit: Math.min(emails.length, 100),
       })
-    )
+
+      for (const user of users.data) {
+        const displayName = user.firstName
+          ? `${user.firstName} ${user.lastName || ''}`.trim()
+          : user.username || null
+        for (const emailObj of user.emailAddresses) {
+          usersByEmail.set(emailObj.emailAddress.toLowerCase(), {
+            name: displayName,
+            avatarUrl: user.imageUrl || null,
+          })
+        }
+      }
+    } catch (clerkErr) {
+      // Fall back to email-only display if Clerk user lookup is unavailable
+      console.warn('Clerk collaborator enrichment failed, returning raw emails:', clerkErr)
+    }
+
+    const enrichedCollaborators = collaborators.map((collab) => {
+      const profile = usersByEmail.get(collab.email.toLowerCase())
+      return {
+        email: collab.email,
+        name: profile?.name ?? null,
+        avatarUrl: profile?.avatarUrl ?? null,
+      }
+    })
 
     return NextResponse.json(enrichedCollaborators)
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error) {
+    return handleApiError(error, 'Failed to fetch collaborators')
   }
 }
 
@@ -54,36 +72,27 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
-  const { userId, getToken } = await auth()
+  const authResult = await getAuthenticatedConvex()
+  if (!authResult.ok) return authResult.response
 
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+  const bodyResult = await parseJsonBody<{ email?: unknown }>(request)
+  if (!bodyResult.ok) return bodyResult.response
+
+  const { email } = bodyResult.data
+  if (typeof email !== 'string' || !EMAIL_PATTERN.test(email.trim())) {
+    return NextResponse.json({ error: 'A valid email address is required' }, { status: 400 })
   }
 
   try {
-    const body = await request.json()
-    const { email } = body
-    if (!email || typeof email !== 'string') {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
-    }
-
     const { projectId } = await params
-    const token = await getToken({ template: 'convex' })
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
-    }
-
-    const convexHttpClient = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
-    convexHttpClient.setAuth(token)
-
-    await (convexHttpClient.mutation as any)(api.projects.addCollaborator, {
+    await authResult.ctx.convex.mutation(api.projects.addCollaborator, {
       projectId: projectId as Id<'projects'>,
-      email,
+      email: email.trim().toLowerCase(),
     })
 
     return NextResponse.json({ success: true }, { status: 201 })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error) {
+    return handleApiError(error, 'Failed to invite collaborator')
   }
 }
 
@@ -91,35 +100,24 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
-  const { userId, getToken } = await auth()
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
-  }
+  const authResult = await getAuthenticatedConvex()
+  if (!authResult.ok) return authResult.response
 
   try {
     const { searchParams } = new URL(request.url)
     const email = searchParams.get('email')
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
+    if (!email || !email.trim()) {
+      return NextResponse.json({ error: 'Email query parameter is required' }, { status: 400 })
     }
 
     const { projectId } = await params
-    const token = await getToken({ template: 'convex' })
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
-    }
-
-    const convexHttpClient = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
-    convexHttpClient.setAuth(token)
-
-    await (convexHttpClient.mutation as any)(api.projects.removeCollaborator, {
+    await authResult.ctx.convex.mutation(api.projects.removeCollaborator, {
       projectId: projectId as Id<'projects'>,
-      email,
+      email: email.trim().toLowerCase(),
     })
 
     return NextResponse.json({ success: true })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error) {
+    return handleApiError(error, 'Failed to remove collaborator')
   }
 }

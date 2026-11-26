@@ -42,6 +42,7 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index('by_userId', ['userId'])
+    .index('by_projectId', ['projectId'])
     .index('by_userId_and_projectId', ['userId', 'projectId']),
 
   presence: defineTable({
@@ -51,7 +52,8 @@ export default defineSchema({
   })
     .index('by_projectId', ['projectId'])
     .index('by_userId', ['userId'])
-    .index('by_lastActive', ['lastActive']),
+    .index('by_lastActive', ['lastActive'])
+    .index('by_projectId_and_userId', ['projectId', 'userId']),
 
   taskRuns: defineTable({
     projectId: v.id('projects'),
@@ -69,6 +71,7 @@ export default defineSchema({
     completedAt: v.optional(v.number()),
   })
     .index('by_projectId', ['projectId'])
+    .index('by_projectId_and_type', ['projectId', 'type'])
     .index('by_status', ['status']),
 
   specs: defineTable({

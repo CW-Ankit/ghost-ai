@@ -5,7 +5,9 @@ const isPublicRoute = createRouteMatcher([
   '/',
   '/sign-in(.*)',
   '/sign-up(.*)',
+  '/api/health(.*)',
   '/api/specs/upload(.*)',
+  '/api/specs/(.+)',
   '/api/liveblocks-auth(.*)',
 ])
 
@@ -15,11 +17,14 @@ export default clerkMiddleware(async (auth, req) => {
   const { userId } = await auth()
 
   if (isPublicRoute(req)) {
-    if (userId && (req.nextUrl.pathname.startsWith('/sign-in') || req.nextUrl.pathname.startsWith('/sign-up'))) {
+    if (
+      userId &&
+      (req.nextUrl.pathname.startsWith('/sign-in') || req.nextUrl.pathname.startsWith('/sign-up'))
+    ) {
       const editorUrl = new URL('/editor', req.url)
       return NextResponse.redirect(editorUrl)
     }
-    return // Allow public access to /, sign-in/up, upload API, and liveblocks-auth
+    return
   }
 
   // Allow editor room route through so public view access can be verified per room

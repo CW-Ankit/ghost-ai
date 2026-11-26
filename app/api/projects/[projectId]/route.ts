@@ -1,75 +1,128 @@
-import { auth } from '@clerk/nextjs/server'
-import { ConvexHttpClient } from 'convex/browser'
-import { api } from '@/convex/_generated/api'
-import { Id } from '@/convex/_generated/dataModel'
 import { NextResponse } from 'next/server'
+import { api } from '@/convex/_generated/api'
+import type { Id } from '@/convex/_generated/dataModel'
+import { getAuthenticatedConvex, handleApiError, parseJsonBody } from '@/lib/api-auth'
+
+const VALID_STATUSES = new Set(['DRAFT', 'ARCHIVED', 'REVIEW'])
+const VALID_PUBLIC_ACCESS = new Set(['PRIVATE', 'VIEW_ONLY'])
+
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ projectId: string }> }
+) {
+  const authResult = await getAuthenticatedConvex()
+  if (!authResult.ok) return authResult.response
+
+  try {
+    const { projectId } = await params
+    const project = await authResult.ctx.convex.query(api.projects.getById, {
+      projectId: projectId as Id<'projects'>,
+    })
+
+    if (!project) {
+      return NextResponse.json({ error: 'Project not found or unauthorized' }, { status: 404 })
+    }
+
+    return NextResponse.json(project)
+  } catch (error) {
+    return handleApiError(error, 'Failed to load project')
+  }
+}
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
-  const { userId, getToken } = await auth()
+  const authResult = await getAuthenticatedConvex()
+  if (!authResult.ok) return authResult.response
 
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+  const bodyResult = await parseJsonBody<{
+    name?: unknown
+    status?: unknown
+    tags?: unknown
+    publicAccess?: unknown
+  }>(request)
+  if (!bodyResult.ok) return bodyResult.response
+
+  const { name, status, tags, publicAccess } = bodyResult.data
+  if (
+    name === undefined &&
+    status === undefined &&
+    tags === undefined &&
+    publicAccess === undefined
+  ) {
+    return NextResponse.json(
+      { error: 'At least one field (name, status, tags, publicAccess) must be provided' },
+      { status: 400 }
+    )
   }
 
   try {
-    const body = await request.json()
     const { projectId } = await params
-    const token = await getToken({ template: 'convex' })
+    const typedId = projectId as Id<'projects'>
+    const { convex } = authResult.ctx
 
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+    if (name !== undefined) {
+      if (typeof name !== 'string' || !name.trim()) {
+        return NextResponse.json({ error: 'name must be a non-empty string' }, { status: 400 })
+      }
+      await convex.mutation(api.projects.rename, { projectId: typedId, name: name.trim() })
     }
 
-    const convexHttpClient = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
-    convexHttpClient.setAuth(token)
+    if (status !== undefined) {
+      if (typeof status !== 'string' || !VALID_STATUSES.has(status)) {
+        return NextResponse.json(
+          { error: 'status must be one of DRAFT, ARCHIVED, REVIEW' },
+          { status: 400 }
+        )
+      }
+      await convex.mutation(api.projects.updateStatus, {
+        projectId: typedId,
+        status: status as 'DRAFT' | 'ARCHIVED' | 'REVIEW',
+      })
+    }
 
-    await (convexHttpClient.mutation as any)(api.projects.rename, {
-      projectId: projectId as Id<'projects'>,
-      name: body.name,
-    })
+    if (tags !== undefined) {
+      if (!Array.isArray(tags) || !tags.every((t) => typeof t === 'string')) {
+        return NextResponse.json({ error: 'tags must be an array of strings' }, { status: 400 })
+      }
+      await convex.mutation(api.projects.updateTags, { projectId: typedId, tags })
+    }
+
+    if (publicAccess !== undefined) {
+      if (typeof publicAccess !== 'string' || !VALID_PUBLIC_ACCESS.has(publicAccess)) {
+        return NextResponse.json(
+          { error: 'publicAccess must be PRIVATE or VIEW_ONLY' },
+          { status: 400 }
+        )
+      }
+      await convex.mutation(api.projects.setPublicAccess, {
+        projectId: typedId,
+        publicAccess: publicAccess as 'PRIVATE' | 'VIEW_ONLY',
+      })
+    }
 
     return NextResponse.json({ success: true })
-  } catch (error: any) {
-    if (error.message === 'Project not found') {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
-    }
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error) {
+    return handleApiError(error, 'Failed to update project')
   }
 }
 
 export async function DELETE(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
-  const { userId, getToken } = await auth()
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
-  }
+  const authResult = await getAuthenticatedConvex()
+  if (!authResult.ok) return authResult.response
 
   try {
     const { projectId } = await params
-    const token = await getToken({ template: 'convex' })
-
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
-    }
-
-    const convexHttpClient = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
-    convexHttpClient.setAuth(token)
-
-    await (convexHttpClient.mutation as any)(api.projects.remove, {
+    await authResult.ctx.convex.mutation(api.projects.remove, {
       projectId: projectId as Id<'projects'>,
     })
 
     return NextResponse.json({ success: true })
-  } catch (error: any) {
-    if (error.message === 'Project not found') {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
-    }
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error) {
+    return handleApiError(error, 'Failed to delete project')
   }
 }

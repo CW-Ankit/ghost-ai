@@ -168,6 +168,22 @@ Update this file whenever the current phase, active feature, or implementation s
     - Added unit test suite in `test/project-access-and-specs.test.ts` (69 / 69 unit tests passing across 6 test suites).
     - Verified strict TypeScript compilation (0 errors) and successful Next.js 16 (Turbopack) production build.
 
+- [x] Backend Architecture Hardening, REST API Completion & Testing (`feat/backend-architecture-and-testing`):
+  - Added missing Convex indexes in `convex/schema.ts` (`favorites.by_projectId`, `presence.by_projectId_and_userId`, `taskRuns.by_projectId_and_type`) to eliminate table scans and `.filter()` queries.
+  - Extracted shared Convex access-control, email normalization, and cascade-deletion helpers in `convex/lib/access.ts`.
+  - Enforced authentication and project membership checks across `convex/ai.ts` (`generateDesign`, `generateSpec`), `convex/taskRuns.ts` (`getTaskRun`, `getLatestTaskRun`, `getTaskRunsByProject`), `convex/projects.ts` (`getCollaborators`, `togglePin`, `bulkDelete` cascade delete), and `convex/presence.ts` (`setPresence`, `getActiveProjects`).
+  - Normalized AI-generated edge handles in `convex/ai.ts` to match `CanvasNode` handle IDs (`*-source` / `*-target`) and forwarded `x-internal-secret` for `/api/specs/upload`.
+  - Created `lib/api-auth.ts` with standardized Clerk/Convex auth resolution, JSON body parsing, SSRF-safe artifact URL validation, and HTTP status error mapping (`400`/`401`/`403`/`404`/`409`).
+  - Completed and secured REST API routes in `app/api/`:
+    - `GET /api/health`
+    - `GET/POST /api/projects` and `GET/PATCH/DELETE /api/projects/[projectId]`
+    - `GET/POST/DELETE /api/projects/[projectId]/collaborators` (batched Clerk user lookup)
+    - `GET/POST /api/canvas/save` (write-access check + JSON rehydration)
+    - `POST /api/ai/design`, `POST /api/ai/spec`, `GET /api/task-runs/[taskRunId]`
+    - `GET /api/projects/[projectId]/specs` and `GET /api/projects/[projectId]/specs/[specId]/download`
+    - `POST /api/specs/upload` and `GET/DELETE /api/specs/[specId]` (SSRF guard)
+  - Added `convex/backend.test.ts` (`convex-test`), `test/api-routes.test.ts`, live runner `scripts/test-backend.mjs` (`pnpm test:api`), and Postman collection/environment in `postman/`.
+
 ## Current Phase
 
 - Phase 2: AI Workflows & Artifact Generation

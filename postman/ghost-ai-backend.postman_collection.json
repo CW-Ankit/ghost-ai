@@ -1,0 +1,615 @@
+{
+  "info": {
+    "name": "Ghost AI — Backend API",
+    "_postman_id": "a7f2f2f1-9c83-4b9c-9c4c-6e2b7a11a101",
+    "description": "Complete backend REST API collection for Ghost AI covering health, projects CRUD, collaborators, Liveblocks room auth, canvas persistence, AI architecture & spec generation, task runs, and security checks.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "authCookie", "value": "" },
+    { "key": "bearerToken", "value": "" },
+    { "key": "projectId", "value": "" },
+    { "key": "roomId", "value": "" },
+    { "key": "specId", "value": "" },
+    { "key": "taskRunId", "value": "" },
+    { "key": "collaboratorEmail", "value": "collaborator@example.com" },
+    { "key": "internalSecret", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "01 Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Returns 200 or 503 with service flags', function () {",
+                  "  pm.expect([200, 503]).to.include(pm.response.code);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('services');",
+                  "  pm.expect(json.services).to.have.property('convexConfigured');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Projects",
+      "item": [
+        {
+          "name": "Create Project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Project created (201)', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.projectId).to.be.a('string');",
+                  "  pm.expect(json.roomId).to.be.a('string');",
+                  "  pm.collectionVariables.set('projectId', json.projectId);",
+                  "  pm.collectionVariables.set('roomId', json.roomId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie", "value": "{{authCookie}}" },
+              { "key": "Authorization", "value": "Bearer {{bearerToken}}", "disabled": true }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Architecture Demo\",\n  \"description\": \"Created from Postman backend test suite\"\n}"
+            },
+            "url": "{{baseUrl}}/api/projects"
+          }
+        },
+        {
+          "name": "List Projects",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Returns owned and shared arrays', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('owned');",
+                  "  pm.expect(json).to.have.property('shared');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "url": "{{baseUrl}}/api/projects"
+          }
+        },
+        {
+          "name": "Get Project By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Returns project with role', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json._id).to.eql(pm.collectionVariables.get('projectId'));",
+                  "  pm.expect(json.role).to.eql('owner');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "url": "{{baseUrl}}/api/projects/{{projectId}}"
+          }
+        },
+        {
+          "name": "Update Project (Rename, Status, Tags, Public Access)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Project updated (200)', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().success).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Architecture Demo v2\",\n  \"status\": \"REVIEW\",\n  \"tags\": [\"microservices\", \"postman\"],\n  \"publicAccess\": \"VIEW_ONLY\"\n}"
+            },
+            "url": "{{baseUrl}}/api/projects/{{projectId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Collaborators",
+      "item": [
+        {
+          "name": "Invite Collaborator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Collaborator invited (201)', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{collaboratorEmail}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/projects/{{projectId}}/collaborators"
+          }
+        },
+        {
+          "name": "List Collaborators",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Returns collaborator array', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const list = pm.response.json();",
+                  "  pm.expect(list).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "url": "{{baseUrl}}/api/projects/{{projectId}}/collaborators"
+          }
+        },
+        {
+          "name": "Remove Collaborator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Collaborator removed (200)', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "url": "{{baseUrl}}/api/projects/{{projectId}}/collaborators?email={{collaboratorEmail}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Canvas Storage",
+      "item": [
+        {
+          "name": "Save Canvas Snapshot",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Canvas saved (200)', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(json.blobUrl).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": \"{{projectId}}\",\n  \"roomId\": \"{{roomId}}\",\n  \"persistToConvex\": true,\n  \"nodes\": [\n    {\n      \"id\": \"api-gw\",\n      \"type\": \"canvasNode\",\n      \"position\": { \"x\": 100, \"y\": 100 },\n      \"data\": { \"label\": \"API Gateway\", \"shape\": \"diamond\", \"color\": \"blue\" }\n    },\n    {\n      \"id\": \"core-db\",\n      \"type\": \"canvasNode\",\n      \"position\": { \"x\": 400, \"y\": 100 },\n      \"data\": { \"label\": \"Postgres DB\", \"shape\": \"cylinder\", \"color\": \"green\" }\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"e1\",\n      \"source\": \"api-gw\",\n      \"target\": \"core-db\",\n      \"sourceHandle\": \"right-source\",\n      \"targetHandle\": \"left-target\",\n      \"data\": { \"label\": \"SQL\" }\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/canvas/save"
+          }
+        },
+        {
+          "name": "Load Saved Canvas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Canvas loaded (200)', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.canvas.nodes.length).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "url": "{{baseUrl}}/api/canvas/save?projectId={{projectId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 AI Workflows & Task Runs",
+      "item": [
+        {
+          "name": "Generate Architecture Design",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('AI design generated (200)', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.taskRunId).to.be.a('string');",
+                  "  pm.expect(json.nodes).to.be.an('array').that.is.not.empty;",
+                  "  pm.collectionVariables.set('taskRunId', json.taskRunId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": \"{{projectId}}\",\n  \"prompt\": \"Design an e-commerce microservices architecture with API Gateway, Kafka, and Redis\"\n}"
+            },
+            "url": "{{baseUrl}}/api/ai/design"
+          }
+        },
+        {
+          "name": "Get Task Run Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Task run status returned (200)', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('completed');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "url": "{{baseUrl}}/api/task-runs/{{taskRunId}}"
+          }
+        },
+        {
+          "name": "Generate Technical Spec",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Technical spec generated (201)', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.specId).to.be.a('string');",
+                  "  pm.expect(json.markdown).to.include('# ');",
+                  "  pm.collectionVariables.set('specId', json.specId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": \"{{projectId}}\",\n  \"nodes\": [\n    { \"id\": \"gw\", \"data\": { \"label\": \"API Gateway\", \"shape\": \"diamond\", \"color\": \"blue\" } },\n    { \"id\": \"svc\", \"data\": { \"label\": \"Order Service\", \"shape\": \"pill\", \"color\": \"green\" } }\n  ],\n  \"edges\": [\n    { \"id\": \"e1\", \"source\": \"gw\", \"target\": \"svc\", \"data\": { \"label\": \"REST\" } }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/ai/spec"
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Specifications",
+      "item": [
+        {
+          "name": "List Project Specs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Specs list returned (200)', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const specs = pm.response.json();",
+                  "  pm.expect(specs).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "url": "{{baseUrl}}/api/projects/{{projectId}}/specs"
+          }
+        },
+        {
+          "name": "Download Spec (Scoped to Project)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Spec downloaded as Markdown attachment', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment');",
+                  "  pm.expect(pm.response.text()).to.include('# ');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "url": "{{baseUrl}}/api/projects/{{projectId}}/specs/{{specId}}/download"
+          }
+        },
+        {
+          "name": "Download Spec (Direct Proxy Endpoint)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Direct spec endpoint returns Markdown', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.text()).to.include('# ');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "url": "{{baseUrl}}/api/specs/{{specId}}"
+          }
+        },
+        {
+          "name": "Delete Spec",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Spec deleted (200)', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "url": "{{baseUrl}}/api/specs/{{specId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Liveblocks Auth",
+      "item": [
+        {
+          "name": "Issue Liveblocks Room Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Liveblocks token issued (200)', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.token).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"room\": \"{{roomId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/liveblocks-auth"
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Cleanup & Security Checks",
+      "item": [
+        {
+          "name": "Unauthenticated Projects List -> 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Rejects unauthenticated request with 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/projects"
+          }
+        },
+        {
+          "name": "Unauthorized Spec Upload -> 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Rejects unauthenticated spec upload with 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": \"invalid\",\n  \"specId\": \"spec-1\",\n  \"content\": \"# Unauthorized\"\n}"
+            },
+            "url": "{{baseUrl}}/api/specs/upload"
+          }
+        },
+        {
+          "name": "Delete Project (Cascade Cleanup)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Project cascade-deleted (200)', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "url": "{{baseUrl}}/api/projects/{{projectId}}"
+          }
+        }
+      ]
+    }
+  ]
+}

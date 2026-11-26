@@ -282,3 +282,17 @@ This document serves as the project's engineering memory, recording mistakes, bu
 - **Mistake**: Pointing `filePath` to unresolvable remote placeholder URLs (e.g. `https://blob.vercel-storage.com/...`) when `BLOB_READ_WRITE_TOKEN` was absent in local development.
 - **Symptom**: Clicking "Preview" or "Download" on generated specifications returned HTTP 404 or failed network fetches.
 - **Solution**: Encoded spec markdown content as a self-contained data URL (`data:text/markdown;charset=utf-8,...`), enabling client preview dialogs and downloads to resolve instantly with zero external storage dependency.
+
+
+---
+
+## 13. Backend Authorization, SSRF & Convex Action Guards
+
+### 13.1 Unauthenticated Convex Actions & Task Run Queries
+- **Mistake**: `convex/ai.ts` (`generateDesign`, `generateSpec`) and `convex/taskRuns.ts` (`getTaskRun`, `getLatestTaskRun`, `getTaskRunsByProject`) did not verify project membership before creating/reading `taskRuns` and invoking Mistral AI.
+- **Root Cause**: Relying on UI-layer checks instead of enforcing ownership/collaborator checks at the Convex function boundary.
+- **Solution**: Added `internal.projects.verifyMemberAccess` called at the start of every AI action, and enforced `resolveProjectAccess` in all `taskRuns`, `specs`, `presence`, and `projects.getCollaborators` queries.
+
+### 13.2 SSRF & Missing Ownership Checks in Artifact API Routes
+- **Mistake**: `/api/specs/[specId]` fetched any arbitrary `?url=` query parameter server-side, `/api/canvas/save` did not verify project write access, and `/api/specs/upload` allowed unauthenticated uploads outside production.
+- **Solution**: Verified artifact ownership via Convex before reading or writing Blob storage, matched any `?url=` parameter against the verified `spec.filePath` and `isAllowedArtifactUrl()` whitelist, and required either `x-internal-secret` or authenticated project write membership for uploads.
