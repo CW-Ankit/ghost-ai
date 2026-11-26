@@ -41,6 +41,12 @@ export async function POST(req: NextRequest) {
       if (!project) {
         return NextResponse.json({ error: 'Project not found or unauthorized' }, { status: 403 })
       }
+      if (project.isReadOnly) {
+        return NextResponse.json(
+          { error: 'Unauthorized: You do not have edit permission for this project' },
+          { status: 403 }
+        )
+      }
       resolvedProjectId = project._id
     }
 

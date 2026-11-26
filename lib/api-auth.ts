@@ -186,7 +186,7 @@ export function handleApiError(error: unknown, fallbackMessage = 'Internal serve
   if (lower.includes('not found')) {
     return NextResponse.json({ error: message }, { status: 404 })
   }
-  if (lower.includes('already invited')) {
+  if (lower.includes('already invited') || lower.includes('already exists')) {
     return NextResponse.json({ error: message }, { status: 409 })
   }
   if (
@@ -194,7 +194,11 @@ export function handleApiError(error: unknown, fallbackMessage = 'Internal serve
     lower.includes('required') ||
     lower.includes('cannot be empty') ||
     lower.includes('cannot invite') ||
-    lower.includes('must contain')
+    lower.includes('must contain') ||
+    lower.includes('validator error') ||
+    lower.includes('argumentvalidationerror') ||
+    lower.includes('expected id') ||
+    lower.includes('unable to validate id')
   ) {
     return NextResponse.json({ error: message }, { status: 400 })
   }

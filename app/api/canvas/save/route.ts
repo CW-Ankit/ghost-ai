@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       projectId: projectId as Id<'projects'>,
     })
 
-    if (canvasUrl === null) {
+    if (!canvasUrl) {
       return NextResponse.json(
         { error: userId ? 'Canvas not found or unauthorized' : 'Unauthorized' },
         { status: userId ? 404 : 401 }
@@ -34,10 +34,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: artifact.error }, { status: artifact.status })
     }
 
+    let parsedCanvas: unknown
+    try {
+      parsedCanvas = JSON.parse(artifact.content)
+    } catch {
+      return NextResponse.json({ error: 'Stored canvas JSON is corrupted' }, { status: 500 })
+    }
+
     return NextResponse.json({
       projectId,
       canvasJsonPath: canvasUrl,
-      canvas: JSON.parse(artifact.content),
+      canvas: parsedCanvas,
     })
   } catch (error) {
     return handleApiError(error, 'Failed to load canvas')

@@ -47,6 +47,11 @@ describe('Convex Backend Architecture', () => {
       description: 'Core architecture',
     })
 
+    // Duplicate roomId is rejected to preserve unique room lookups
+    await expect(
+      asOwner.mutation(api.projects.create, { roomId: 'room-alpha' })
+    ).rejects.toThrow(/already exists/)
+
     const listed = await asOwner.query(api.projects.list, {})
     expect(listed).not.toBeNull()
     expect(listed!.owned).toHaveLength(1)

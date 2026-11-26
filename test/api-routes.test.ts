@@ -231,5 +231,26 @@ describe('Next.js Backend API Routes', () => {
     })
     const emptyNodesRes = await postSpec(emptyNodesReq)
     expect(emptyNodesRes.status).toBe(400)
+
+    mockQuery.mockResolvedValueOnce({ _id: 'proj_1', isReadOnly: true })
+    const roRoomReq = new NextRequest('http://localhost:3000/api/ai/design', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roomId: 'room-readonly', prompt: 'Add cache' }),
+    })
+    const roRoomRes = await postDesign(roRoomReq)
+    expect(roRoomRes.status).toBe(403)
+  })
+
+  it('maps Convex ID validator errors to 400 Bad Request', async () => {
+    const { GET } = await import('@/app/api/projects/[projectId]/route')
+    mockQuery.mockRejectedValueOnce(
+      new Error('Validator error: Expected ID for table "projects", got "bad-id"')
+    )
+
+    const res = await GET(new Request('http://localhost:3000/api/projects/bad-id'), {
+      params: Promise.resolve({ projectId: 'bad-id' }),
+    })
+    expect(res.status).toBe(400)
   })
 })

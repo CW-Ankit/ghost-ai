@@ -163,6 +163,14 @@ export const create = mutation({
       throw new ConvexError('roomId is required')
     }
 
+    const existingRoom = await ctx.db
+      .query('projects')
+      .withIndex('by_roomId', (q) => q.eq('roomId', trimmedRoomId))
+      .first()
+    if (existingRoom) {
+      throw new ConvexError('A project with this roomId already exists')
+    }
+
     const trimmedName = args.name?.trim()
     const name = trimmedName && trimmedName.length > 0 ? trimmedName : 'Untitled Project'
 
