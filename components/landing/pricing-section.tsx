@@ -93,7 +93,7 @@ export function PricingSection({ isSignedIn = false }: PricingSectionProps) {
     <section
       id="pricing"
       tabIndex={-1}
-      className="mx-auto w-full max-w-6xl space-y-10 px-6 pt-12 pb-36 outline-none"
+      className="mx-auto w-full max-w-6xl scroll-mt-8 space-y-10 px-6 pt-12 pb-36 outline-none"
     >
       <div className="max-w-2xl space-y-3">
         <p className="font-mono text-xs font-medium tracking-[0.14em] text-accent-primary uppercase">

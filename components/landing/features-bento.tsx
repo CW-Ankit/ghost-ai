@@ -35,7 +35,7 @@ export function FeaturesBento() {
     <div className="mx-auto w-full max-w-6xl space-y-12 px-6 pt-24 pb-16">
       {/* Canvas & Workspace Section */}
       <div className="space-y-8">
-        <div id="overview" tabIndex={-1} className="max-w-2xl space-y-3 outline-none">
+        <div id="overview" tabIndex={-1} className="max-w-2xl scroll-mt-8 space-y-3 outline-none">
           <p className="font-mono text-xs font-medium tracking-[0.14em] text-accent-primary uppercase">
             Workspace
           </p>
@@ -51,7 +51,7 @@ export function FeaturesBento() {
         <section
           id="canvas"
           tabIndex={-1}
-          className="grid grid-cols-1 gap-4 outline-none md:grid-cols-6"
+          className="grid scroll-mt-8 grid-cols-1 gap-4 outline-none md:grid-cols-6"
         >
           {/* Card 1: Multiplayer Canvas */}
           <PixelCard
@@ -115,7 +115,7 @@ export function FeaturesBento() {
       </div>
 
       {/* AI Architect, Specs & Sharing Section */}
-      <section id="specs" tabIndex={-1} className="outline-none">
+      <section id="specs" tabIndex={-1} className="scroll-mt-8 outline-none">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
           {/* Card 3: AI Architect */}
           <PixelCard
