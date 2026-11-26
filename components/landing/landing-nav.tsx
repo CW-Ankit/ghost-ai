@@ -2,6 +2,7 @@
 
 import { useState, type CSSProperties } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@clerk/nextjs'
 import PillNav, { type PillNavItem } from '@/components/pill-nav'
 import { Logo } from '@/components/ui/logo'
 
@@ -11,8 +12,14 @@ const NAV_ITEMS: PillNavItem[] = [
   { label: 'Specs', href: '#specs' },
 ]
 
-export function LandingNav() {
+interface LandingNavProps {
+  initialSignedIn?: boolean
+}
+
+export function LandingNav({ initialSignedIn = false }: LandingNavProps) {
   const [activeHref, setActiveHref] = useState('#hero')
+  const { isLoaded, isSignedIn } = useAuth()
+  const showOpenStudio = isLoaded ? Boolean(isSignedIn) : initialSignedIn
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
@@ -51,10 +58,10 @@ export function LandingNav() {
         </div>
 
         <Link
-          href="/editor"
+          href={showOpenStudio ? '/editor' : '/sign-up'}
           className="inline-flex h-[44px] flex-none items-center justify-center rounded-full bg-accent-primary px-5 text-[14px] leading-none font-medium tracking-[-0.005em] whitespace-nowrap text-bg-base shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_22px_44px_-20px_rgba(0,0,0,0.8),0_6px_16px_-8px_rgba(0,0,0,0.5)] transition-[background-color,transform] duration-200 hover:bg-accent-primary/90 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-primary"
         >
-          Open Studio
+          {showOpenStudio ? 'Open Studio' : 'Get Started'}
         </Link>
       </div>
     </div>

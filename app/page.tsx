@@ -1,7 +1,10 @@
+import { auth } from '@clerk/nextjs/server'
 import { HeroBackground } from '@/components/landing/hero-background'
 import { LandingNav } from '@/components/landing/landing-nav'
 
-export default function Home() {
+export default async function Home() {
+  const { userId } = await auth()
+
   return (
     <main
       id="hero"
@@ -11,7 +14,7 @@ export default function Home() {
       <h1 className="pointer-events-none relative z-10 select-none font-heading text-6xl font-bold tracking-tight text-text-primary drop-shadow-[0_4px_24px_rgba(8,8,9,0.85)] sm:text-7xl md:text-8xl">
         Ghost AI
       </h1>
-      <LandingNav />
+      <LandingNav initialSignedIn={Boolean(userId)} />
     </main>
   )
 }
