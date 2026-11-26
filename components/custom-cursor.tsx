@@ -361,7 +361,7 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({
     // ─────────────────────────────────────────────
     const isInsideScope = (target: Element | null): boolean => {
       if (scope === 'body') return true
-      if (!target) return false
+      if (!target || typeof target.closest !== 'function') return false
 
       return Boolean(target.closest(scope))
     }
@@ -370,7 +370,7 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({
     // Clickable element check
     // ─────────────────────────────────────────────
     const checkClickable = (target: Element | null): boolean => {
-      if (!target) return false
+      if (!target || typeof target.closest !== 'function') return false
       if (target === lastTargetElement) {
         return lastClickableResult
       }
@@ -462,11 +462,17 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({
     // Event listeners
     // ─────────────────────────────────────────────
     const onMouseMove = (event: MouseEvent) => {
-      const target = (event.target as Element) || null
+      const rawTarget = event.target
+      const target =
+        rawTarget instanceof Element
+          ? rawTarget
+          : rawTarget instanceof Node
+            ? rawTarget.parentElement
+            : null
 
       const insideScope = isInsideScope(target)
       const isOverInput = isTextInputElement(target)
-      const hasIgnoreAttr = Boolean(target?.closest?.('[data-cursor-ignore]'))
+      const hasIgnoreAttr = Boolean(target && typeof target.closest === 'function' && target.closest('[data-cursor-ignore]'))
       const isOverTop = hideOnTop && event.clientY < topOffset
 
       const shouldBeVisible = insideScope && !isOverInput && !hasIgnoreAttr && !isOverTop
