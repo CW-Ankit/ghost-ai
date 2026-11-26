@@ -34,8 +34,8 @@ export function FeaturesBento() {
   return (
     <div className="mx-auto w-full max-w-6xl space-y-12 px-6 pt-24 pb-16">
       {/* Canvas & Workspace Section */}
-      <section id="canvas" tabIndex={-1} className="space-y-8 outline-none">
-        <div className="max-w-2xl space-y-3">
+      <div className="space-y-8">
+        <div id="overview" tabIndex={-1} className="max-w-2xl space-y-3 outline-none">
           <p className="font-mono text-xs font-medium tracking-[0.14em] text-accent-primary uppercase">
             Workspace
           </p>
@@ -48,7 +48,11 @@ export function FeaturesBento() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
+        <section
+          id="canvas"
+          tabIndex={-1}
+          className="grid grid-cols-1 gap-4 outline-none md:grid-cols-6"
+        >
           {/* Card 1: Multiplayer Canvas */}
           <PixelCard
             {...SHARED_PIXEL_PROPS}
@@ -107,8 +111,8 @@ export function FeaturesBento() {
               </div>
             </div>
           </PixelCard>
-        </div>
-      </section>
+        </section>
+      </div>
 
       {/* AI Architect, Specs & Sharing Section */}
       <section id="specs" tabIndex={-1} className="outline-none">

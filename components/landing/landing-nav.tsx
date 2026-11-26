@@ -7,10 +7,13 @@ import PillNav, { type PillNavItem } from '@/components/pill-nav'
 import { Logo } from '@/components/ui/logo'
 
 const NAV_ITEMS: PillNavItem[] = [
-  { label: 'Overview', href: '#hero' },
+  { label: 'Overview', href: '#overview' },
   { label: 'Canvas', href: '#canvas' },
   { label: 'Specs', href: '#specs' },
+  { label: 'Pricing', href: '#pricing' },
 ]
+
+const SECTION_IDS = ['hero', 'overview', 'canvas', 'specs', 'pricing']
 
 interface LandingNavProps {
   initialSignedIn?: boolean
@@ -22,10 +25,9 @@ export function LandingNav({ initialSignedIn = false }: LandingNavProps) {
   const showOpenStudio = isLoaded ? Boolean(isSignedIn) : initialSignedIn
 
   useEffect(() => {
-    const sections = NAV_ITEMS.map((item) => item.href)
-      .filter((href): href is string => Boolean(href?.startsWith('#')))
-      .map((href) => document.getElementById(href.slice(1)))
-      .filter((el): el is HTMLElement => el !== null)
+    const sections = SECTION_IDS.map((id) => document.getElementById(id)).filter(
+      (el): el is HTMLElement => el !== null
+    )
 
     if (!sections.length) return undefined
 
