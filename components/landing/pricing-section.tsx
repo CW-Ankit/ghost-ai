@@ -32,7 +32,7 @@ const TIERS: PricingTier[] = [
     name: 'Starter',
     tagline: 'For solo projects',
     price: 0,
-    ctaLabel: 'Get started',
+    ctaLabel: 'Open Studio',
     icon: <Sparkles className="h-5 w-5 text-text-primary" />,
     colors: ['var(--text-primary)', 'var(--text-secondary)', 'var(--border-subtle)'],
     glowColor: 'var(--text-secondary)',
@@ -68,7 +68,7 @@ const TIERS: PricingTier[] = [
     name: 'Team',
     tagline: 'For organizations',
     price: 49,
-    ctaLabel: 'Start team trial',
+    ctaLabel: 'Upgrade to Teams',
     icon: <Users className="h-5 w-5 text-text-primary" />,
     colors: ['var(--text-primary)', 'var(--accent-ai-text)', 'var(--accent-ai)'],
     glowColor: 'var(--accent-ai)',
@@ -185,7 +185,7 @@ export function PricingSection({ isSignedIn = false }: PricingSectionProps) {
                     : 'bg-[linear-gradient(180deg,#2d2c36_0%,#1b1a21_100%)] text-text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_0_0_1px_rgba(255,255,255,0.08),0_8px_18px_-6px_rgba(0,0,0,0.85)] hover:bg-[linear-gradient(180deg,#353440_0%,#222129_100%)]'
                 )}
               >
-                {isSignedIn ? 'Open Studio' : tier.ctaLabel}
+                {tier.ctaLabel}
               </Link>
             </div>
           </PixelCard>
