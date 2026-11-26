@@ -26,7 +26,9 @@ export interface PillNavProps {
   logo?: string | ReactNode
   logoAlt?: string
   logoHref?: string
+  onLogoClick?: (event: ReactMouseEvent<HTMLElement>) => void
   items?: PillNavItem[]
+  action?: ReactNode
   activeHref?: string
   defaultActiveIndex?: number
   onItemClick?: (item: PillNavItem, index: number, event: ReactMouseEvent<HTMLElement>) => void
@@ -233,7 +235,9 @@ const PillNav = ({
   logo,
   logoAlt = 'Logo',
   logoHref = '#',
+  onLogoClick,
   items = DEFAULT_ITEMS,
+  action,
   activeHref,
   defaultActiveIndex = 0,
   onItemClick,
@@ -270,6 +274,7 @@ const PillNav = ({
   const logoRef = useRef<HTMLSpanElement>(null)
   const markRef = useRef<HTMLSpanElement>(null)
   const toggleRef = useRef<HTMLButtonElement>(null)
+  const actionRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const measureRef = useRef<HTMLDivElement>(null)
   const measureListRef = useRef<HTMLDivElement>(null)
@@ -287,6 +292,7 @@ const PillNav = ({
   const activeIndex = controlled ? items.findIndex((item) => item.href === activeHref) : selected
   const joined = layout === 'joined'
   const hasLogo = Boolean(logo)
+  const hasAction = Boolean(action)
   const fill = hoverEffect === 'fill'
   const glide = !fill && (hoverEffect === 'glide' || indicator === 'pill')
 
@@ -657,13 +663,16 @@ const PillNav = ({
           (parseFloat(styles.paddingLeft) || 0) -
           (parseFloat(styles.paddingRight) || 0)
         const listWidth = measureListRef.current?.offsetWidth ?? 0
+        const actionWidth = actionRef.current?.offsetWidth ?? 0
         const height = readVar(root, '--pn-h')
         const pad = readVar(root, '--pn-pad')
         const gap = readVar(root, '--pn-gap')
         const inner = readVar(root, '--pn-inner')
-        const need = joined
-          ? pad * 2 + (hasLogo ? inner + 2 : 0) + listWidth
-          : (hasLogo ? height + gap : 0) + listWidth + pad * 2
+        const need =
+          (joined
+            ? pad * 2 + (hasLogo ? inner + 2 : 0) + listWidth
+            : (hasLogo ? height + gap : 0) + listWidth + pad * 2) +
+          (hasAction ? gap + actionWidth : 0)
         return need > available + 0.5
       })()
 
@@ -676,9 +685,10 @@ const PillNav = ({
     evaluate()
     const observer = new ResizeObserver(evaluate)
     if (root.parentElement) observer.observe(root.parentElement)
+    if (actionRef.current) observer.observe(actionRef.current)
     observer.observe(measureEl)
     return () => observer.disconnect()
-  }, [collapse, collapsed, joined, hasLogo, size])
+  }, [collapse, collapsed, joined, hasLogo, hasAction, size])
 
   useLayoutEffect(() => {
     const root = rootRef.current
@@ -710,6 +720,7 @@ const PillNav = ({
     pop(logoRef.current, 0)
     if (collapsed) {
       pop(toggleRef.current, 120)
+      pop(actionRef.current, 180)
       return
     }
     slideRef.current = true
@@ -723,6 +734,18 @@ const PillNav = ({
         { duration: 560, delay: 200 + index * 50, easing: EASE_OUT, fill: 'backwards' }
       )
     })
+    actionRef.current?.animate(
+      [
+        { opacity: 0, transform: 'scale(0.84) translateX(-10px)' },
+        { opacity: 1, transform: 'scale(1) translateX(0)' },
+      ],
+      {
+        duration: 620,
+        delay: 240,
+        easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+        fill: 'backwards',
+      }
+    )
   }, [collapsed, joined])
 
   useLayoutEffect(() => {
@@ -850,6 +873,15 @@ const PillNav = ({
     </>
   )
 
+  const actionNode = action ? (
+    <div
+      ref={actionRef}
+      className="relative z-[2] flex h-[var(--pn-h)] flex-none items-center group-data-[layout=joined]/nav:h-[var(--pn-inner)]"
+    >
+      {action}
+    </div>
+  ) : null
+
   return (
     <nav
       ref={rootRef}
@@ -868,6 +900,7 @@ const PillNav = ({
             href={logoHref}
             className={LOGO_LINK}
             aria-label={logoAlt}
+            onClick={onLogoClick}
             onPointerEnter={spin}
           >
             <span ref={markRef} className={MARK}>
@@ -933,22 +966,27 @@ const PillNav = ({
         </div>
       )}
 
+      {!collapsed && actionNode}
+
       {collapsed && (
-        <button
-          ref={toggleRef}
-          type="button"
-          className={[TOGGLE, joined ? TOGGLE_BARE : SURFACE].join(' ')}
-          aria-expanded={open}
-          aria-controls={panelId}
-          aria-label={open ? 'Close menu' : 'Open menu'}
-          onClick={toggle}
-        >
-          <span className={BURGER} aria-hidden="true">
-            <span className={LINE_TOP} />
-            <span className={LINE_BOTTOM} />
-          </span>
-          {!joined && <span className={RIM} />}
-        </button>
+        <div className="flex flex-none items-center gap-[var(--pn-gap)]">
+          <button
+            ref={toggleRef}
+            type="button"
+            className={[TOGGLE, joined ? TOGGLE_BARE : SURFACE].join(' ')}
+            aria-expanded={open}
+            aria-controls={panelId}
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            onClick={toggle}
+          >
+            <span className={BURGER} aria-hidden="true">
+              <span className={LINE_TOP} />
+              <span className={LINE_BOTTOM} />
+            </span>
+            {!joined && <span className={RIM} />}
+          </button>
+          {actionNode}
+        </div>
       )}
 
       {collapsed && panelShown && (
