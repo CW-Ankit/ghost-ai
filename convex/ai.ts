@@ -549,7 +549,9 @@ async function callMistralChat({
 
   if (!res.ok) {
     const errorText = await res.text()
-    throw new Error(`Mistral API error (${res.status}): ${errorText}`)
+    const err = new Error(`Mistral API error (${res.status}): ${errorText}`)
+    ;(err as Error & { statusCode?: number }).statusCode = res.status
+    throw err
   }
 
   const data = await res.json()
@@ -559,6 +561,18 @@ async function callMistralChat({
   }
 
   return content.trim()
+}
+
+function isMistralFallbackStatus(error: unknown): boolean {
+  const status = (error as { statusCode?: number } | null)?.statusCode
+  if (status === 401 || status === 402 || status === 403 || status === 429) return true
+  const msg = error instanceof Error ? error.message : String(error)
+  return (
+    msg.includes('Mistral API error (401)') ||
+    msg.includes('Mistral API error (402)') ||
+    msg.includes('Mistral API error (403)') ||
+    msg.includes('Mistral API error (429)')
+  )
 }
 
 export const generateDesign = action({
@@ -657,57 +671,72 @@ export const generateDesign = action({
           content: cleanPrompt,
         })
 
-        const text = await callMistralChat({
-          model: 'mistral-small-latest',
-          responseFormat: { type: 'json_object' },
-          messages,
-          temperature: 0.7,
-        })
+        try {
+          const text = await callMistralChat({
+            model: 'mistral-small-latest',
+            responseFormat: { type: 'json_object' },
+            messages,
+            temperature: 0.7,
+          })
 
-        let jsonText = text
-        if (jsonText.startsWith('```')) {
-          jsonText = jsonText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+          let jsonText = text
+          if (jsonText.startsWith('```')) {
+            jsonText = jsonText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+          }
+
+          const parsed = JSON.parse(jsonText)
+
+          if (!parsed.nodes || !Array.isArray(parsed.nodes)) {
+            throw new Error('AI response missing nodes array')
+          }
+          if (!parsed.edges || !Array.isArray(parsed.edges)) {
+            throw new Error('AI response missing edges array')
+          }
+
+          summary =
+            parsed.summary ||
+            (hasExistingNodes
+              ? 'Updated canvas architecture'
+              : 'Generated initial system architecture')
+
+          nodes = parsed.nodes.map((node: any, index: number) => ({
+            id: node.id || `node-${index}-${Date.now()}`,
+            type: 'canvasNode',
+            position: node.position || {
+              x: 100 + (index % 4) * 300,
+              y: 100 + Math.floor(index / 4) * 200,
+            },
+            data: {
+              label: node.label || 'Untitled',
+              shape: VALID_SHAPES.has(node.shape) ? node.shape : 'rectangle',
+              color: VALID_COLORS.has(node.color) ? node.color : 'default',
+            },
+          }))
+
+          edges = parsed.edges.map((edge: any, index: number) => ({
+            id: edge.id || `edge-${index}-${Date.now()}`,
+            source: edge.source,
+            target: edge.target,
+            sourceHandle: normalizeHandle(edge.sourceHandle, 'source'),
+            targetHandle: normalizeHandle(edge.targetHandle, 'target'),
+            type: 'canvasEdge',
+            markerEnd: { type: 'arrowclosed' },
+            data: {
+              label: edge.label || '',
+            },
+          }))
+        } catch (mistralErr) {
+          if (!isMistralFallbackStatus(mistralErr)) throw mistralErr
+          console.warn('Mistral API unavailable, falling back to offline design generator:', mistralErr)
+          const offlineResult = generateOfflineArchitecture(
+            cleanPrompt,
+            args.currentNodes,
+            args.currentEdges
+          )
+          nodes = offlineResult.nodes
+          edges = offlineResult.edges
+          summary = offlineResult.summary
         }
-
-        const parsed = JSON.parse(jsonText)
-
-        if (!parsed.nodes || !Array.isArray(parsed.nodes)) {
-          throw new Error('AI response missing nodes array')
-        }
-        if (!parsed.edges || !Array.isArray(parsed.edges)) {
-          throw new Error('AI response missing edges array')
-        }
-
-        summary =
-          parsed.summary ||
-          (hasExistingNodes ? 'Updated canvas architecture' : 'Generated initial system architecture')
-
-        nodes = parsed.nodes.map((node: any, index: number) => ({
-          id: node.id || `node-${index}-${Date.now()}`,
-          type: 'canvasNode',
-          position: node.position || {
-            x: 100 + (index % 4) * 300,
-            y: 100 + Math.floor(index / 4) * 200,
-          },
-          data: {
-            label: node.label || 'Untitled',
-            shape: VALID_SHAPES.has(node.shape) ? node.shape : 'rectangle',
-            color: VALID_COLORS.has(node.color) ? node.color : 'default',
-          },
-        }))
-
-        edges = parsed.edges.map((edge: any, index: number) => ({
-          id: edge.id || `edge-${index}-${Date.now()}`,
-          source: edge.source,
-          target: edge.target,
-          sourceHandle: normalizeHandle(edge.sourceHandle, 'source'),
-          targetHandle: normalizeHandle(edge.targetHandle, 'target'),
-          type: 'canvasEdge',
-          markerEnd: { type: 'arrowclosed' },
-          data: {
-            label: edge.label || '',
-          },
-        }))
       }
 
       await ctx.runMutation(internal.taskRuns.patchTaskRun, {
@@ -789,20 +818,48 @@ export const generateSpec = action({
       } else {
         const graphDescription = serializeGraphForLLM(args.nodes, args.edges)
 
-        markdown = await callMistralChat({
-          model: 'mistral-large-latest',
-          messages: [
-            {
-              role: 'system',
-              content: SPEC_SYSTEM_PROMPT,
-            },
-            {
-              role: 'user',
-              content: `Architecture Graph:\n${graphDescription}`,
-            },
-          ],
-          temperature: 0.5,
-        })
+        try {
+          markdown = await callMistralChat({
+            model: 'mistral-large-latest',
+            messages: [
+              {
+                role: 'system',
+                content: SPEC_SYSTEM_PROMPT,
+              },
+              {
+                role: 'user',
+                content: `Architecture Graph:\n${graphDescription}`,
+              },
+            ],
+            temperature: 0.5,
+          })
+        } catch (largeErr) {
+          if (!isMistralFallbackStatus(largeErr)) throw largeErr
+          // Retry with mistral-small-latest if mistral-large-latest is restricted on the account tier
+          try {
+            markdown = await callMistralChat({
+              model: 'mistral-small-latest',
+              messages: [
+                {
+                  role: 'system',
+                  content: SPEC_SYSTEM_PROMPT,
+                },
+                {
+                  role: 'user',
+                  content: `Architecture Graph:\n${graphDescription}`,
+                },
+              ],
+              temperature: 0.5,
+            })
+          } catch (smallErr) {
+            if (!isMistralFallbackStatus(smallErr)) throw smallErr
+            console.warn(
+              'Mistral API unavailable, falling back to offline spec generator:',
+              smallErr
+            )
+            markdown = generateOfflineSpecMarkdown(args.nodes, args.edges)
+          }
+        }
       }
 
       const specId = `spec-${Date.now()}`

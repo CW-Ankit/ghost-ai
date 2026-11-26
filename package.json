@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:api": "node scripts/test-backend.mjs",
+    "test:token": "node scripts/test-backend.mjs --print-token",
     "format": "prettier --write .",
     "check": "pnpm format && pnpm lint && pnpm test"
   },

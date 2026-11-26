@@ -10,24 +10,16 @@ pnpm test
 
 ## 2. Live HTTP API Script (`scripts/test-backend.mjs`)
 
-Start the Next.js server (`pnpm dev`) and run:
+Start the Next.js server (`pnpm dev`), then in another terminal run:
 
 ```bash
-# Public & security boundary checks (401/403/400 + /api/health)
 pnpm test:api
 ```
 
-To run the **full authenticated E2E lifecycle** (projects CRUD, collaborators, Liveblocks auth, canvas save/load, AI design generation, task runs, spec generation & download, cascade delete):
+`pnpm test:api` automatically reads `CLERK_SECRET_KEY` from `.env.local` to mint a temporary 5-minute Clerk Bearer session token, runs **all 18+ E2E checks** (health, security `401`/`403` guards, projects CRUD, collaborators, Liveblocks auth, canvas save/load, AI design generation, task runs, AI spec generation/download, and cascade cleanup), and revokes the temporary session when finished.
 
-1. Sign in to `http://localhost:3000` in your browser.
-2. Open DevTools -> **Application** -> **Cookies** -> copy the `__session` cookie value (or run `await window.Clerk.session.getToken()` in Console for a Bearer token).
-3. Run:
-
-```powershell
-# PowerShell
-$env:AUTH_COOKIE="__session=<your-clerk-session-cookie>"
-pnpm test:api
-```
+- To run only the public & unauthenticated security checks: `SKIP_AUTH=1 pnpm test:api`
+- To test with an explicit token: `BEARER_TOKEN="<jwt>" pnpm test:api`
 
 ## 3. Postman Collection
 
@@ -36,8 +28,12 @@ pnpm test:api
    - `postman/ghost-ai-backend.postman_collection.json`
    - `postman/ghost-ai-local.postman_environment.json`
 3. Select the **Ghost AI — Local** environment in the top-right dropdown.
-4. Set `authCookie` to `__session=<your-clerk-session-cookie>` (from your signed-in browser DevTools).
-5. Run folders `01 Health` through `08 Cleanup & Security Checks` in order (or use Postman **Collection Runner**). Collection variables (`projectId`, `roomId`, `taskRunId`, `specId`) are automatically populated by each request's `pm.test(...)` script.
+4. Generate a fresh 5-minute Bearer token in one command:
+   ```bash
+   pnpm test:token
+   ```
+5. Paste the printed JWT into the **`bearerToken`** environment variable in Postman (use Bearer auth rather than a raw `__session` cookie alone, because Clerk's `__session` cookie expires in 60 seconds and requires `__client_uat`).
+6. Run folders `01 Health` through `08 Cleanup & Security Checks` in order (or use Postman **Collection Runner**). Collection variables (`projectId`, `roomId`, `taskRunId`, `specId`) are automatically populated by each request's `pm.test(...)` script.
 
 ## 4. Backend Endpoints Reference
 

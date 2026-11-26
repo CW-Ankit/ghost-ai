@@ -6,15 +6,42 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:3000" },
-    { "key": "authCookie", "value": "" },
-    { "key": "bearerToken", "value": "" },
-    { "key": "projectId", "value": "" },
-    { "key": "roomId", "value": "" },
-    { "key": "specId", "value": "" },
-    { "key": "taskRunId", "value": "" },
-    { "key": "collaboratorEmail", "value": "collaborator@example.com" },
-    { "key": "internalSecret", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "authCookie",
+      "value": ""
+    },
+    {
+      "key": "bearerToken",
+      "value": ""
+    },
+    {
+      "key": "projectId",
+      "value": ""
+    },
+    {
+      "key": "roomId",
+      "value": ""
+    },
+    {
+      "key": "specId",
+      "value": ""
+    },
+    {
+      "key": "taskRunId",
+      "value": ""
+    },
+    {
+      "key": "collaboratorEmail",
+      "value": "collaborator@example.com"
+    },
+    {
+      "key": "internalSecret",
+      "value": ""
+    }
   ],
   "item": [
     {
@@ -71,9 +98,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Cookie", "value": "{{authCookie}}" },
-              { "key": "Authorization", "value": "Bearer {{bearerToken}}", "disabled": true }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -103,7 +135,10 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Cookie", "value": "{{authCookie}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
             ],
             "url": "{{baseUrl}}/api/projects"
           }
@@ -129,7 +164,10 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Cookie", "value": "{{authCookie}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
             ],
             "url": "{{baseUrl}}/api/projects/{{projectId}}"
           }
@@ -153,8 +191,14 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Cookie", "value": "{{authCookie}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -186,8 +230,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Cookie", "value": "{{authCookie}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -216,7 +266,10 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Cookie", "value": "{{authCookie}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
             ],
             "url": "{{baseUrl}}/api/projects/{{projectId}}/collaborators"
           }
@@ -239,7 +292,10 @@
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "Cookie", "value": "{{authCookie}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
             ],
             "url": "{{baseUrl}}/api/projects/{{projectId}}/collaborators?email={{collaboratorEmail}}"
           }
@@ -270,8 +326,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Cookie", "value": "{{authCookie}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -300,7 +362,10 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Cookie", "value": "{{authCookie}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
             ],
             "url": "{{baseUrl}}/api/canvas/save?projectId={{projectId}}"
           }
@@ -332,8 +397,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Cookie", "value": "{{authCookie}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -362,7 +433,10 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Cookie", "value": "{{authCookie}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
             ],
             "url": "{{baseUrl}}/api/task-runs/{{taskRunId}}"
           }
@@ -389,8 +463,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Cookie", "value": "{{authCookie}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -424,7 +504,10 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Cookie", "value": "{{authCookie}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
             ],
             "url": "{{baseUrl}}/api/projects/{{projectId}}/specs"
           }
@@ -449,7 +532,10 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Cookie", "value": "{{authCookie}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
             ],
             "url": "{{baseUrl}}/api/projects/{{projectId}}/specs/{{specId}}/download"
           }
@@ -473,7 +559,10 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Cookie", "value": "{{authCookie}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
             ],
             "url": "{{baseUrl}}/api/specs/{{specId}}"
           }
@@ -496,7 +585,10 @@
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "Cookie", "value": "{{authCookie}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
             ],
             "url": "{{baseUrl}}/api/specs/{{specId}}"
           }
@@ -526,8 +618,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Cookie", "value": "{{authCookie}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -578,7 +676,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"projectId\": \"invalid\",\n  \"specId\": \"spec-1\",\n  \"content\": \"# Unauthorized\"\n}"
@@ -604,7 +707,10 @@
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "Cookie", "value": "{{authCookie}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
             ],
             "url": "{{baseUrl}}/api/projects/{{projectId}}"
           }

@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { put } from '@vercel/blob'
 import { api } from '@/convex/_generated/api'
 import type { Id } from '@/convex/_generated/dataModel'
-import { getAuthenticatedConvex, handleApiError, parseJsonBody } from '@/lib/api-auth'
+import {
+  getAuthenticatedConvex,
+  handleApiError,
+  parseJsonBody,
+  uploadArtifactToBlob,
+} from '@/lib/api-auth'
 
 export async function POST(req: NextRequest) {
   try {
@@ -57,25 +61,16 @@ export async function POST(req: NextRequest) {
     }
 
     const filename = `specs/${projectId}/${safeSpecId}.md`
+    const { blobUrl, fallback } = await uploadArtifactToBlob(
+      filename,
+      content,
+      'text/markdown;charset=utf-8'
+    )
 
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      const blob = await put(filename, content, {
-        access: 'public',
-        addRandomSuffix: false,
-        contentType: 'text/markdown; charset=utf-8',
-      })
-
-      return NextResponse.json({
-        success: true,
-        blobUrl: blob.url,
-      })
-    }
-
-    const fallbackUrl = `data:text/markdown;charset=utf-8,${encodeURIComponent(content)}`
     return NextResponse.json({
       success: true,
-      blobUrl: fallbackUrl,
-      fallback: true,
+      blobUrl,
+      ...(fallback ? { fallback: true } : {}),
     })
   } catch (error) {
     return handleApiError(error, 'Failed to upload spec')

@@ -28,6 +28,7 @@ vi.mock('@vercel/blob', () => ({
   put: vi.fn(async (pathname: string) => ({
     url: `https://demo.public.blob.vercel-storage.com/${pathname}`,
   })),
+  get: vi.fn(async () => null),
 }))
 
 describe('Next.js Backend API Routes', () => {

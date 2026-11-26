@@ -1,4 +1,5 @@
 import { auth } from '@clerk/nextjs/server'
+import { get as getBlob, put as putBlob } from '@vercel/blob'
 import { ConvexHttpClient } from 'convex/browser'
 import { NextResponse } from 'next/server'
 
@@ -136,7 +137,47 @@ export function isAllowedArtifactUrl(rawUrl: string): boolean {
 }
 
 /**
+ * Uploads an artifact to Vercel Blob, supporting both private and public Blob stores.
+ * Falls back to a self-contained data URI when BLOB_READ_WRITE_TOKEN is absent.
+ */
+export async function uploadArtifactToBlob(
+  pathname: string,
+  content: string,
+  contentType: string
+): Promise<{ blobUrl: string; fallback: boolean }> {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return {
+      blobUrl: `data:${contentType},${encodeURIComponent(content)}`,
+      fallback: true,
+    }
+  }
+
+  try {
+    const blob = await putBlob(pathname, content, {
+      access: 'private',
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      contentType,
+    })
+    return { blobUrl: blob.url, fallback: false }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase()
+    if (msg.includes('public') && msg.includes('access')) {
+      const blob = await putBlob(pathname, content, {
+        access: 'public',
+        addRandomSuffix: false,
+        allowOverwrite: true,
+        contentType,
+      })
+      return { blobUrl: blob.url, fallback: false }
+    }
+    throw err
+  }
+}
+
+/**
  * Safely reads text content from a verified data URI or allowed Vercel Blob HTTPS URL.
+ * Supports both private and public Vercel Blob stores.
  */
 export async function readVerifiedArtifact(
   artifactUrl: string
@@ -151,6 +192,34 @@ export async function readVerifiedArtifact(
       return { ok: false, status: 400, error: 'Malformed data URI' }
     }
     return { ok: true, content: decodeURIComponent(artifactUrl.slice(commaIndex + 1)) }
+  }
+
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      const isPublicHost = artifactUrl.includes('.public.blob.vercel-storage.com')
+      const blobResult = await getBlob(artifactUrl, {
+        access: isPublicHost ? 'public' : 'private',
+        useCache: false,
+      })
+      if (!blobResult || blobResult.statusCode !== 200 || !blobResult.stream) {
+        return { ok: false, status: 404, error: 'Artifact not found in Blob storage' }
+      }
+      const content = await new Response(blobResult.stream).text()
+      return { ok: true, content }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase()
+      // Retry opposite access level if store visibility differs from URL host heuristic
+      if (msg.includes('access') || msg.includes('private') || msg.includes('public')) {
+        const retryResult = await getBlob(artifactUrl, {
+          access: artifactUrl.includes('.public.blob.vercel-storage.com') ? 'private' : 'public',
+          useCache: false,
+        })
+        if (retryResult && retryResult.statusCode === 200 && retryResult.stream) {
+          return { ok: true, content: await new Response(retryResult.stream).text() }
+        }
+      }
+      throw err
+    }
   }
 
   const response = await fetch(artifactUrl)

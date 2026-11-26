@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { put } from '@vercel/blob'
 import { api } from '@/convex/_generated/api'
 import type { Id } from '@/convex/_generated/dataModel'
 import {
@@ -8,6 +7,7 @@ import {
   handleApiError,
   parseJsonBody,
   readVerifiedArtifact,
+  uploadArtifactToBlob,
 } from '@/lib/api-auth'
 
 export async function GET(req: NextRequest) {
@@ -107,20 +107,11 @@ export async function POST(req: NextRequest) {
     const jsonContent = JSON.stringify(canvasPayload, null, 2)
     const filename = `canvas/${projectId}.json`
 
-    let blobUrl: string
-    let fallback = false
-
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      const blob = await put(filename, jsonContent, {
-        access: 'public',
-        addRandomSuffix: false,
-        contentType: 'application/json',
-      })
-      blobUrl = blob.url
-    } else {
-      blobUrl = `data:application/json;charset=utf-8,${encodeURIComponent(jsonContent)}`
-      fallback = true
-    }
+    const { blobUrl, fallback } = await uploadArtifactToBlob(
+      filename,
+      jsonContent,
+      'application/json;charset=utf-8'
+    )
 
     // Optionally sync metadata directly to Convex (useful for direct API / Postman clients)
     if (persistToConvex === true) {
