@@ -2,9 +2,8 @@
 
 import type { ReactNode } from 'react'
 import Link from 'next/link'
-import { Check } from 'lucide-react'
+import { Check, Rocket, Sparkles, Users } from 'lucide-react'
 import PixelCard from '@/components/pixel-card'
-import { AiSpark3DIcon, Canvas3DIcon, Share3DIcon } from '@/components/landing/bento-3d-icons'
 import { cn } from '@/lib/utils'
 
 interface PricingTier {
@@ -31,10 +30,10 @@ const TIERS: PricingTier[] = [
   {
     id: 'starter',
     name: 'Starter',
-    tagline: 'For solo projects & exploration',
+    tagline: 'For solo projects',
     price: 0,
     ctaLabel: 'Get started',
-    icon: <Canvas3DIcon className="h-5 w-5" />,
+    icon: <Sparkles className="h-5 w-5 text-text-primary" />,
     colors: ['var(--text-primary)', 'var(--text-secondary)', 'var(--border-subtle)'],
     glowColor: 'var(--text-secondary)',
     shape: 'square',
@@ -43,21 +42,17 @@ const TIERS: PricingTier[] = [
     pixelSize: 1.6,
     opacity: 0.25,
     introDelay: 0,
-    features: [
-      '3 architecture projects',
-      'Starter system blueprints',
-      'Markdown & PDF spec export',
-    ],
+    features: ['3 architecture projects', 'Starter system blueprints', 'Markdown & PDF export'],
   },
   {
     id: 'pro',
     name: 'Pro',
-    tagline: 'For growing teams & builders',
+    tagline: 'For growing teams',
     price: 19,
     popular: true,
     featured: true,
     ctaLabel: 'Upgrade to Pro',
-    icon: <AiSpark3DIcon className="h-5 w-5" />,
+    icon: <Rocket className="h-5 w-5 text-text-primary" />,
     colors: ['var(--text-primary)', 'var(--accent-primary)', 'var(--accent-ai-text)'],
     glowColor: 'var(--accent-primary)',
     shape: 'square',
@@ -66,19 +61,15 @@ const TIERS: PricingTier[] = [
     pixelSize: 1.6,
     opacity: 0.32,
     introDelay: 90,
-    features: [
-      'Unlimited architecture projects',
-      'Real-time multiplayer & AI diffs',
-      'Public share links & autosave',
-    ],
+    features: ['Unlimited projects', 'Live multiplayer & AI diffs', 'Public share links'],
   },
   {
     id: 'team',
     name: 'Team',
-    tagline: 'For organizations & reviews',
+    tagline: 'For organizations',
     price: 49,
     ctaLabel: 'Start team trial',
-    icon: <Share3DIcon className="h-5 w-5" />,
+    icon: <Users className="h-5 w-5 text-text-primary" />,
     colors: ['var(--text-primary)', 'var(--accent-ai-text)', 'var(--accent-ai)'],
     glowColor: 'var(--accent-ai)',
     shape: 'diamond',
@@ -87,11 +78,7 @@ const TIERS: PricingTier[] = [
     pixelSize: 1.6,
     opacity: 0.3,
     introDelay: 180,
-    features: [
-      'Shared team workspaces',
-      'Unlimited room collaborators',
-      'Priority onboarding & support',
-    ],
+    features: ['Shared workspaces', 'Team access controls', 'Priority support'],
   },
 ]
 
@@ -110,14 +97,13 @@ export function PricingSection({ isSignedIn = false }: PricingSectionProps) {
     >
       <div className="max-w-2xl space-y-3">
         <p className="font-mono text-xs font-medium tracking-[0.14em] text-accent-primary uppercase">
-          Simple, Transparent Pricing
+          Pricing
         </p>
         <h2 className="font-heading text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
-          Start designing for free. Scale with your team.
+          Simple plans for every team.
         </h2>
         <p className="text-sm leading-relaxed text-text-secondary sm:text-base">
-          Every tier includes real-time canvas editing, starter blueprints, and instant spec
-          exports.
+          Start free on personal diagrams, and upgrade when your team needs unlimited scale.
         </p>
       </div>
 

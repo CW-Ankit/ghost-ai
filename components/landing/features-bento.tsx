@@ -1,13 +1,7 @@
 'use client'
 
+import { FileText, Layers, MousePointerClick, Share2, WandSparkles } from 'lucide-react'
 import PixelCard from '@/components/pixel-card'
-import {
-  AiSpark3DIcon,
-  Canvas3DIcon,
-  Share3DIcon,
-  Specs3DIcon,
-  Templates3DIcon,
-} from '@/components/landing/bento-3d-icons'
 
 const CYAN_PIXELS = ['var(--text-primary)', 'var(--accent-primary)', 'var(--accent-ai-text)']
 const AI_PIXELS = ['var(--text-primary)', 'var(--accent-ai-text)', 'var(--accent-ai)']
@@ -31,7 +25,7 @@ const SHARED_PIXEL_PROPS = {
 }
 
 const ICON_SOCKET_CLASS =
-  'inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#2a2a33_0%,#16161c_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.16),inset_0_0_0_1px_rgba(255,255,255,0.08),0_8px_18px_-6px_rgba(0,0,0,0.85)] transition-transform duration-300 group-hover:-translate-y-0.5'
+  'inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#2a2a33_0%,#16161c_100%)] text-text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.16),inset_0_0_0_1px_rgba(255,255,255,0.08),0_8px_18px_-6px_rgba(0,0,0,0.85)] transition-transform duration-300 group-hover:-translate-y-0.5'
 
 const ASSET_WELL_CLASS =
   'pointer-events-none relative my-5 flex-1 overflow-hidden rounded-2xl bg-[linear-gradient(180deg,rgba(8,8,9,0.52)_0%,rgba(17,17,20,0.28)_100%)] shadow-[inset_0_2px_10px_rgba(0,0,0,0.68),inset_0_0_0_1px_rgba(255,255,255,0.04)]'
@@ -43,19 +37,19 @@ export function FeaturesBento() {
       <section id="canvas" tabIndex={-1} className="space-y-8 outline-none">
         <div className="max-w-2xl space-y-3">
           <p className="font-mono text-xs font-medium tracking-[0.14em] text-accent-primary uppercase">
-            Collaborative Architecture Workspace
+            Workspace
           </p>
           <h2 className="font-heading text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
-            Design distributed systems together, in real time.
+            From idea to architecture in seconds.
           </h2>
           <p className="text-sm leading-relaxed text-text-secondary sm:text-base">
-            From natural-language prompts to multi-user graph editing and export-ready technical
-            specs, every stage lives on one unified canvas.
+            Sketch systems together on a live canvas, refine with AI, and ship clear technical
+            specs.
           </p>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
-          {/* Card 1: Real-Time Multiplayer Canvas */}
+          {/* Card 1: Multiplayer Canvas */}
           <PixelCard
             {...SHARED_PIXEL_PROPS}
             colors={CYAN_PIXELS}
@@ -66,7 +60,7 @@ export function FeaturesBento() {
           >
             <div className="relative flex h-full w-full flex-col justify-between p-6 sm:p-8">
               <div className={ICON_SOCKET_CLASS}>
-                <Canvas3DIcon className="h-8 w-8" />
+                <MousePointerClick className="h-5 w-5" />
               </div>
 
               <div aria-hidden="true" className={ASSET_WELL_CLASS}>
@@ -75,17 +69,16 @@ export function FeaturesBento() {
 
               <div className="space-y-1.5">
                 <h3 className="font-heading text-lg font-semibold text-text-primary">
-                  Real-Time Multiplayer Canvas
+                  Multiplayer Canvas
                 </h3>
-                <p className="max-w-lg text-sm leading-relaxed text-text-secondary">
-                  Liveblocks CRDT state sync, live collaborator cursors, 6 custom node shapes,
-                  orthogonal edge routing, and viewport-culled 100+ node performance.
+                <p className="max-w-md text-sm leading-relaxed text-text-secondary">
+                  Collaborate live with shared cursors, custom shapes, and effortless edge routing.
                 </p>
               </div>
             </div>
           </PixelCard>
 
-          {/* Card 2: Starter System Templates */}
+          {/* Card 2: Starter Blueprints */}
           <PixelCard
             {...SHARED_PIXEL_PROPS}
             colors={EMERALD_PIXELS}
@@ -96,7 +89,7 @@ export function FeaturesBento() {
           >
             <div className="relative flex h-full w-full flex-col justify-between p-6 sm:p-8">
               <div className={ICON_SOCKET_CLASS}>
-                <Templates3DIcon className="h-8 w-8" />
+                <Layers className="h-5 w-5" />
               </div>
 
               <div aria-hidden="true" className={ASSET_WELL_CLASS}>
@@ -105,11 +98,11 @@ export function FeaturesBento() {
 
               <div className="space-y-1.5">
                 <h3 className="font-heading text-lg font-semibold text-text-primary">
-                  Starter System Templates
+                  Starter Blueprints
                 </h3>
                 <p className="text-sm leading-relaxed text-text-secondary">
-                  Drop prebuilt microservices, event-driven, serverless, and CI/CD blueprints
-                  directly into active rooms.
+                  Start faster with ready-made patterns for microservices, serverless, and
+                  pipelines.
                 </p>
               </div>
             </div>
@@ -120,7 +113,7 @@ export function FeaturesBento() {
       {/* AI Architect, Specs & Sharing Section */}
       <section id="specs" tabIndex={-1} className="outline-none">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
-          {/* Card 3: AI Synthesis & Visual Diffs */}
+          {/* Card 3: AI Architect */}
           <PixelCard
             {...SHARED_PIXEL_PROPS}
             colors={AI_PIXELS}
@@ -131,7 +124,7 @@ export function FeaturesBento() {
           >
             <div className="relative flex h-full w-full flex-col justify-between p-6 sm:p-8">
               <div className={ICON_SOCKET_CLASS}>
-                <AiSpark3DIcon className="h-8 w-8" />
+                <WandSparkles className="h-5 w-5" />
               </div>
 
               <div aria-hidden="true" className={ASSET_WELL_CLASS}>
@@ -140,17 +133,16 @@ export function FeaturesBento() {
 
               <div className="space-y-1.5">
                 <h3 className="font-heading text-lg font-semibold text-text-primary">
-                  AI Synthesis &amp; Diffs
+                  AI Architect
                 </h3>
                 <p className="text-sm leading-relaxed text-text-secondary">
-                  Generate and refine architectures from plain English while preserving existing IDs
-                  and highlighting changed nodes.
+                  Generate and evolve diagrams in plain English with instant visual diffs.
                 </p>
               </div>
             </div>
           </PixelCard>
 
-          {/* Card 4: Technical Specs & Multi-Format Export */}
+          {/* Card 4: Instant Specs */}
           <PixelCard
             {...SHARED_PIXEL_PROPS}
             colors={CYAN_PIXELS}
@@ -161,7 +153,7 @@ export function FeaturesBento() {
           >
             <div className="relative flex h-full w-full flex-col justify-between p-6 sm:p-8">
               <div className={ICON_SOCKET_CLASS}>
-                <Specs3DIcon className="h-8 w-8" />
+                <FileText className="h-5 w-5" />
               </div>
 
               <div aria-hidden="true" className={ASSET_WELL_CLASS}>
@@ -170,17 +162,16 @@ export function FeaturesBento() {
 
               <div className="space-y-1.5">
                 <h3 className="font-heading text-lg font-semibold text-text-primary">
-                  Technical Specs &amp; Export
+                  Instant Specs
                 </h3>
                 <p className="text-sm leading-relaxed text-text-secondary">
-                  Compile any canvas graph into Markdown specs and A4 PDFs, with vector PNG/SVG
-                  diagram export arriving next.
+                  Turn any architecture graph into clean Markdown documentation and PDFs.
                 </p>
               </div>
             </div>
           </PixelCard>
 
-          {/* Card 5: Public Share Links & Autosave */}
+          {/* Card 5: Share & Recover */}
           <PixelCard
             {...SHARED_PIXEL_PROPS}
             colors={EMERALD_PIXELS}
@@ -191,7 +182,7 @@ export function FeaturesBento() {
           >
             <div className="relative flex h-full w-full flex-col justify-between p-6 sm:p-8">
               <div className={ICON_SOCKET_CLASS}>
-                <Share3DIcon className="h-8 w-8" />
+                <Share2 className="h-5 w-5" />
               </div>
 
               <div aria-hidden="true" className={ASSET_WELL_CLASS}>
@@ -200,11 +191,10 @@ export function FeaturesBento() {
 
               <div className="space-y-1.5">
                 <h3 className="font-heading text-lg font-semibold text-text-primary">
-                  Public Links &amp; Autosave
+                  Share &amp; Recover
                 </h3>
                 <p className="text-sm leading-relaxed text-text-secondary">
-                  Share protocol-enforced read-only links backed by 2.5s debounced Vercel Blob
-                  snapshots and instant recovery.
+                  Publish read-only architecture links with continuous cloud autosave.
                 </p>
               </div>
             </div>
