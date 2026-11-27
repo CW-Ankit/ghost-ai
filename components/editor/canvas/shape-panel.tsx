@@ -2,8 +2,7 @@
 
 import React from 'react'
 import { Square, Circle, Diamond, Pill, Database, Hexagon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { EditorButton } from '../editor-button'
 import { NodeShape } from '@/types/canvas'
 import { useCanvasContext } from './canvas-context'
 
@@ -26,19 +25,19 @@ function ShapeItem({ shape, icon, label }: ShapeItemProps) {
   }
 
   return (
-    <Button
-      variant="ghost"
-      size="icon"
+    <EditorButton
+      tone="socket"
+      size="icon-lg"
       draggable
       onDragStart={onDragStart}
-      className="h-11 w-11 rounded-xl bg-bg-surface border border-border-default text-text-secondary hover:text-accent-primary hover:border-accent-primary transition-all group relative"
+      className="hover:text-accent-primary group relative"
       title={label}
     >
       {icon}
       <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-bg-elevated text-text-primary text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-border-subtle">
         {label}
       </span>
-    </Button>
+    </EditorButton>
   )
 }
 
@@ -59,7 +58,7 @@ export function ShapePanel() {
   ]
 
   return (
-    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40">
       <div className="flex items-center gap-2 p-2 bg-bg-surface/80 backdrop-blur-md border border-border-default rounded-2xl shadow-2xl">
         {shapes.map((s) => (
           <ShapeItem key={s.shape} {...s} />

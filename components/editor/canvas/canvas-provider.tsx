@@ -31,7 +31,7 @@ export function CanvasProvider({
       <div className="h-screen w-full flex items-center justify-center bg-base text-text-muted">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 border-2 border-accent-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-medium text-text-secondary">Connecting to workspace...</p>
+          <p className="text-sm font-medium text-text-secondary">Opening the studio doors...</p>
         </div>
       </div>
     )
@@ -46,7 +46,7 @@ export function CanvasProvider({
               <div className="h-full w-full flex items-center justify-center bg-base text-text-muted">
                 <div className="flex flex-col items-center gap-2">
                   <div className="h-8 w-8 border-2 border-accent-primary border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm">Connecting to room...</p>
+                  <p className="text-sm">Pulling up the whiteboard...</p>
                 </div>
               </div>
             }
@@ -58,7 +58,7 @@ export function CanvasProvider({
                 <div className="h-full w-full flex items-center justify-center bg-base text-text-muted">
                   <div className="flex flex-col items-center gap-2">
                     <div className="h-8 w-8 border-2 border-accent-primary border-t-transparent rounded-full animate-spin" />
-                    <p className="text-sm">Loading canvas...</p>
+                    <p className="text-sm">Unrolling the blueprint...</p>
                   </div>
                 </div>
               ))}
