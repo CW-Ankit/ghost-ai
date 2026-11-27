@@ -30,7 +30,7 @@ const TIERS: PricingTier[] = [
   {
     id: 'starter',
     name: 'Starter',
-    tagline: 'For solo projects',
+    tagline: 'For solo late-night builds',
     price: 0,
     ctaLabel: 'Open Studio',
     icon: <Sparkles className="h-5 w-5 text-text-primary" />,
@@ -47,7 +47,7 @@ const TIERS: PricingTier[] = [
   {
     id: 'pro',
     name: 'Pro',
-    tagline: 'For growing teams',
+    tagline: 'For crews shipping fast',
     price: 19,
     popular: true,
     featured: true,
@@ -66,7 +66,7 @@ const TIERS: PricingTier[] = [
   {
     id: 'team',
     name: 'Team',
-    tagline: 'For organizations',
+    tagline: 'For whole orgs & crews',
     price: 49,
     ctaLabel: 'Upgrade to Teams',
     icon: <Users className="h-5 w-5 text-text-primary" />,
@@ -100,10 +100,10 @@ export function PricingSection({ isSignedIn = false }: PricingSectionProps) {
           Pricing
         </p>
         <h2 className="font-heading text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
-          Simple plans for every team.
+          Pick a seat, start sketching.
         </h2>
         <p className="text-sm leading-relaxed text-text-secondary sm:text-base">
-          Start free on personal diagrams, and upgrade when your team needs unlimited scale.
+          Free for solo late-night ideas. Ready whenever your whole engineering crew piles in.
         </p>
       </div>
 

@@ -1,4 +1,5 @@
 import { auth } from '@clerk/nextjs/server'
+import { BuiltWithMarquee } from '@/components/landing/built-with-marquee'
 import { FeaturesBento } from '@/components/landing/features-bento'
 import { HeroBackground } from '@/components/landing/hero-background'
 import { LandingNav } from '@/components/landing/landing-nav'
@@ -22,6 +23,8 @@ export default async function Home() {
       </section>
 
       <FeaturesBento />
+
+      <BuiltWithMarquee />
 
       <PricingSection isSignedIn={isSignedIn} />
 

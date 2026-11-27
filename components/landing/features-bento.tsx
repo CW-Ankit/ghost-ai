@@ -37,14 +37,14 @@ export function FeaturesBento() {
       <div className="space-y-8">
         <div id="overview" tabIndex={-1} className="max-w-2xl scroll-mt-8 space-y-3 outline-none">
           <p className="font-mono text-xs font-medium tracking-[0.14em] text-accent-primary uppercase">
-            Workspace
+            The Studio
           </p>
           <h2 className="font-heading text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
-            From idea to architecture in seconds.
+            Sketch systems like you actually talk about them.
           </h2>
           <p className="text-sm leading-relaxed text-text-secondary sm:text-base">
-            Sketch systems together on a live canvas, refine with AI, and ship clear technical
-            specs.
+            Draw together on a live canvas, bounce ideas off Ghost AI, and walk away with a spec
+            your team will actually read.
           </p>
         </div>
 
@@ -76,7 +76,8 @@ export function FeaturesBento() {
                   Multiplayer Canvas
                 </h3>
                 <p className="max-w-md text-sm leading-relaxed text-text-secondary">
-                  Collaborate live with shared cursors, custom shapes, and effortless edge routing.
+                  Watch your teammates&apos; cursors fly around live with custom shapes and clean
+                  edge routing.
                 </p>
               </div>
             </div>
@@ -105,8 +106,8 @@ export function FeaturesBento() {
                   Starter Blueprints
                 </h3>
                 <p className="text-sm leading-relaxed text-text-secondary">
-                  Start faster with ready-made patterns for microservices, serverless, and
-                  pipelines.
+                  Skip the blank-canvas stare. Drop in battle-tested patterns for microservices,
+                  serverless, or pipelines.
                 </p>
               </div>
             </div>
@@ -140,7 +141,8 @@ export function FeaturesBento() {
                   AI Architect
                 </h3>
                 <p className="text-sm leading-relaxed text-text-secondary">
-                  Generate and evolve diagrams in plain English with instant visual diffs.
+                  Tell Ghost AI what you&apos;re building in plain English and watch visual diffs
+                  light up your board.
                 </p>
               </div>
             </div>
@@ -169,7 +171,8 @@ export function FeaturesBento() {
                   Instant Specs
                 </h3>
                 <p className="text-sm leading-relaxed text-text-secondary">
-                  Turn any architecture graph into clean Markdown documentation and PDFs.
+                  Turn all those boxes and arrows into clean Markdown docs and print-ready PDFs in
+                  one click.
                 </p>
               </div>
             </div>
@@ -198,7 +201,8 @@ export function FeaturesBento() {
                   Share &amp; Recover
                 </h3>
                 <p className="text-sm leading-relaxed text-text-secondary">
-                  Publish read-only architecture links with continuous cloud autosave.
+                  Drop a read-only link for anyone to peek while cloud autosave quietly watches your
+                  back.
                 </p>
               </div>
             </div>
