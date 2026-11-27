@@ -1,6 +1,19 @@
-import { v } from 'convex/values'
-import { query, mutation } from './_generated/server'
-import { ConvexError } from 'convex/values'
+import { v, ConvexError } from 'convex/values'
+import { internalQuery, mutation, query } from './_generated/server'
+import type { Doc } from './_generated/dataModel'
+import {
+  canManageProject,
+  cascadeDeleteProject,
+  extractOrgContext,
+  isValidEmail,
+  normalizeEmail,
+  requireIdentity,
+  requireProjectMember,
+  requireProjectOwner,
+  resolveProjectAccess,
+} from './lib/access'
+
+const ACTIVE_PRESENCE_WINDOW_MS = 60 * 1000
 
 export const list = query({
   args: {},
@@ -11,77 +24,140 @@ export const list = query({
     }
 
     const userIdentifier = identity.tokenIdentifier
-    const userEmail = identity.email
+    const { orgId } = extractOrgContext(identity)
+    const rawEmail = identity.email
+    const normalizedEmail = rawEmail ? normalizeEmail(rawEmail) : undefined
 
     // Get user's pinned projects
     const favorites = await ctx.db
       .query('favorites')
       .withIndex('by_userId', (q) => q.eq('userId', userIdentifier))
-      .collect()
+      .take(200)
     const pinnedProjectIds = new Set(favorites.map((f) => f.projectId))
 
-    // Get owned projects
-    const ownedProjects = await ctx.db
-      .query('projects')
-      .withIndex('by_ownerId', (q) => q.eq('ownerId', userIdentifier))
-      .collect()
+    // Scope primary workspace projects by active Clerk organization (or personal profile when orgId is null)
+    const primaryProjects = orgId
+      ? await ctx.db
+          .query('projects')
+          .withIndex('by_orgId', (q) => q.eq('orgId', orgId))
+          .take(200)
+      : (
+          await ctx.db
+            .query('projects')
+            .withIndex('by_ownerId', (q) => q.eq('ownerId', userIdentifier))
+            .take(200)
+        ).filter((p) => !p.orgId)
 
     // Get shared projects if email is available
-    let sharedProjects: any[] = []
-    if (userEmail) {
+    let sharedProjects: Doc<'projects'>[] = []
+    if (normalizedEmail) {
       const collaborations = await ctx.db
         .query('projectCollaborators')
-        .withIndex('by_email', (q) => q.eq('email', userEmail))
-        .collect()
+        .withIndex('by_email', (q) => q.eq('email', normalizedEmail))
+        .take(200)
 
-      const sharedProjectIds = collaborations.map((c) => c.projectId)
+      const legacyCollaborations =
+        rawEmail && rawEmail !== normalizedEmail
+          ? await ctx.db
+              .query('projectCollaborators')
+              .withIndex('by_email', (q) => q.eq('email', rawEmail))
+              .take(200)
+          : []
 
-      // Fetch shared projects in parallel
+      const uniqueSharedIds = Array.from(
+        new Set([...collaborations, ...legacyCollaborations].map((c) => c.projectId))
+      )
+
       sharedProjects = (
-        await Promise.all(
-          sharedProjectIds.map(async (projectId) => {
-            const project = await ctx.db.get(projectId)
-            return project
-          })
-        )
-      ).filter((p): p is NonNullable<typeof p> => p !== null)
+        await Promise.all(uniqueSharedIds.map((projectId) => ctx.db.get(projectId)))
+      ).filter((p): p is Doc<'projects'> => p !== null)
     }
 
-    const ownedProjectIds = new Set(ownedProjects.map((p) => p._id))
+    const primaryProjectIds = new Set(primaryProjects.map((p) => p._id))
     const allAccessibleProjects = [
-      ...ownedProjects,
-      ...sharedProjects.filter((p) => !ownedProjectIds.has(p._id)),
+      ...primaryProjects,
+      ...sharedProjects.filter((p) => !primaryProjectIds.has(p._id)),
     ]
-    const now = Date.now()
-    const timeout = 60 * 1000
 
-    // Calculate active users for each accessible project in parallel
+    const cutoff = Date.now() - ACTIVE_PRESENCE_WINDOW_MS
+
+    // Calculate active users for each accessible project using indexed queries
     const projectsWithMetadata = await Promise.all(
       allAccessibleProjects.map(async (p) => {
-        const activeUsers = await ctx.db
+        const presenceRows = await ctx.db
           .query('presence')
           .withIndex('by_projectId', (q) => q.eq('projectId', p._id))
-          .filter((q) => q.gt(q.field('lastActive'), now - timeout))
-          .collect()
+          .take(100)
+        const activeCount = presenceRows.filter((row) => row.lastActive > cutoff).length
 
         return {
           ...p,
           isPinned: pinnedProjectIds.has(p._id),
-          activeUsers: activeUsers.length,
+          activeUsers: activeCount,
+          canManage: canManageProject(p, identity),
         }
       })
     )
 
-    const ownedWithPinned = projectsWithMetadata.filter((p) =>
-      ownedProjects.some((op) => op._id === p._id)
-    )
-    const sharedWithPinned = projectsWithMetadata.filter(
-      (p) => sharedProjects.some((sp) => sp._id === p._id) && !ownedProjectIds.has(p._id)
-    )
+    const ownedWithPinned = projectsWithMetadata.filter((p) => primaryProjectIds.has(p._id))
+    const sharedWithPinned = projectsWithMetadata.filter((p) => !primaryProjectIds.has(p._id))
 
     return {
       owned: ownedWithPinned,
       shared: sharedWithPinned,
+      activeOrgId: orgId,
+    }
+  },
+})
+
+export const getById = query({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity()
+    const project = await ctx.db.get(args.projectId)
+    if (!project) {
+      return null
+    }
+
+    const access = await resolveProjectAccess(ctx, project, identity)
+    if (!access) {
+      return null
+    }
+
+    return {
+      ...project,
+      role: access.role,
+      isReadOnly: access.isReadOnly,
+      canManage: identity ? canManageProject(project, identity) : false,
+    }
+  },
+})
+
+export const verifyMemberAccess = internalQuery({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) {
+      return { ok: false as const, error: 'Unauthenticated' }
+    }
+
+    const project = await ctx.db.get(args.projectId)
+    if (!project) {
+      return { ok: false as const, error: 'Project not found' }
+    }
+
+    const access = await resolveProjectAccess(ctx, project, identity)
+    if (!access || access.isReadOnly) {
+      return {
+        ok: false as const,
+        error: 'Unauthorized: You do not have edit permission for this project',
+      }
+    }
+
+    return {
+      ok: true as const,
+      role: access.role,
+      userId: identity.tokenIdentifier,
     }
   },
 })
@@ -93,19 +169,34 @@ export const create = mutation({
     roomId: v.string(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
-      throw new ConvexError('Unauthenticated')
+    const identity = await requireIdentity(ctx)
+
+    const trimmedRoomId = args.roomId.trim()
+    if (!trimmedRoomId) {
+      throw new ConvexError('roomId is required')
     }
 
+    const existingRoom = await ctx.db
+      .query('projects')
+      .withIndex('by_roomId', (q) => q.eq('roomId', trimmedRoomId))
+      .first()
+    if (existingRoom) {
+      throw new ConvexError('A project with this roomId already exists')
+    }
+
+    const trimmedName = args.name?.trim()
+    const name = trimmedName && trimmedName.length > 0 ? trimmedName : 'Untitled Project'
+
+    const { orgId } = extractOrgContext(identity)
     const now = Date.now()
     return await ctx.db.insert('projects', {
       ownerId: identity.tokenIdentifier,
-      name: args.name ?? 'Untitled Project',
-      description: args.description, // now matches schema v.optional
+      ...(orgId ? { orgId } : {}),
+      name,
+      description: args.description?.trim() || undefined,
       status: 'DRAFT',
-      roomId: args.roomId,
-      // Removed placeholder canvasJsonPath; let the client/action set it once we have the projectId
+      publicAccess: 'PRIVATE',
+      roomId: trimmedRoomId,
       createdAt: now,
       updatedAt: now,
     })
@@ -118,18 +209,15 @@ export const rename = mutation({
     name: v.string(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
-      throw new ConvexError('Unauthenticated')
-    }
+    await requireProjectOwner(ctx, args.projectId, 'Only the project owner can rename this project')
 
-    const project = await ctx.db.get(args.projectId)
-    if (!project || project.ownerId !== identity.tokenIdentifier) {
-      throw new ConvexError('Project not found')
+    const trimmed = args.name.trim()
+    if (!trimmed) {
+      throw new ConvexError('Project name cannot be empty')
     }
 
     await ctx.db.patch(args.projectId, {
-      name: args.name,
+      name: trimmed,
       updatedAt: Date.now(),
     })
 
@@ -142,64 +230,8 @@ export const remove = mutation({
     projectId: v.id('projects'),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
-      throw new ConvexError('Unauthenticated')
-    }
-
-    const project = await ctx.db.get(args.projectId)
-    if (!project || project.ownerId !== identity.tokenIdentifier) {
-      throw new ConvexError('Project not found')
-    }
-
-    // Cascade delete: collaborators
-    const collaborators = await ctx.db
-      .query('projectCollaborators')
-      .withIndex('by_projectId_and_email', (q) => q.eq('projectId', args.projectId))
-      .collect()
-    for (const collab of collaborators) {
-      await ctx.db.delete(collab._id)
-    }
-
-    // Cascade delete: favorites
-    const favorites = await ctx.db
-      .query('favorites')
-      .withIndex('by_userId')
-      .filter((q) => q.eq(q.field('projectId'), args.projectId))
-      .collect()
-    for (const fav of favorites) {
-      await ctx.db.delete(fav._id)
-    }
-
-    // Cascade delete: presence
-    const presenceRecords = await ctx.db
-      .query('presence')
-      .withIndex('by_projectId', (q) => q.eq('projectId', args.projectId))
-      .collect()
-    for (const p of presenceRecords) {
-      await ctx.db.delete(p._id)
-    }
-
-    // Cascade delete: task runs
-    const taskRuns = await ctx.db
-      .query('taskRuns')
-      .withIndex('by_projectId', (q) => q.eq('projectId', args.projectId))
-      .collect()
-    for (const run of taskRuns) {
-      await ctx.db.delete(run._id)
-    }
-
-    // Cascade delete: specs
-    const specs = await ctx.db
-      .query('specs')
-      .withIndex('by_projectId', (q) => q.eq('projectId', args.projectId))
-      .collect()
-    for (const spec of specs) {
-      await ctx.db.delete(spec._id)
-    }
-
-    await ctx.db.delete(args.projectId)
-
+    await requireProjectOwner(ctx, args.projectId, 'Only the project owner can delete this project')
+    await cascadeDeleteProject(ctx, args.projectId)
     return true
   },
 })
@@ -212,10 +244,20 @@ export const getCollaborators = query({
       return null
     }
 
+    const project = await ctx.db.get(args.projectId)
+    if (!project) {
+      return null
+    }
+
+    const access = await resolveProjectAccess(ctx, project, identity)
+    if (!access || access.isReadOnly) {
+      return null
+    }
+
     return await ctx.db
       .query('projectCollaborators')
       .withIndex('by_projectId_and_email', (q) => q.eq('projectId', args.projectId))
-      .collect()
+      .take(200)
   },
 })
 
@@ -225,20 +267,25 @@ export const addCollaborator = mutation({
     email: v.string(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
-      throw new ConvexError('Unauthenticated')
+    const { identity } = await requireProjectOwner(
+      ctx,
+      args.projectId,
+      'Only the project owner can invite collaborators'
+    )
+
+    if (!isValidEmail(args.email)) {
+      throw new ConvexError('Invalid email address')
     }
 
-    const project = await ctx.db.get(args.projectId)
-    if (!project || project.ownerId !== identity.tokenIdentifier) {
-      throw new ConvexError('Only the project owner can invite collaborators')
+    const normalizedEmail = normalizeEmail(args.email)
+    if (identity.email && normalizeEmail(identity.email) === normalizedEmail) {
+      throw new ConvexError('Cannot invite the project owner as a collaborator')
     }
 
     const existing = await ctx.db
       .query('projectCollaborators')
       .withIndex('by_projectId_and_email', (q) =>
-        q.eq('projectId', args.projectId).eq('email', args.email)
+        q.eq('projectId', args.projectId).eq('email', normalizedEmail)
       )
       .unique()
 
@@ -248,7 +295,7 @@ export const addCollaborator = mutation({
 
     await ctx.db.insert('projectCollaborators', {
       projectId: args.projectId,
-      email: args.email,
+      email: normalizedEmail,
       createdAt: Date.now(),
     })
 
@@ -262,22 +309,28 @@ export const removeCollaborator = mutation({
     email: v.string(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
-      throw new ConvexError('Unauthenticated')
-    }
+    await requireProjectOwner(
+      ctx,
+      args.projectId,
+      'Only the project owner can remove collaborators'
+    )
 
-    const project = await ctx.db.get(args.projectId)
-    if (!project || project.ownerId !== identity.tokenIdentifier) {
-      throw new ConvexError('Only the project owner can remove collaborators')
-    }
-
-    const collaborator = await ctx.db
+    const normalizedEmail = normalizeEmail(args.email)
+    let collaborator = await ctx.db
       .query('projectCollaborators')
       .withIndex('by_projectId_and_email', (q) =>
-        q.eq('projectId', args.projectId).eq('email', args.email)
+        q.eq('projectId', args.projectId).eq('email', normalizedEmail)
       )
       .unique()
+
+    if (!collaborator && args.email !== normalizedEmail) {
+      collaborator = await ctx.db
+        .query('projectCollaborators')
+        .withIndex('by_projectId_and_email', (q) =>
+          q.eq('projectId', args.projectId).eq('email', args.email)
+        )
+        .unique()
+    }
 
     if (!collaborator) {
       throw new ConvexError('Collaborator not found')
@@ -294,9 +347,15 @@ export const togglePin = mutation({
     projectId: v.id('projects'),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
-      throw new ConvexError('Unauthenticated')
+    const identity = await requireIdentity(ctx)
+    const project = await ctx.db.get(args.projectId)
+    if (!project) {
+      throw new ConvexError('Project not found')
+    }
+
+    const access = await resolveProjectAccess(ctx, project, identity)
+    if (!access) {
+      throw new ConvexError('Unauthorized')
     }
 
     const userId = identity.tokenIdentifier
@@ -310,14 +369,14 @@ export const togglePin = mutation({
     if (favorite) {
       await ctx.db.delete(favorite._id)
       return { pinned: false }
-    } else {
-      await ctx.db.insert('favorites', {
-        userId,
-        projectId: args.projectId,
-        createdAt: Date.now(),
-      })
-      return { pinned: true }
     }
+
+    await ctx.db.insert('favorites', {
+      userId,
+      projectId: args.projectId,
+      createdAt: Date.now(),
+    })
+    return { pinned: true }
   },
 })
 
@@ -329,39 +388,13 @@ export const updateSnapshot = mutation({
     edgeCount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) throw new ConvexError('Unauthenticated')
-
-    const project = await ctx.db.get(args.projectId)
-    if (!project) throw new ConvexError('Project not found')
-
-    const userId = identity.tokenIdentifier
-    const userEmail = identity.email
-
-    // Verify project membership: must be owner or a collaborator
-    const isOwner = project.ownerId === userId
-    let isCollaborator = false
-
-    if (userEmail) {
-      const collaboration = await ctx.db
-        .query('projectCollaborators')
-        .withIndex('by_projectId_and_email', (q) =>
-          q.eq('projectId', args.projectId).eq('email', userEmail)
-        )
-        .unique()
-      if (collaboration) isCollaborator = true
-    }
-
-    if (!isOwner && !isCollaborator) {
-      throw new ConvexError(
-        'Unauthorized: You do not have permission to update this project snapshot'
-      )
-    }
+    const { identity, project } = await requireProjectMember(ctx, args.projectId)
 
     await ctx.db.patch(args.projectId, {
       canvasSnapshot: args.snapshot,
       nodeCount: args.nodeCount ?? project.nodeCount,
       edgeCount: args.edgeCount ?? project.edgeCount,
+      lastContributorId: identity.tokenIdentifier,
       updatedAt: Date.now(),
     })
 
@@ -375,13 +408,7 @@ export const updateStatus = mutation({
     status: v.union(v.literal('DRAFT'), v.literal('ARCHIVED'), v.literal('REVIEW')),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) throw new ConvexError('Unauthenticated')
-
-    const project = await ctx.db.get(args.projectId)
-    if (!project || project.ownerId !== identity.tokenIdentifier) {
-      throw new ConvexError('Project not found or unauthorized')
-    }
+    await requireProjectOwner(ctx, args.projectId)
 
     await ctx.db.patch(args.projectId, {
       status: args.status,
@@ -398,12 +425,11 @@ export const bulkUpdateStatus = mutation({
     status: v.union(v.literal('DRAFT'), v.literal('ARCHIVED'), v.literal('REVIEW')),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) throw new ConvexError('Unauthenticated')
+    const identity = await requireIdentity(ctx)
 
     for (const projectId of args.projectIds) {
       const project = await ctx.db.get(projectId)
-      if (project && project.ownerId === identity.tokenIdentifier) {
+      if (project && canManageProject(project, identity)) {
         await ctx.db.patch(projectId, { status: args.status, updatedAt: Date.now() })
       }
     }
@@ -416,13 +442,12 @@ export const bulkDelete = mutation({
     projectIds: v.array(v.id('projects')),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) throw new ConvexError('Unauthenticated')
+    const identity = await requireIdentity(ctx)
 
     for (const projectId of args.projectIds) {
       const project = await ctx.db.get(projectId)
-      if (project && project.ownerId === identity.tokenIdentifier) {
-        await ctx.db.delete(projectId)
+      if (project && canManageProject(project, identity)) {
+        await cascadeDeleteProject(ctx, projectId)
       }
     }
     return true
@@ -435,15 +460,16 @@ export const updateTags = mutation({
     tags: v.array(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) throw new ConvexError('Unauthenticated')
+    await requireProjectOwner(ctx, args.projectId)
 
-    const project = await ctx.db.get(args.projectId)
-    if (!project || project.ownerId !== identity.tokenIdentifier) {
-      throw new ConvexError('Project not found or unauthorized')
-    }
+    const sanitizedTags = Array.from(
+      new Set(args.tags.map((t) => t.trim()).filter((t) => t.length > 0))
+    )
 
-    await ctx.db.patch(args.projectId, { tags: args.tags })
+    await ctx.db.patch(args.projectId, {
+      tags: sanitizedTags,
+      updatedAt: Date.now(),
+    })
     return true
   },
 })
@@ -454,15 +480,11 @@ export const setPublicAccess = mutation({
     publicAccess: v.union(v.literal('PRIVATE'), v.literal('VIEW_ONLY')),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
-      throw new ConvexError('Unauthenticated')
-    }
-
-    const project = await ctx.db.get(args.projectId)
-    if (!project || project.ownerId !== identity.tokenIdentifier) {
-      throw new ConvexError('Only the project owner can change sharing settings')
-    }
+    await requireProjectOwner(
+      ctx,
+      args.projectId,
+      'Only the project owner can change sharing settings'
+    )
 
     await ctx.db.patch(args.projectId, {
       publicAccess: args.publicAccess,
@@ -476,6 +498,10 @@ export const setPublicAccess = mutation({
 export const getByRoomId = query({
   args: { roomId: v.string() },
   handler: async (ctx, args) => {
+    if (!args.roomId.trim()) {
+      return null
+    }
+
     const identity = await ctx.auth.getUserIdentity()
 
     const project = await ctx.db
@@ -487,44 +513,17 @@ export const getByRoomId = query({
       return null
     }
 
-    // 1. Owner access
-    if (identity && project.ownerId === identity.tokenIdentifier) {
-      return {
-        ...project,
-        role: 'owner' as const,
-        isReadOnly: false,
-      }
+    const access = await resolveProjectAccess(ctx, project, identity)
+    if (!access) {
+      return null
     }
 
-    // 2. Collaborator access
-    if (identity?.email) {
-      const collaborator = await ctx.db
-        .query('projectCollaborators')
-        .withIndex('by_projectId_and_email', (q) =>
-          q.eq('projectId', project._id).eq('email', identity.email!)
-        )
-        .unique()
-
-      if (collaborator) {
-        return {
-          ...project,
-          role: 'editor' as const,
-          isReadOnly: false,
-        }
-      }
+    return {
+      ...project,
+      role: access.role,
+      isReadOnly: access.isReadOnly,
+      canManage: identity ? canManageProject(project, identity) : false,
     }
-
-    // 3. Public view access
-    if (project.publicAccess === 'VIEW_ONLY') {
-      return {
-        ...project,
-        role: 'viewer' as const,
-        isReadOnly: true,
-      }
-    }
-
-    // 4. Denied
-    return null
   },
 })
 
@@ -537,38 +536,14 @@ export const saveCanvas = mutation({
     snapshot: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) throw new ConvexError('Unauthenticated')
-
-    const project = await ctx.db.get(args.projectId)
-    if (!project) throw new ConvexError('Project not found')
-
-    const userId = identity.tokenIdentifier
-    const userEmail = identity.email
-
-    // Verify project membership: must be owner or a collaborator
-    const isOwner = project.ownerId === userId
-    let isCollaborator = false
-
-    if (userEmail) {
-      const collaboration = await ctx.db
-        .query('projectCollaborators')
-        .withIndex('by_projectId_and_email', (q) =>
-          q.eq('projectId', args.projectId).eq('email', userEmail)
-        )
-        .unique()
-      if (collaboration) isCollaborator = true
-    }
-
-    if (!isOwner && !isCollaborator) {
-      throw new ConvexError('Unauthorized: You do not have permission to modify this project')
-    }
+    const { identity, project } = await requireProjectMember(ctx, args.projectId)
 
     await ctx.db.patch(args.projectId, {
       canvasJsonPath: args.canvasJsonPath,
       nodeCount: args.nodeCount ?? project.nodeCount,
       edgeCount: args.edgeCount ?? project.edgeCount,
       canvasSnapshot: args.snapshot ?? project.canvasSnapshot,
+      lastContributorId: identity.tokenIdentifier,
       updatedAt: Date.now(),
     })
 
@@ -586,25 +561,8 @@ export const getCanvasUrl = query({
       return null
     }
 
-    const userId = identity?.tokenIdentifier
-    const userEmail = identity?.email
-
-    const isOwner = Boolean(userId && project.ownerId === userId)
-    let isCollaborator = false
-
-    if (userEmail) {
-      const collaboration = await ctx.db
-        .query('projectCollaborators')
-        .withIndex('by_projectId_and_email', (q) =>
-          q.eq('projectId', args.projectId).eq('email', userEmail)
-        )
-        .unique()
-      if (collaboration) isCollaborator = true
-    }
-
-    const isPublicView = project.publicAccess === 'VIEW_ONLY'
-
-    if (!isOwner && !isCollaborator && !isPublicView) {
+    const access = await resolveProjectAccess(ctx, project, identity)
+    if (!access) {
       return null
     }
 

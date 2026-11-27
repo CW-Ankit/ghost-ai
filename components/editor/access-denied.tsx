@@ -3,6 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { Lock } from 'lucide-react'
+import { editorButtonClass } from './editor-button'
 
 export function AccessDenied() {
   return (
@@ -11,15 +12,15 @@ export function AccessDenied() {
         <div className="h-16 w-16 bg-accent-primary-dim rounded-full flex items-center justify-center text-brand mb-2">
           <Lock className="h-8 w-8" />
         </div>
-        <h1 className="text-2xl font-semibold text-text-primary">Access Denied</h1>
+        <h1 className="text-2xl font-semibold text-text-primary">Whoa there — this room is locked.</h1>
         <p className="text-text-secondary">
-          You don&apos;t have permission to access this project, or the project no longer exists.
+          Looks like you don&apos;t have the keys to this workspace, or it vanished into thin air.
         </p>
         <Link
           href="/editor"
-          className="mt-4 inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg bg-accent-primary text-bg-base hover:bg-accent-primary/90 transition-colors"
+          className={editorButtonClass({ tone: 'primary', size: 'md', className: 'mt-4 px-5' })}
         >
-          Back to Projects
+          Take me back to Projects
         </Link>
       </div>
     </div>

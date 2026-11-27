@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Plus, Shapes } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { EditorButton } from './editor-button'
 
 interface EditorHomeProps {
   onNewProject: () => void
@@ -15,18 +15,20 @@ export function EditorHome({ onNewProject }: EditorHomeProps) {
         <Shapes className="h-12 w-12" />
       </div>
       <h1 className="text-3xl font-heading font-semibold text-text-primary mb-2">
-        Create a project or open an existing one
+        It&apos;s a little quiet in here.
       </h1>
       <p className="text-text-secondary max-w-md mb-8">
-        Start a new architecture workspace, or choose a project from the sidebar.
+        Spin up a fresh architecture canvas, or grab an existing project from the sidebar.
       </p>
-      <Button
+      <EditorButton
+        tone="primary"
+        size="lg"
         onClick={onNewProject}
-        className="gap-2 bg-accent-primary text-bg-base hover:bg-accent-primary/90 px-6 py-6 text-lg"
+        className="h-12 px-6 text-base"
       >
         <Plus className="h-5 w-5" />
         New Project
-      </Button>
+      </EditorButton>
     </div>
   )
 }

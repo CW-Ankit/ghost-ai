@@ -1,21 +1,24 @@
 'use client'
 
-import React from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  Plus,
-  MoreVertical,
-  Folder,
-  Users,
-  FileText,
-  Pencil,
-  Trash2,
-  Clock,
   Archive,
+  ArrowUpRight,
+  Clock,
+  Folder,
+  MoreVertical,
+  Pencil,
+  Pin,
+  PinOff,
+  Plus,
+  Search,
+  Trash2,
+  Users,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { EditorButton } from './editor-button'
+import { AnchoredPopup } from './anchored-popup'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import { CanvasPreview } from './project-dashboard/canvas-preview'
@@ -23,12 +26,123 @@ import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { useProjectActions } from '../../hooks/use-project-actions'
 import { Doc } from '@/convex/_generated/dataModel'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { parseSearchQuery, searchProjects, type SearchableProject } from '@/lib/search-engine'
+import { EmptyStateIllustration } from './empty-state-illustration'
+
+type ProjectWithMeta = Doc<'projects'> & {
+  isPinned?: boolean
+  canManage?: boolean
+  activeUsers?: number
+}
+
+function formatRelativeTime(timestamp: number): string {
+  const diffMs = Date.now() - timestamp
+  const mins = Math.max(0, Math.floor(diffMs / 60000))
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}d ago`
+  return new Date(timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
+function StatusBadge({ status }: { status: string }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider border',
+        status === 'DRAFT' && 'bg-white/[0.04] border-white/[0.08] text-text-muted',
+        status === 'REVIEW' && 'bg-[#12303b] border-[#7ecbd4]/30 text-[#8ee0ea]',
+        status === 'ARCHIVED' && 'bg-state-error/10 border-state-error/25 text-state-error'
+      )}
+    >
+      {status === 'REVIEW' ? 'In Review' : status === 'ARCHIVED' ? 'Archived' : 'Draft'}
+    </span>
+  )
+}
+
+interface ProjectMenuContentProps {
+  project: ProjectWithMeta
+  onTogglePin: (id: string) => void
+  onRename: (project: Doc<'projects'>) => void
+  onArchive: (id: string) => void
+  onDelete: (project: Doc<'projects'>) => void
+  onClose: () => void
+}
+
+function ProjectMenuContent({
+  project,
+  onTogglePin,
+  onRename,
+  onArchive,
+  onDelete,
+  onClose,
+}: ProjectMenuContentProps) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          onTogglePin(project._id)
+          onClose()
+        }}
+        className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-text-secondary hover:bg-white/[0.07] hover:text-text-primary focus-visible:bg-white/[0.09] focus-visible:text-text-primary focus-visible:outline-none transition-colors cursor-pointer"
+      >
+        {project.isPinned ? (
+          <PinOff className="h-3.5 w-3.5 text-text-muted shrink-0" />
+        ) : (
+          <Pin className="h-3.5 w-3.5 text-[#7ecbd4] shrink-0" />
+        )}
+        <span>{project.isPinned ? 'Unpin' : 'Pin to top'}</span>
+      </button>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          onRename(project)
+          onClose()
+        }}
+        className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-text-secondary hover:bg-white/[0.07] hover:text-text-primary focus-visible:bg-white/[0.09] focus-visible:text-text-primary focus-visible:outline-none transition-colors cursor-pointer"
+      >
+        <Pencil className="h-3.5 w-3.5 text-text-muted shrink-0" />
+        <span>Rename</span>
+      </button>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          onArchive(project._id)
+          onClose()
+        }}
+        className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-text-secondary hover:bg-white/[0.07] hover:text-text-primary focus-visible:bg-white/[0.09] focus-visible:text-text-primary focus-visible:outline-none transition-colors cursor-pointer"
+      >
+        <Archive className="h-3.5 w-3.5 text-text-muted shrink-0" />
+        <span>Archive</span>
+      </button>
+      <hr className="my-1 border-white/[0.06]" />
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          onDelete(project)
+          onClose()
+        }}
+        className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-state-error/90 hover:bg-state-error/10 hover:text-state-error focus-visible:bg-state-error/10 focus-visible:outline-none transition-colors cursor-pointer"
+      >
+        <Trash2 className="h-3.5 w-3.5 shrink-0" />
+        <span>Delete</span>
+      </button>
+    </div>
+  )
+}
 
 interface ProjectCardProps {
-  project: Doc<'projects'>
+  project: ProjectWithMeta
   isOwner: boolean
-  onAction: (id: string) => void
+  onTogglePin: (id: string) => void
+  onArchive: (id: string) => void
   onRename: (project: Doc<'projects'>) => void
   onDelete: (project: Doc<'projects'>) => void
   onClick: (roomId: string) => void
@@ -37,125 +151,274 @@ interface ProjectCardProps {
 function ProjectCard({
   project,
   isOwner,
-  onAction,
+  onTogglePin,
+  onArchive,
   onRename,
   onDelete,
   onClick,
 }: ProjectCardProps) {
   const router = useRouter()
-  const [showMenu, setShowMenu] = React.useState(false)
-
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp)
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-  }
+  const [showMenu, setShowMenu] = useState(false)
+  const menuTriggerRef = useRef<HTMLButtonElement>(null)
 
   return (
-    <Card
-      className={cn(
-        'group relative p-5 bg-bg-surface border-border-default hover:border-accent-primary transition-all duration-200 cursor-pointer overflow-hidden',
-        'hover:shadow-[0_0_20px_rgba(0,200,212,0.1)]'
-      )}
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onClick(project.roomId)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick(project.roomId)
+        }
+      }}
       onMouseEnter={() => router.prefetch(`/editor/${project.roomId}`)}
+      className={cn(
+        'group relative flex flex-col rounded-2xl p-3.5 cursor-pointer transition-all duration-200 outline-none',
+        'bg-[#0e141c]/90 border border-white/[0.07] shadow-[0_14px_34px_-16px_rgba(0,0,0,0.85)]',
+        'hover:border-[#7ecbd4]/35 hover:bg-[#121a24] focus-visible:ring-2 focus-visible:ring-accent-primary/60'
+      )}
     >
-      <div className="flex justify-between items-start mb-4">
-        <div className="w-12 h-12 rounded-xl bg-bg-subtle border border-border-subtle overflow-hidden">
-          {project.canvasSnapshot ? (
-            <CanvasPreview snapshot={project.canvasSnapshot} />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-accent-primary">
-              <FileText className="h-5 w-5" />
-            </div>
+      {/* Visual Preview Banner */}
+      <div className="relative h-32 w-full mb-3.5">
+        <CanvasPreview snapshot={project.canvasSnapshot} />
+
+        {/* Top-left Status & Live Presence */}
+        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 pointer-events-none">
+          <StatusBadge status={project.status} />
+          {(project.activeUsers ?? 0) > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-bg-base/85 border border-white/[0.08] px-1.5 py-0.5 text-[10px] font-medium text-state-success">
+              <span className="h-1.5 w-1.5 rounded-full bg-state-success animate-pulse" />
+              {project.activeUsers} live
+            </span>
           )}
         </div>
-        {isOwner && (
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-text-muted hover:text-text-primary"
-              onClick={(e) => {
-                e.stopPropagation()
-                setShowMenu(!showMenu)
-              }}
+
+        {/* Top-right Pin Indicator + Actions */}
+        <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
+          {project.isPinned && (
+            <span
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-bg-base/80 border border-white/[0.08] text-[#7ecbd4]"
+              title="Pinned"
             >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-            {showMenu && (
+              <Pin className="h-3 w-3" />
+            </span>
+          )}
+
+          {isOwner && (
+            <>
+              <EditorButton
+                ref={menuTriggerRef}
+                tone="socket"
+                size="icon-sm"
+                aria-label="Project options"
+                aria-expanded={showMenu}
+                className={cn(
+                  'h-7 w-7 transition-opacity',
+                  showMenu
+                    ? 'opacity-100'
+                    : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+                )}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowMenu((prev) => !prev)
+                }}
+              >
+                <MoreVertical className="h-3.5 w-3.5" />
+              </EditorButton>
+              <AnchoredPopup
+                open={showMenu}
+                onOpenChange={setShowMenu}
+                anchorRef={menuTriggerRef}
+                align="end"
+                minWidth={184}
+                maxWidth={212}
+                enableArrowNavigation
+                className="p-1.5"
+              >
+                <ProjectMenuContent
+                  project={project}
+                  onTogglePin={onTogglePin}
+                  onRename={onRename}
+                  onArchive={onArchive}
+                  onDelete={onDelete}
+                  onClose={() => setShowMenu(false)}
+                />
+              </AnchoredPopup>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Title + Room Slug */}
+      <div className="space-y-1 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-text-primary truncate group-hover:text-white transition-colors">
+            {project.name}
+          </h3>
+          <ArrowUpRight className="h-3.5 w-3.5 text-text-faint opacity-0 group-hover:opacity-100 group-hover:text-[#7ecbd4] transition-all shrink-0" />
+        </div>
+        <p className="text-[11px] text-text-faint font-mono truncate">ghost.ai/{project.roomId}</p>
+      </div>
+
+      {/* Footer Meta */}
+      <div className="mt-3.5 pt-2.5 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-text-muted">
+        <span>
+          {project.nodeCount
+            ? `${project.nodeCount} node${project.nodeCount === 1 ? '' : 's'}`
+            : 'Blank board'}
+        </span>
+        <span className="text-text-faint">{formatRelativeTime(project.updatedAt)}</span>
+      </div>
+    </div>
+  )
+}
+
+interface ProjectListViewProps {
+  projects: ProjectWithMeta[]
+  selectedProjects: string[]
+  setSelectedProjects: React.Dispatch<React.SetStateAction<string[]>>
+  canManageRows: boolean
+  onOpen: (roomId: string) => void
+  onTogglePin: (id: string) => void
+  onArchive: (id: string) => void
+  onRename: (project: Doc<'projects'>) => void
+  onDelete: (project: Doc<'projects'>) => void
+}
+
+function ProjectListView({
+  projects,
+  selectedProjects,
+  setSelectedProjects,
+  canManageRows,
+  onOpen,
+  onTogglePin,
+  onArchive,
+  onRename,
+  onDelete,
+}: ProjectListViewProps) {
+  const [menuProject, setMenuProject] = useState<ProjectWithMeta | null>(null)
+  const menuAnchorRef = useRef<HTMLElement | null>(null)
+
+  return (
+    <div className="rounded-2xl bg-[#0e141c]/90 border border-white/[0.07] overflow-hidden shadow-[0_14px_34px_-16px_rgba(0,0,0,0.85)]">
+      <div className="grid grid-cols-12 px-4 sm:px-5 py-2.5 bg-white/[0.02] border-b border-white/[0.06] text-[10px] font-semibold text-text-muted uppercase tracking-[0.12em]">
+        <div className="col-span-1 flex items-center" />
+        <div className="col-span-6 sm:col-span-5">Blueprint</div>
+        <div className="hidden sm:block sm:col-span-2">Status</div>
+        <div className="col-span-2 hidden md:block">Nodes</div>
+        <div className="col-span-4 sm:col-span-3 md:col-span-1 text-right">Edited</div>
+        <div className="col-span-1" />
+      </div>
+
+      <div>
+        {projects.map((project) => {
+          const isRowOwner = canManageRows && (project.canManage ?? true)
+          const checked = selectedProjects.includes(project._id)
+          return (
+            <div
+              key={project._id}
+              onClick={() => onOpen(project.roomId)}
+              className="grid grid-cols-12 px-4 sm:px-5 py-3 border-b border-white/[0.05] last:border-b-0 hover:bg-white/[0.04] transition-colors cursor-pointer group items-center"
+            >
               <div
-                className="absolute right-0 top-8 z-20 w-32 bg-bg-elevated border border-border-default rounded-xl shadow-xl p-1 flex flex-col gap-1"
+                className="col-span-1 flex items-center"
                 onClick={(e) => e.stopPropagation()}
               >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start gap-2 text-xs h-8 text-text-secondary hover:text-text-primary"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onRename(project)
-                    setShowMenu(false)
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={(next) => {
+                    if (next) {
+                      setSelectedProjects((prev) => [...prev, project._id])
+                    } else {
+                      setSelectedProjects((prev) => prev.filter((id) => id !== project._id))
+                    }
                   }}
-                >
-                  <Pencil className="h-3 w-3" /> Rename
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start gap-2 text-xs h-8 text-text-secondary hover:text-accent-ai"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onAction(project._id) // We'll use onAction for archive
-                    setShowMenu(false)
-                  }}
-                >
-                  <Archive className="h-3 w-3" /> Archive
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start gap-2 text-xs h-8 text-text-secondary hover:text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onDelete(project)
-                    setShowMenu(false)
-                  }}
-                >
-                  <Trash2 className="h-3 w-3" /> Delete
-                </Button>
+                />
               </div>
-            )}
-          </div>
-        )}
-      </div>
 
-      <div className="space-y-1">
-        <h3 className="text-text-primary font-medium truncate">{project.name}</h3>
-        <p className="text-xs text-text-muted font-mono truncate">ghost.ai/{project.roomId}</p>
-      </div>
+              <div className="col-span-6 sm:col-span-5 flex items-center gap-3 min-w-0 pr-2">
+                <div className="h-9 w-9 shrink-0 rounded-lg overflow-hidden">
+                  <CanvasPreview snapshot={project.canvasSnapshot} compact />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs sm:text-sm font-medium text-text-primary truncate group-hover:text-white">
+                      {project.name}
+                    </span>
+                    {project.isPinned && <Pin className="h-3 w-3 text-[#7ecbd4] shrink-0" />}
+                  </div>
+                  <div className="text-[10px] font-mono text-text-faint truncate">
+                    ghost.ai/{project.roomId}
+                  </div>
+                </div>
+              </div>
 
-      <div className="mt-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div
-            className={cn(
-              'px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider',
-              project.status === 'DRAFT' && 'bg-bg-subtle border-border-subtle text-text-muted',
-              project.status === 'REVIEW' &&
-                'bg-accent-ai-dim border-accent-ai text-accent-ai-text',
-              project.status === 'ARCHIVED' && 'bg-red-900/20 border-red-900/50 text-red-400'
-            )}
-          >
-            {project.status}
-          </div>
-          {project.nodeCount && (
-            <div className="px-2 py-0.5 rounded-full bg-bg-subtle border border-border-subtle text-[10px] text-text-muted">
-              {project.nodeCount} nodes
+              <div className="hidden sm:block sm:col-span-2">
+                <StatusBadge status={project.status} />
+              </div>
+
+              <div className="col-span-2 hidden md:block text-xs text-text-muted">
+                {project.nodeCount ? `${project.nodeCount} nodes` : '—'}
+              </div>
+
+              <div className="col-span-4 sm:col-span-3 md:col-span-1 text-right text-xs text-text-muted">
+                {formatRelativeTime(project.updatedAt)}
+              </div>
+
+              <div
+                className="col-span-1 flex justify-end"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {isRowOwner && (
+                  <EditorButton
+                    tone="ghost3d"
+                    size="icon-sm"
+                    aria-label="Project options"
+                    className="h-7 w-7 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 text-text-muted hover:text-text-primary"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (menuProject?._id === project._id) {
+                        setMenuProject(null)
+                      } else {
+                        menuAnchorRef.current = e.currentTarget
+                        setMenuProject(project)
+                      }
+                    }}
+                  >
+                    <MoreVertical className="h-3.5 w-3.5" />
+                  </EditorButton>
+                )}
+              </div>
             </div>
-          )}
-        </div>
-        <span className="text-[10px] text-text-faint">{formatDate(project.updatedAt)}</span>
+          )
+        })}
       </div>
-    </Card>
+
+      <AnchoredPopup
+        open={Boolean(menuProject)}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setMenuProject(null)
+        }}
+        anchorRef={menuAnchorRef}
+        align="end"
+        minWidth={184}
+        maxWidth={212}
+        enableArrowNavigation
+        className="p-1.5"
+      >
+        {menuProject && (
+          <ProjectMenuContent
+            project={menuProject}
+            onTogglePin={onTogglePin}
+            onRename={onRename}
+            onArchive={onArchive}
+            onDelete={onDelete}
+            onClose={() => setMenuProject(null)}
+          />
+        )}
+      </AnchoredPopup>
+    </div>
   )
 }
 
@@ -164,24 +427,26 @@ export function ProjectDashboard({
   searchQuery,
   setSearchQuery,
   sortBy,
-  setSortBy,
+  setSortBy: _setSortBy,
   viewMode,
-  setViewMode,
+  setViewMode: _setViewMode,
   actions,
 }: {
   onNewProject: () => void
   searchQuery: string
   setSearchQuery: (val: string) => void
   sortBy: string
-  setSortBy: (val: any) => void
+  setSortBy: React.Dispatch<React.SetStateAction<'recent' | 'oldest' | 'name-asc' | 'name-desc'>>
   viewMode: 'grid' | 'list'
   setViewMode: (val: 'grid' | 'list') => void
   actions: ReturnType<typeof useProjectActions>
 }) {
   const router = useRouter()
   const projects = useQuery(api.projects.list)
-  const [selectedProjects, setSelectedProjects] = React.useState<string[]>([])
-  const [activeTag, setActiveTag] = React.useState<string | null>(null)
+  const [selectedProjects, setSelectedProjects] = useState<string[]>([])
+  const [activeTag, setActiveTag] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'my-projects' | 'shared'>('my-projects')
+  const parsedSearch = useMemo(() => parseSearchQuery(searchQuery), [searchQuery])
 
   const handleProjectClick = (roomId: string) => {
     router.push(`/editor/${roomId}`)
@@ -189,325 +454,332 @@ export function ProjectDashboard({
 
   if (projects === undefined) {
     return (
-      <div className="h-full w-full flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 border-2 border-accent-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-text-muted">Loading your projects...</p>
+      <div className="h-full w-full p-5 sm:p-8 space-y-6 overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="h-6 w-44 rounded-lg bg-white/[0.06] animate-pulse" />
+            <div className="h-3.5 w-32 rounded-md bg-white/[0.04] animate-pulse" />
+          </div>
+          <div className="h-9 w-48 rounded-xl bg-white/[0.05] animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, idx) => (
+            <div
+              key={idx}
+              className="rounded-2xl bg-[#0e141c]/80 border border-white/[0.06] p-3.5 space-y-3"
+            >
+              <div className="h-32 w-full rounded-xl bg-white/[0.04] animate-pulse" />
+              <div className="h-4 w-2/3 rounded-md bg-white/[0.06] animate-pulse" />
+              <div className="h-3 w-1/2 rounded-md bg-white/[0.04] animate-pulse" />
+            </div>
+          ))}
         </div>
       </div>
     )
   }
 
-  const allProjects = projects ? [...projects.owned, ...projects.shared] : []
-
-  // Extract all unique tags
+  const myProjects = (projects?.owned ?? []) as ProjectWithMeta[]
+  const sharedProjects = (projects?.shared ?? []) as ProjectWithMeta[]
+  const allProjects = [...myProjects, ...sharedProjects]
   const allTags = Array.from(new Set(allProjects.flatMap((p) => p.tags || []))).sort()
 
-  const filteredProjects = allProjects.filter((p) => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesTag = !activeTag || (p.tags && p.tags.includes(activeTag))
-    return matchesSearch && matchesTag
-  })
+  const sortProjects = (list: ProjectWithMeta[]) => {
+    return [...list].sort((a, b) => {
+      switch (sortBy) {
+        case 'name-asc':
+          return a.name.localeCompare(b.name)
+        case 'name-desc':
+          return b.name.localeCompare(a.name)
+        case 'oldest':
+          return (a.createdAt || 0) - (b.createdAt || 0)
+        case 'recent':
+        default:
+          return (b.updatedAt || 0) - (a.updatedAt || 0)
+      }
+    })
+  }
 
+  const filterList = (list: ProjectWithMeta[]) => {
+    const byTag = activeTag
+      ? list.filter((p) => p.tags && p.tags.includes(activeTag))
+      : list
+    if (!searchQuery.trim()) return sortProjects(byTag)
+    return searchProjects(byTag as SearchableProject[], parsedSearch).map(
+      (r) => r.project as ProjectWithMeta
+    )
+  }
+
+  const filteredProjects = filterList(allProjects)
   const recentProjects = [...filteredProjects]
     .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
     .slice(0, 4)
 
-  const myProjects = projects?.owned ?? []
-  const sharedProjects = projects?.shared ?? []
+  const filteredMyProjects = filterList(myProjects)
+  const filteredSharedProjects = filterList(sharedProjects)
 
-  const filteredMyProjects = myProjects.filter((p) => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesTag = !activeTag || (p.tags && p.tags.includes(activeTag))
-    return matchesSearch && matchesTag
-  })
-  const filteredSharedProjects = sharedProjects.filter((p) => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesTag = !activeTag || (p.tags && p.tags.includes(activeTag))
-    return matchesSearch && matchesTag
-  })
+  const isFiltered = Boolean(searchQuery.trim() || activeTag)
+  const currentList = activeTab === 'my-projects' ? filteredMyProjects : filteredSharedProjects
+  const isOrgMode = Boolean(projects?.activeOrgId)
+
+  const clearFilters = () => {
+    setSearchQuery('')
+    setActiveTag(null)
+  }
 
   return (
-    <div className="h-full w-full flex flex-col p-8 overflow-y-auto">
-      {recentProjects.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4 flex items-center gap-2">
-            <Clock className="h-3 w-3" />
-            Recent Projects
+    <div className="h-full w-full flex flex-col px-5 py-6 sm:px-8 sm:py-7 overflow-y-auto space-y-7">
+      {/* Workspace Header & Segmented Switcher */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="font-heading text-lg sm:text-xl font-semibold tracking-tight text-text-primary">
+            {isOrgMode ? 'Team Workspace' : 'Personal Studio'}
+          </h1>
+          <p className="text-xs text-text-muted mt-0.5">
+            {myProjects.length} {isOrgMode ? 'team' : 'owned'} blueprint
+            {myProjects.length === 1 ? '' : 's'}
+            {sharedProjects.length > 0 ? ` · ${sharedProjects.length} shared` : ''}
+          </p>
+        </div>
+
+        <div
+          role="tablist"
+          aria-label="Project collections"
+          className="inline-flex items-center gap-1 rounded-2xl bg-[#0e141c] border border-white/[0.07] p-1 w-full sm:w-fit"
+        >
+          <EditorButton
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'my-projects'}
+            tone={activeTab === 'my-projects' ? 'surface' : 'ghost3d'}
+            size="sm"
+            onClick={() => setActiveTab('my-projects')}
+            className="flex-1 sm:flex-initial px-3.5 text-xs"
+          >
+            <Folder
+              className={cn(
+                'h-3.5 w-3.5',
+                activeTab === 'my-projects' ? 'text-[#7ecbd4]' : 'text-text-muted'
+              )}
+            />
+            <span>{isOrgMode ? 'Team Projects' : 'My Projects'}</span>
+            <span className="ml-0.5 text-[11px] text-text-muted">{filteredMyProjects.length}</span>
+          </EditorButton>
+          <EditorButton
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'shared'}
+            tone={activeTab === 'shared' ? 'surface' : 'ghost3d'}
+            size="sm"
+            onClick={() => setActiveTab('shared')}
+            className="flex-1 sm:flex-initial px-3.5 text-xs"
+          >
+            <Users
+              className={cn(
+                'h-3.5 w-3.5',
+                activeTab === 'shared' ? 'text-[#7ecbd4]' : 'text-text-muted'
+              )}
+            />
+            <span>Shared</span>
+            <span className="ml-0.5 text-[11px] text-text-muted">
+              {filteredSharedProjects.length}
+            </span>
+          </EditorButton>
+        </div>
+      </div>
+
+      {/* Recent Quick-Jump Strip */}
+      {recentProjects.length > 0 && !isFiltered && (
+        <section className="space-y-3">
+          <h2 className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.12em] flex items-center gap-2">
+            <Clock className="h-3.5 w-3.5 text-[#7ecbd4]" />
+            <span>Fresh off the canvas</span>
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {recentProjects.map((project) => (
               <Link
                 key={project._id}
                 href={`/editor/${project.roomId}`}
                 prefetch={true}
-                className="p-3 bg-bg-surface border border-border-default rounded-2xl flex items-center gap-3 hover:border-accent-primary transition-colors group"
+                className="p-3 rounded-2xl bg-[#0e141c]/90 border border-white/[0.07] hover:border-[#7ecbd4]/35 hover:bg-[#131b26] flex items-center gap-3 shadow-[0_10px_28px_-14px_rgba(0,0,0,0.85)] transition-all group"
               >
-                <div className="p-2 rounded-lg bg-bg-subtle text-accent-primary">
-                  <FileText className="h-4 w-4" />
+                <div className="h-11 w-11 shrink-0 rounded-xl overflow-hidden">
+                  <CanvasPreview snapshot={project.canvasSnapshot} compact />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-text-primary truncate">{project.name}</p>
-                  <p className="text-[10px] text-text-muted truncate">
-                    Edited {new Date(project.updatedAt).toLocaleDateString()}
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs sm:text-sm font-medium text-text-primary truncate group-hover:text-white">
+                      {project.name}
+                    </p>
+                    {(project.activeUsers ?? 0) > 0 && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-state-success shrink-0" />
+                    )}
+                  </div>
+                  <p className="text-[11px] text-text-muted truncate mt-0.5">
+                    Edited {formatRelativeTime(project.updatedAt)}
                   </p>
                 </div>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Plus className="h-3 w-3 text-text-muted" />
-                </div>
+                <ArrowUpRight className="h-3.5 w-3.5 text-text-faint opacity-0 group-hover:opacity-100 group-hover:text-[#7ecbd4] transition-all shrink-0" />
               </Link>
             ))}
           </div>
+        </section>
+      )}
+
+      {/* Tag Filters */}
+      {allTags.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <span className="text-[11px] uppercase tracking-wider text-text-muted font-medium mr-1 shrink-0">
+            Tags
+          </span>
+          <EditorButton
+            tone={activeTag === null ? 'primarySoft' : 'socket'}
+            size="xs"
+            onClick={() => setActiveTag(null)}
+          >
+            All
+          </EditorButton>
+          {allTags.map((tag) => (
+            <EditorButton
+              key={tag}
+              tone={activeTag === tag ? 'primarySoft' : 'socket'}
+              size="xs"
+              onClick={() => setActiveTag(activeTag === tag ? null : tag)}
+            >
+              #{tag}
+            </EditorButton>
+          ))}
         </div>
       )}
 
+      {/* Bulk Action Floating Bar */}
       {selectedProjects.length > 0 && (
-        <div className="mb-6 p-3 bg-accent-primary-dim border border-accent-primary rounded-2xl flex items-center justify-between animate-in fade-in slide-in-from-top-2">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-accent-ai-text">
-              {selectedProjects.length} projects selected
-            </span>
-          </div>
+        <div className="p-3.5 bg-[#0e141c]/95 border border-[#7ecbd4]/25 rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.9)] flex flex-wrap items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2">
+          <span className="text-xs sm:text-sm font-medium text-[#8ee0ea]">
+            {selectedProjects.length} picked — what&apos;s the move?
+          </span>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
+            <EditorButton
+              tone="socket"
               size="sm"
               onClick={() => setSelectedProjects([])}
-              className="h-8 text-xs text-text-secondary hover:text-text-primary"
+              className="text-xs"
             >
               Cancel
-            </Button>
-            <Button
-              variant="ghost"
+            </EditorButton>
+            <EditorButton
+              tone="aiSoft"
               size="sm"
               onClick={() => {
                 actions.handleBulkUpdateStatus(selectedProjects, 'ARCHIVED')
                 setSelectedProjects([])
               }}
-              className="h-8 text-xs text-text-secondary hover:text-accent-ai"
+              className="text-xs"
             >
-              <Archive className="h-3 w-3 mr-1" /> Archive
-            </Button>
-            <Button
-              variant="ghost"
+              <Archive className="h-3.5 w-3.5" />
+              <span>Archive</span>
+            </EditorButton>
+            <EditorButton
+              tone="destructive"
               size="sm"
               onClick={() => {
                 actions.handleBulkDelete(selectedProjects)
                 setSelectedProjects([])
               }}
-              className="h-8 text-xs text-text-secondary hover:text-destructive"
+              className="text-xs"
             >
-              <Trash2 className="h-3 w-3 mr-1" /> Delete
-            </Button>
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>Delete</span>
+            </EditorButton>
           </div>
         </div>
       )}
 
-      {allTags.length > 0 && (
-        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1">
-          <span className="text-xs text-text-muted font-medium mr-1">Tags:</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setActiveTag(null)}
-            className={cn(
-              'h-7 px-2.5 rounded-full text-xs transition-all',
-              activeTag === null
-                ? 'bg-accent-primary text-bg-base font-medium hover:bg-accent-primary/90'
-                : 'bg-bg-surface border border-border-default text-text-secondary hover:text-text-primary hover:border-border-subtle'
+      {/* Main Projects Content */}
+      <section className="flex-1 min-h-0">
+        {currentList.length > 0 ? (
+          viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {currentList.map((project) => (
+                <ProjectCard
+                  key={project._id}
+                  project={project}
+                  isOwner={activeTab === 'my-projects' && (project.canManage ?? true)}
+                  onTogglePin={(id) => actions.handleTogglePin(id)}
+                  onArchive={(id) => actions.handleUpdateStatus(id, 'ARCHIVED')}
+                  onRename={(p) => actions.openRenameDialog(p)}
+                  onDelete={(p) => actions.openDeleteDialog(p)}
+                  onClick={handleProjectClick}
+                />
+              ))}
+            </div>
+          ) : (
+            <ProjectListView
+              projects={currentList}
+              selectedProjects={selectedProjects}
+              setSelectedProjects={setSelectedProjects}
+              canManageRows={activeTab === 'my-projects'}
+              onOpen={handleProjectClick}
+              onTogglePin={(id) => actions.handleTogglePin(id)}
+              onArchive={(id) => actions.handleUpdateStatus(id, 'ARCHIVED')}
+              onRename={(p) => actions.openRenameDialog(p)}
+              onDelete={(p) => actions.openDeleteDialog(p)}
+            />
+          )
+        ) : (
+          <div className="min-h-[320px] flex flex-col items-center justify-center text-center px-6 py-16">
+            <EmptyStateIllustration
+              type={isFiltered ? 'search' : activeTab === 'shared' ? 'shared' : 'projects'}
+              className="mb-6"
+            />
+
+            {isFiltered ? (
+              <>
+                <p className="text-sm font-semibold text-text-primary">
+                  No blueprints matched that filter.
+                </p>
+                <p className="text-xs text-text-muted mt-1.5 max-w-sm">
+                  Try another keyword, layer swatch, or reset active filters to see everything.
+                </p>
+                <EditorButton
+                  tone="socket"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="mt-5"
+                >
+                  Clear filters
+                </EditorButton>
+              </>
+            ) : activeTab === 'shared' ? (
+              <>
+                <p className="text-sm font-semibold text-text-primary">
+                  No invites in your inbox yet.
+                </p>
+                <p className="text-xs text-text-muted mt-1.5 max-w-sm">
+                  When someone shares a blueprint with you, it&apos;ll show up right here.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-semibold text-text-primary">
+                  Spooky quiet in here.
+                </p>
+                <p className="text-xs text-text-muted mt-1.5 max-w-sm">
+                  Summon your first architecture diagram and let Ghost AI help wire the stack.
+                </p>
+                <EditorButton
+                  tone="primary"
+                  size="md"
+                  onClick={onNewProject}
+                  className="mt-5"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>New Project</span>
+                </EditorButton>
+              </>
             )}
-          >
-            All
-          </Button>
-          {allTags.map((tag) => (
-            <Button
-              key={tag}
-              variant="ghost"
-              size="sm"
-              onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-              className={cn(
-                'h-7 px-2.5 rounded-full text-xs transition-all',
-                activeTag === tag
-                  ? 'bg-accent-primary text-bg-base font-medium hover:bg-accent-primary/90'
-                  : 'bg-bg-surface border border-border-default text-text-secondary hover:text-text-primary hover:border-border-subtle'
-              )}
-            >
-              #{tag}
-            </Button>
-          ))}
-        </div>
-      )}
-
-      <Tabs defaultValue="my-projects" className="flex-1 flex flex-col">
-        <TabsList className="grid w-[400px] grid-cols-2 bg-bg-subtle">
-          <TabsTrigger value="my-projects" className="gap-2">
-            <Folder className="h-3.5 w-3.5" />
-            My Projects
-          </TabsTrigger>
-          <TabsTrigger value="shared" className="gap-2">
-            <Users className="h-3.5 w-3.5" />
-            Shared
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="my-projects" className="mt-6">
-          {filteredMyProjects.length > 0 ? (
-            viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredMyProjects.map((project) => (
-                  <ProjectCard
-                    key={project._id}
-                    project={project}
-                    isOwner={true}
-                    onAction={(id) => actions.handleUpdateStatus(id, 'ARCHIVED')}
-                    onRename={(p) => actions.openRenameDialog(p)}
-                    onDelete={(p) => actions.openDeleteDialog(p)}
-                    onClick={handleProjectClick}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <div className="grid grid-cols-12 px-5 py-2 text-xs font-semibold text-text-muted uppercase tracking-wider border-b border-border-subtle">
-                  <div className="col-span-1"></div>
-                  <div className="col-span-5">Project Name</div>
-                  <div className="col-span-3">Status</div>
-                  <div className="col-span-3 text-right">Modified</div>
-                </div>
-                {filteredMyProjects.map((project) => (
-                  <div
-                    key={project._id}
-                    className="grid grid-cols-12 px-5 py-3 bg-bg-surface border-b border-border-default hover:bg-bg-subtle transition-colors cursor-pointer group items-center"
-                  >
-                    <div className="col-span-1">
-                      <Checkbox
-                        checked={selectedProjects.includes(project._id)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedProjects([...selectedProjects, project._id])
-                          } else {
-                            setSelectedProjects(selectedProjects.filter((id) => id !== project._id))
-                          }
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
-                    <div
-                      className="col-span-5 flex items-center gap-3"
-                      onClick={() => handleProjectClick(project.roomId)}
-                    >
-                      <FileText className="h-4 w-4 text-text-muted" />
-                      <span className="text-sm text-text-primary truncate">{project.name}</span>
-                    </div>
-                    <div className="col-span-3">
-                      <span
-                        className={cn(
-                          'px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider',
-                          project.status === 'DRAFT' &&
-                            'bg-bg-subtle border-border-subtle text-text-muted',
-                          project.status === 'REVIEW' &&
-                            'bg-accent-ai-dim border-accent-ai text-accent-ai-text',
-                          project.status === 'ARCHIVED' &&
-                            'bg-red-900/20 border-red-900/50 text-red-400'
-                        )}
-                      >
-                        {project.status}
-                      </span>
-                    </div>
-                    <div className="col-span-3 text-right text-xs text-text-muted">
-                      {new Date(project.updatedAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )
-          ) : (
-            <div className="h-64 flex flex-col items-center justify-center text-center text-text-muted bg-bg-surface border border-dashed border-border-subtle rounded-3xl">
-              <Folder className="h-10 w-10 mb-3 opacity-20" />
-              <p className="text-sm">No projects found.</p>
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="shared" className="mt-6">
-          {filteredSharedProjects.length > 0 ? (
-            viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredSharedProjects.map((project) => (
-                  <ProjectCard
-                    key={project._id}
-                    project={project}
-                    isOwner={false}
-                    onAction={() => {}}
-                    onRename={() => {}}
-                    onDelete={() => {}}
-                    onClick={handleProjectClick}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <div className="grid grid-cols-12 px-5 py-2 text-xs font-semibold text-text-muted uppercase tracking-wider border-b border-border-subtle">
-                  <div className="col-span-1"></div>
-                  <div className="col-span-5">Project Name</div>
-                  <div className="col-span-3">Status</div>
-                  <div className="col-span-3 text-right">Modified</div>
-                </div>
-                {filteredSharedProjects.map((project) => (
-                  <div
-                    key={project._id}
-                    className="grid grid-cols-12 px-5 py-3 bg-bg-surface border-b border-border-default hover:bg-bg-subtle transition-colors cursor-pointer group items-center"
-                  >
-                    <div className="col-span-1">
-                      <Checkbox
-                        checked={selectedProjects.includes(project._id)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedProjects([...selectedProjects, project._id])
-                          } else {
-                            setSelectedProjects(selectedProjects.filter((id) => id !== project._id))
-                          }
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
-                    <div
-                      className="col-span-5 flex items-center gap-3"
-                      onClick={() => handleProjectClick(project.roomId)}
-                    >
-                      <FileText className="h-4 w-4 text-text-muted" />
-                      <span className="text-sm text-text-primary truncate">{project.name}</span>
-                    </div>
-                    <div className="col-span-3">
-                      <span
-                        className={cn(
-                          'px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider',
-                          project.status === 'DRAFT' &&
-                            'bg-bg-subtle border-border-subtle text-text-muted',
-                          project.status === 'REVIEW' &&
-                            'bg-accent-ai-dim border-accent-ai text-accent-ai-text',
-                          project.status === 'ARCHIVED' &&
-                            'bg-red-900/20 border-red-900/50 text-red-400'
-                        )}
-                      >
-                        {project.status}
-                      </span>
-                    </div>
-                    <div className="col-span-3 text-right text-xs text-text-muted">
-                      {new Date(project.updatedAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )
-          ) : (
-            <div className="h-64 flex flex-col items-center justify-center text-center text-text-muted bg-bg-surface border border-dashed border-border-subtle rounded-3xl">
-              <Users className="h-10 w-10 mb-3 opacity-20" />
-              <p className="text-sm">No shared projects found.</p>
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+          </div>
+        )}
+      </section>
     </div>
   )
 }

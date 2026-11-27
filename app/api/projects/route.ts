@@ -1,59 +1,57 @@
-import { auth } from '@clerk/nextjs/server'
-import { ConvexHttpClient } from 'convex/browser'
-import { api } from '@/convex/_generated/api'
 import { NextResponse } from 'next/server'
+import { api } from '@/convex/_generated/api'
+import { getAuthenticatedConvex, handleApiError, parseJsonBody } from '@/lib/api-auth'
 
 export async function GET() {
-  const { userId, getToken } = await auth()
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
-  }
+  const authResult = await getAuthenticatedConvex()
+  if (!authResult.ok) return authResult.response
 
   try {
-    const token = await getToken({ template: 'convex' })
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
-    }
-
-    const convexHttpClient = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
-    convexHttpClient.setAuth(token)
-
-    const projects = await (convexHttpClient.query as any)(api.projects.list, {})
+    const projects = await authResult.ctx.convex.query(api.projects.list, {})
     return NextResponse.json(projects)
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error) {
+    return handleApiError(error, 'Failed to list projects')
   }
 }
 
 export async function POST(request: Request) {
-  const { userId, getToken } = await auth()
+  const authResult = await getAuthenticatedConvex()
+  if (!authResult.ok) return authResult.response
 
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+  const bodyResult = await parseJsonBody<{
+    name?: unknown
+    description?: unknown
+    roomId?: unknown
+  }>(request)
+  if (!bodyResult.ok) return bodyResult.response
+
+  const { name, description, roomId } = bodyResult.data
+
+  if (name !== undefined && typeof name !== 'string') {
+    return NextResponse.json({ error: 'name must be a string' }, { status: 400 })
+  }
+  if (description !== undefined && typeof description !== 'string') {
+    return NextResponse.json({ error: 'description must be a string' }, { status: 400 })
+  }
+  if (roomId !== undefined && typeof roomId !== 'string') {
+    return NextResponse.json({ error: 'roomId must be a string' }, { status: 400 })
   }
 
+  const resolvedRoomId =
+    typeof roomId === 'string' && roomId.trim().length > 0 ? roomId.trim() : `room-${crypto.randomUUID()}`
+
   try {
-    const body = await request.json()
-    if (!body.roomId || typeof body.roomId !== 'string') {
-      return NextResponse.json({ error: 'roomId is required' }, { status: 400 })
-    }
-    const token = await getToken({ template: 'convex' })
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
-    }
-
-    const convexHttpClient = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
-    convexHttpClient.setAuth(token)
-
-    const projectId = await (convexHttpClient.mutation as any)(api.projects.create, {
-      name: body.name,
-      description: body.description,
-      roomId: body.roomId,
+    const projectId = await authResult.ctx.convex.mutation(api.projects.create, {
+      name: typeof name === 'string' ? name : undefined,
+      description: typeof description === 'string' ? description : undefined,
+      roomId: resolvedRoomId,
     })
 
-    return NextResponse.json({ projectId }, { status: 201 })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(
+      { projectId, roomId: resolvedRoomId, orgId: authResult.ctx.orgId },
+      { status: 201 }
+    )
+  } catch (error) {
+    return handleApiError(error, 'Failed to create project')
   }
 }

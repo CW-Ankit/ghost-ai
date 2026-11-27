@@ -11,7 +11,7 @@ export const prunePresence = internalMutation({
     const expired = await ctx.db
       .query('presence')
       .withIndex('by_lastActive', (q) => q.lt('lastActive', now - timeout))
-      .collect()
+      .take(200)
 
     for (const p of expired) {
       await ctx.db.delete(p._id)

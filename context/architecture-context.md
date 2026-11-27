@@ -31,11 +31,13 @@
 
 ## Auth and Collaboration Model
 
-- Every project has a single owner (Clerk user ID).
-- Projects can include additional collaborators.
+- Every project has a creator/owner (`ownerId`, Clerk user `tokenIdentifier`) and an optional Clerk organization (`orgId`).
+- Users can work under their personal profile (`orgId` unset) or switch into an active Clerk organization (`orgId` set).
+- Personal projects (`!orgId`) are owned by `ownerId` and can include additional email-invited collaborators.
+- Organization projects (`orgId` set) grant automatic edit access to active members of that Clerk organization (`org:admin` or the creator can manage/delete/configure sharing; `org:member` has editor access), and also support external email collaborators.
 - Only authenticated users can access protected routes.
-- Only the owner or a collaborator can mutate project resources.
-- Liveblocks room tokens are issued only after verifying project membership.
+- Only authorized editors/owners (not `VIEW_ONLY` public viewers) can mutate project resources.
+- Liveblocks room tokens are issued only after verifying project membership (`READ_ACCESS` vs `FULL_ACCESS`).
 
 ## Starter System Designs
 

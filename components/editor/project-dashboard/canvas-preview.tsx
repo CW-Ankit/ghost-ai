@@ -8,16 +8,34 @@ interface Snapshot {
 }
 
 interface CanvasPreviewProps {
-  snapshot: Snapshot
+  snapshot?: Snapshot | null
+  compact?: boolean
+  className?: string
 }
 
-export function CanvasPreview({ snapshot }: CanvasPreviewProps) {
+export function CanvasPreview({ snapshot, compact = false, className }: CanvasPreviewProps) {
   const [isHovered, setIsHovered] = useState(false)
+
+  const gridStyle: React.CSSProperties = {
+    backgroundImage:
+      'radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px)',
+    backgroundSize: compact ? '10px 10px' : '14px 14px',
+  }
 
   if (!snapshot || !snapshot.nodes || snapshot.nodes.length === 0) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-bg-subtle rounded-xl border border-border-subtle text-text-muted">
-        <div className="text-[10px] font-mono opacity-50">Empty Canvas</div>
+      <div
+        style={gridStyle}
+        className={cn(
+          'w-full h-full flex items-center justify-center bg-[#090d12] rounded-xl border border-white/[0.06] text-text-faint',
+          className
+        )}
+      >
+        {!compact && (
+          <span className="text-[10px] font-mono tracking-wider uppercase opacity-55">
+            Empty Canvas
+          </span>
+        )}
       </div>
     )
   }
@@ -29,23 +47,28 @@ export function CanvasPreview({ snapshot }: CanvasPreviewProps) {
   const minY = Math.min(...yCoords)
   const maxY = Math.max(...yCoords)
 
-  const width = maxX - minX || 100
-  const height = maxY - minY || 100
+  const width = maxX - minX || 120
+  const height = maxY - minY || 120
 
   const scaleX = 100 / width
   const scaleY = 100 / height
 
   return (
     <div
-      className="w-full h-full bg-bg-subtle rounded-xl border border-border-subtle overflow-hidden relative transition-all duration-300"
+      style={gridStyle}
+      className={cn(
+        'w-full h-full bg-[#090d12] rounded-xl border border-white/[0.06] overflow-hidden relative transition-colors duration-200',
+        className
+      )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <svg
-        viewBox="0 0 100 100"
+        viewBox="-16 -16 132 132"
+        preserveAspectRatio="xMidYMid meet"
         className={cn(
           'w-full h-full transition-transform duration-300 origin-center',
-          isHovered ? 'scale-125' : 'scale-100'
+          isHovered ? 'scale-110' : 'scale-100'
         )}
       >
         {snapshot.edges.map((edge, i) => {
@@ -60,8 +83,9 @@ export function CanvasPreview({ snapshot }: CanvasPreviewProps) {
               y1={(start.y - minY) * scaleY}
               x2={(end.x - minX) * scaleX}
               y2={(end.y - minY) * scaleY}
-              stroke="var(--border-subtle)"
-              strokeWidth="1"
+              stroke="rgba(142, 224, 234, 0.32)"
+              strokeWidth={compact ? '1.6' : '1.2'}
+              strokeLinecap="round"
             />
           )
         })}
@@ -69,19 +93,38 @@ export function CanvasPreview({ snapshot }: CanvasPreviewProps) {
         {snapshot.nodes.map((node, i) => {
           const cx = (node.x - minX) * scaleX
           const cy = (node.y - minY) * scaleY
-          const color =
-            NODE_COLORS[node.color as keyof typeof NODE_COLORS]?.fill || NODE_COLORS.default.fill
+          const palette =
+            NODE_COLORS[node.color as keyof typeof NODE_COLORS] || NODE_COLORS.default
+          const w = compact ? 10 : 12
+          const h = compact ? 6.5 : 7.5
+
+          if (node.shape === 'circle') {
+            return (
+              <circle
+                key={i}
+                cx={cx}
+                cy={cy}
+                r={compact ? '4.5' : '5'}
+                fill={palette.fill}
+                stroke={palette.text}
+                strokeOpacity={0.7}
+                strokeWidth="1"
+              />
+            )
+          }
 
           return (
-            <circle
+            <rect
               key={i}
-              cx={cx}
-              cy={cy}
-              r={isHovered ? '3' : '2'}
-              fill={color}
-              stroke="var(--border-default)"
-              strokeWidth="0.5"
-              className="transition-all duration-300"
+              x={cx - w / 2}
+              y={cy - h / 2}
+              width={w}
+              height={h}
+              rx={node.shape === 'pill' ? h / 2 : 2}
+              fill={palette.fill}
+              stroke={palette.text}
+              strokeOpacity={0.7}
+              strokeWidth="0.9"
             />
           )
         })}

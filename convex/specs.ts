@@ -1,6 +1,6 @@
-import { v } from 'convex/values'
+import { v, ConvexError } from 'convex/values'
 import { query, mutation } from './_generated/server'
-import { ConvexError } from 'convex/values'
+import { requireProjectOwner, resolveProjectAccess } from './lib/access'
 
 export const listByProject = query({
   args: { projectId: v.id('projects') },
@@ -12,23 +12,8 @@ export const listByProject = query({
       return []
     }
 
-    // Verify access
-    const isOwner = Boolean(identity && project.ownerId === identity.tokenIdentifier)
-    let isCollaborator = false
-
-    if (identity?.email) {
-      const collaboration = await ctx.db
-        .query('projectCollaborators')
-        .withIndex('by_projectId_and_email', (q) =>
-          q.eq('projectId', args.projectId).eq('email', identity.email!)
-        )
-        .unique()
-      if (collaboration) isCollaborator = true
-    }
-
-    const isPublicView = project.publicAccess === 'VIEW_ONLY'
-
-    if (!isOwner && !isCollaborator && !isPublicView) {
+    const access = await resolveProjectAccess(ctx, project, identity)
+    if (!access) {
       return []
     }
 
@@ -36,7 +21,7 @@ export const listByProject = query({
       .query('specs')
       .withIndex('by_projectId', (q) => q.eq('projectId', args.projectId))
       .order('desc')
-      .collect()
+      .take(100)
   },
 })
 
@@ -55,22 +40,8 @@ export const getById = query({
       return null
     }
 
-    const isOwner = Boolean(identity && project.ownerId === identity.tokenIdentifier)
-    let isCollaborator = false
-
-    if (identity?.email) {
-      const collaboration = await ctx.db
-        .query('projectCollaborators')
-        .withIndex('by_projectId_and_email', (q) =>
-          q.eq('projectId', project._id).eq('email', identity.email!)
-        )
-        .unique()
-      if (collaboration) isCollaborator = true
-    }
-
-    const isPublicView = project.publicAccess === 'VIEW_ONLY'
-
-    if (!isOwner && !isCollaborator && !isPublicView) {
+    const access = await resolveProjectAccess(ctx, project, identity)
+    if (!access) {
       return null
     }
 
@@ -81,20 +52,16 @@ export const getById = query({
 export const remove = mutation({
   args: { specId: v.id('specs') },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
-      throw new ConvexError('Unauthenticated')
-    }
-
     const spec = await ctx.db.get(args.specId)
     if (!spec) {
       throw new ConvexError('Spec not found')
     }
 
-    const project = await ctx.db.get(spec.projectId)
-    if (!project || project.ownerId !== identity.tokenIdentifier) {
-      throw new ConvexError('Only the project owner can delete specifications')
-    }
+    await requireProjectOwner(
+      ctx,
+      spec.projectId,
+      'Only the project owner can delete specifications'
+    )
 
     await ctx.db.delete(args.specId)
     return true

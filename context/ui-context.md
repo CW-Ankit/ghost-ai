@@ -30,13 +30,13 @@ Tailwind utility names map to these variables. Use `bg-base`, `bg-surface`, `tex
 
 ## Typography
 
-| Role                  | Font              | CSS Variable     |
-| --------------------- | ----------------- | ---------------- |
-| UI & Body text        | Plus Jakarta Sans | `--font-sans`    |
-| Headings & Titles     | Space Grotesk     | `--font-heading` |
-| Code & Technical mono | JetBrains Mono    | `--font-mono`    |
+| Role                  | Font             | Source / CSS Variable                                        |
+| --------------------- | ---------------- | ------------------------------------------------------------ |
+| UI & Body text        | Google Sans Flex | `app/fonts/GoogleSansFlex-Variable.woff2` (`--font-sans`)    |
+| Headings & Titles     | Google Sans Flex | `app/fonts/GoogleSansFlex-Variable.woff2` (`--font-heading`) |
+| Code & Technical mono | JetBrains Mono   | `@fontsource/jetbrains-mono` (`--font-mono`)                 |
 
-Fonts are loaded self-hosted via `@fontsource` packages, guaranteeing zero network waterfalls during compilation, maximum rendering crispness, antialiasing, and subpixel rendering.
+Google Sans Flex is self-hosted locally via `next/font/local` (`app/fonts/GoogleSansFlex-Variable.woff2`), and JetBrains Mono is self-hosted via `@fontsource`, guaranteeing zero network waterfalls during compilation, maximum rendering crispness, antialiasing, and subpixel rendering.
 
 ## Border Radius
 
@@ -93,6 +93,10 @@ React Flow `<Background>` component. Canvas sits on the base background color.
 ## Component Library
 
 shadcn/ui on top of Tailwind. No custom design system. Components live in `components/ui/`. Use the `shadcn` CLI to add new components rather than writing them from scratch.
+
+### No Unsolicited Pills
+
+Never add pill-shaped options, status badges, or tag chips (`rounded-full` badges/chips/toggles) anywhere in the app unless explicitly requested by the user.
 
 ## Layout Patterns
 

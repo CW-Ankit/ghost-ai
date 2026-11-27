@@ -4,6 +4,7 @@ import { v } from 'convex/values'
 export default defineSchema({
   projects: defineTable({
     ownerId: v.string(),
+    orgId: v.optional(v.string()),
     name: v.string(),
     description: v.optional(v.string()),
     status: v.union(v.literal('DRAFT'), v.literal('ARCHIVED'), v.literal('REVIEW')),
@@ -26,6 +27,7 @@ export default defineSchema({
     tags: v.optional(v.array(v.string())),
   })
     .index('by_ownerId', ['ownerId'])
+    .index('by_orgId', ['orgId'])
     .index('by_roomId', ['roomId']),
 
   projectCollaborators: defineTable({
@@ -42,6 +44,7 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index('by_userId', ['userId'])
+    .index('by_projectId', ['projectId'])
     .index('by_userId_and_projectId', ['userId', 'projectId']),
 
   presence: defineTable({
@@ -51,7 +54,8 @@ export default defineSchema({
   })
     .index('by_projectId', ['projectId'])
     .index('by_userId', ['userId'])
-    .index('by_lastActive', ['lastActive']),
+    .index('by_lastActive', ['lastActive'])
+    .index('by_projectId_and_userId', ['projectId', 'userId']),
 
   taskRuns: defineTable({
     projectId: v.id('projects'),
@@ -69,6 +73,7 @@ export default defineSchema({
     completedAt: v.optional(v.number()),
   })
     .index('by_projectId', ['projectId'])
+    .index('by_projectId_and_type', ['projectId', 'type'])
     .index('by_status', ['status']),
 
   specs: defineTable({
