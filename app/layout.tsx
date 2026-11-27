@@ -6,6 +6,7 @@ import { shadcn } from '@clerk/ui/themes'
 import ConvexClientProvider from '@/components/convex-client-provider'
 import { CustomCursor } from '@/components/custom-cursor'
 import { Analytics } from '@vercel/analytics/next'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 const googleSansFlex = localFont({
   src: './fonts/GoogleSansFlex-Variable.woff2',
@@ -88,6 +89,7 @@ export default function RootLayout({
         </ClerkProvider>
         <CustomCursor />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )
