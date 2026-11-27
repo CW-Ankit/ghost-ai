@@ -47,7 +47,10 @@ export async function POST(request: Request) {
       roomId: resolvedRoomId,
     })
 
-    return NextResponse.json({ projectId, roomId: resolvedRoomId }, { status: 201 })
+    return NextResponse.json(
+      { projectId, roomId: resolvedRoomId, orgId: authResult.ctx.orgId },
+      { status: 201 }
+    )
   } catch (error) {
     return handleApiError(error, 'Failed to create project')
   }

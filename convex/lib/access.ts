@@ -10,7 +10,64 @@ export interface ProjectAccessResult {
   isReadOnly: boolean
 }
 
+export interface OrgContext {
+  orgId: string | null
+  orgRole: string | null
+  isOrgAdmin: boolean
+}
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function readNonEmptyString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null
+}
+
+/**
+ * Extracts optional Clerk organization claims from Convex UserIdentity.
+ * Supports both standard JWT template claims (`org_id`, `org_role`) and
+ * Clerk Session Token v2 compact organization claims (`o.id`, `o.rol`).
+ */
+export function extractOrgContext(identity: UserIdentity | null): OrgContext {
+  if (!identity) {
+    return { orgId: null, orgRole: null, isOrgAdmin: false }
+  }
+
+  const claims = identity as unknown as Record<string, unknown>
+  const compactOrg =
+    claims.o && typeof claims.o === 'object' && !Array.isArray(claims.o)
+      ? (claims.o as Record<string, unknown>)
+      : null
+
+  const orgId =
+    readNonEmptyString(claims.org_id) ??
+    readNonEmptyString(claims.orgId) ??
+    readNonEmptyString(compactOrg?.id)
+
+  const orgRole =
+    readNonEmptyString(claims.org_role) ??
+    readNonEmptyString(claims.orgRole) ??
+    readNonEmptyString(compactOrg?.rol)
+
+  const isOrgAdmin = orgRole === 'org:admin' || orgRole === 'admin'
+
+  return { orgId, orgRole, isOrgAdmin }
+}
+
+/**
+ * Returns true if the authenticated user can perform owner/admin actions on a project.
+ * Personal projects require matching `ownerId`; organization projects require active
+ * membership in `project.orgId` as either an org admin or the project creator.
+ */
+export function canManageProject(project: Doc<'projects'>, identity: UserIdentity): boolean {
+  if (project.orgId) {
+    const orgCtx = extractOrgContext(identity)
+    return (
+      orgCtx.orgId === project.orgId &&
+      (orgCtx.isOrgAdmin || project.ownerId === identity.tokenIdentifier)
+    )
+  }
+  return project.ownerId === identity.tokenIdentifier
+}
 
 /**
  * Normalizes email addresses for consistent collaborator indexing and lookup.
@@ -78,7 +135,13 @@ export async function resolveProjectAccess(
   project: Doc<'projects'>,
   identity: UserIdentity | null
 ): Promise<ProjectAccessResult | null> {
-  if (identity && project.ownerId === identity.tokenIdentifier) {
+  if (project.orgId) {
+    const orgCtx = extractOrgContext(identity)
+    if (identity && orgCtx.orgId === project.orgId) {
+      const isManager = orgCtx.isOrgAdmin || project.ownerId === identity.tokenIdentifier
+      return { role: isManager ? 'owner' : 'editor', isReadOnly: false }
+    }
+  } else if (identity && project.ownerId === identity.tokenIdentifier) {
     return { role: 'owner', isReadOnly: false }
   }
 
@@ -123,7 +186,8 @@ export async function requireProjectMember(
 }
 
 /**
- * Verifies the caller is authenticated and is the sole owner of the project.
+ * Verifies the caller is authenticated and can manage the project
+ * (sole owner for personal projects, or creator / org admin for organization projects).
  */
 export async function requireProjectOwner(
   ctx: QueryCtx | MutationCtx,
@@ -138,7 +202,7 @@ export async function requireProjectOwner(
   if (!project) {
     throw new ConvexError('Project not found')
   }
-  if (project.ownerId !== identity.tokenIdentifier) {
+  if (!canManageProject(project, identity)) {
     throw new ConvexError(unauthorizedMessage)
   }
 

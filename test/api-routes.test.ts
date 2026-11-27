@@ -44,6 +44,8 @@ describe('Next.js Backend API Routes', () => {
 
     mockAuth.mockResolvedValue({
       userId: 'user_123',
+      orgId: null,
+      orgRole: null,
       getToken: vi.fn().mockResolvedValue('convex-jwt-token'),
       sessionClaims: { full_name: 'Test User' },
     })
@@ -79,11 +81,34 @@ describe('Next.js Backend API Routes', () => {
 
     expect(postRes.status).toBe(201)
     expect(postJson.projectId).toBe('proj_1')
+    expect(postJson.orgId).toBeNull()
     expect(postJson.roomId).toMatch(/^room-/)
     expect(mockMutation).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ roomId: postJson.roomId })
     )
+
+    // With Clerk's native Convex integration (aud: 'convex'), getToken() is called without a template
+    const nativeGetToken = vi.fn().mockResolvedValue('native-convex-session-jwt')
+    mockAuth.mockResolvedValueOnce({
+      userId: 'user_123',
+      orgId: 'org_acme',
+      orgRole: 'org:admin',
+      getToken: nativeGetToken,
+      sessionClaims: { aud: 'convex', full_name: 'Test User' },
+    })
+    mockMutation.mockResolvedValueOnce('proj_org_1')
+    const orgPostReq = new Request('http://localhost:3000/api/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Org Architecture' }),
+    })
+    const orgPostRes = await POST(orgPostReq)
+    const orgPostJson = await orgPostRes.json()
+    expect(orgPostRes.status).toBe(201)
+    expect(orgPostJson.projectId).toBe('proj_org_1')
+    expect(orgPostJson.orgId).toBe('org_acme')
+    expect(nativeGetToken).toHaveBeenCalledWith()
   })
 
   it('PATCH & DELETE /api/projects/[projectId] map authorization & validation errors', async () => {

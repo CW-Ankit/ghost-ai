@@ -329,4 +329,99 @@ describe('Convex Backend Architecture', () => {
     const pruned = await t.mutation(internal.crons.prunePresence, {})
     expect(pruned).toBe(1)
   })
+
+  it('supports optional Clerk organizations alongside personal workspaces', async () => {
+    const t = convexTest(schema, modules)
+
+    const personalOwner = t.withIdentity(OWNER_IDENTITY)
+    const orgAdmin = t.withIdentity({
+      ...OWNER_IDENTITY,
+      org_id: 'org_acme',
+      org_role: 'org:admin',
+    })
+    const orgMember = t.withIdentity({
+      ...COLLAB_IDENTITY,
+      org_id: 'org_acme',
+      org_role: 'org:member',
+    })
+    // Also support Clerk session token v2 compact `o` claim
+    const orgMemberCompact = t.withIdentity({
+      ...STRANGER_IDENTITY,
+      o: { id: 'org_acme', rol: 'member' },
+    })
+    const otherOrgUser = t.withIdentity({
+      ...STRANGER_IDENTITY,
+      org_id: 'org_other',
+      org_role: 'org:admin',
+    })
+
+    // 1. Personal project has no orgId and stays isolated from org list
+    const personalId = await personalOwner.mutation(api.projects.create, {
+      name: 'Personal Blueprint',
+      roomId: 'room-personal-1',
+    })
+
+    // 2. Org member creates an organization project
+    const orgProjectId = await orgMember.mutation(api.projects.create, {
+      name: 'Acme Core Platform',
+      roomId: 'room-acme-1',
+    })
+
+    // Personal workspace sees only personal projects; org workspace sees only org projects
+    const personalList = await personalOwner.query(api.projects.list, {})
+    expect(personalList?.activeOrgId).toBeNull()
+    expect(personalList?.owned.map((p) => p._id)).toEqual([personalId])
+
+    const acmeList = await orgAdmin.query(api.projects.list, {})
+    expect(acmeList?.activeOrgId).toBe('org_acme')
+    expect(acmeList?.owned.map((p) => p._id)).toEqual([orgProjectId])
+
+    const otherList = await otherOrgUser.query(api.projects.list, {})
+    expect(otherList?.activeOrgId).toBe('org_other')
+    expect(otherList?.owned).toHaveLength(0)
+
+    // 3. Another org member (compact v2 claims) gets editor access, not owner/admin
+    const compactRoom = await orgMemberCompact.query(api.projects.getByRoomId, {
+      roomId: 'room-acme-1',
+    })
+    expect(compactRoom?.role).toBe('editor')
+    expect(compactRoom?.isReadOnly).toBe(false)
+    expect(compactRoom?.canManage).toBe(false)
+
+    // Non-creator org:member can save canvas and run AI, but cannot rename/delete org project
+    await orgMemberCompact.mutation(api.projects.saveCanvas, {
+      projectId: orgProjectId,
+      canvasJsonPath: 'data:application/json;charset=utf-8,%7B%7D',
+    })
+    await expect(
+      orgMemberCompact.mutation(api.projects.rename, { projectId: orgProjectId, name: 'Hijacked' })
+    ).rejects.toThrow(/Only the project owner/)
+
+    const orgSpec = await orgMemberCompact.action(api.ai.generateSpec, {
+      projectId: orgProjectId,
+      nodes: [{ id: 'n1', data: { label: 'Gateway', shape: 'diamond', color: 'blue' } }],
+      edges: [],
+      siteUrl: 'http://localhost:3000',
+    })
+    await expect(
+      orgMemberCompact.mutation(api.specs.remove, { specId: orgSpec.specId })
+    ).rejects.toThrow(/Only the project owner/)
+
+    // 4. Org admin can manage (rename, delete specs, delete project) created by another member
+    await orgAdmin.mutation(api.projects.rename, {
+      projectId: orgProjectId,
+      name: 'Acme Renamed Platform',
+    })
+    await orgAdmin.mutation(api.specs.remove, { specId: orgSpec.specId })
+    expect(await orgAdmin.query(api.specs.listByProject, { projectId: orgProjectId })).toHaveLength(
+      0
+    )
+
+    // 5. User outside org_acme cannot access org project
+    expect(await otherOrgUser.query(api.projects.getById, { projectId: orgProjectId })).toBeNull()
+    expect(await personalOwner.query(api.projects.getById, { projectId: orgProjectId })).toBeNull()
+
+    await orgAdmin.mutation(api.projects.remove, { projectId: orgProjectId })
+    expect(await orgAdmin.query(api.projects.getById, { projectId: orgProjectId })).toBeNull()
+  })
 })

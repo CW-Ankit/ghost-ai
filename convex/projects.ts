@@ -2,7 +2,9 @@ import { v, ConvexError } from 'convex/values'
 import { internalQuery, mutation, query } from './_generated/server'
 import type { Doc } from './_generated/dataModel'
 import {
+  canManageProject,
   cascadeDeleteProject,
+  extractOrgContext,
   isValidEmail,
   normalizeEmail,
   requireIdentity,
@@ -22,6 +24,7 @@ export const list = query({
     }
 
     const userIdentifier = identity.tokenIdentifier
+    const { orgId } = extractOrgContext(identity)
     const rawEmail = identity.email
     const normalizedEmail = rawEmail ? normalizeEmail(rawEmail) : undefined
 
@@ -32,11 +35,18 @@ export const list = query({
       .take(200)
     const pinnedProjectIds = new Set(favorites.map((f) => f.projectId))
 
-    // Get owned projects
-    const ownedProjects = await ctx.db
-      .query('projects')
-      .withIndex('by_ownerId', (q) => q.eq('ownerId', userIdentifier))
-      .take(200)
+    // Scope primary workspace projects by active Clerk organization (or personal profile when orgId is null)
+    const primaryProjects = orgId
+      ? await ctx.db
+          .query('projects')
+          .withIndex('by_orgId', (q) => q.eq('orgId', orgId))
+          .take(200)
+      : (
+          await ctx.db
+            .query('projects')
+            .withIndex('by_ownerId', (q) => q.eq('ownerId', userIdentifier))
+            .take(200)
+        ).filter((p) => !p.orgId)
 
     // Get shared projects if email is available
     let sharedProjects: Doc<'projects'>[] = []
@@ -63,10 +73,10 @@ export const list = query({
       ).filter((p): p is Doc<'projects'> => p !== null)
     }
 
-    const ownedProjectIds = new Set(ownedProjects.map((p) => p._id))
+    const primaryProjectIds = new Set(primaryProjects.map((p) => p._id))
     const allAccessibleProjects = [
-      ...ownedProjects,
-      ...sharedProjects.filter((p) => !ownedProjectIds.has(p._id)),
+      ...primaryProjects,
+      ...sharedProjects.filter((p) => !primaryProjectIds.has(p._id)),
     ]
 
     const cutoff = Date.now() - ACTIVE_PRESENCE_WINDOW_MS
@@ -84,16 +94,18 @@ export const list = query({
           ...p,
           isPinned: pinnedProjectIds.has(p._id),
           activeUsers: activeCount,
+          canManage: canManageProject(p, identity),
         }
       })
     )
 
-    const ownedWithPinned = projectsWithMetadata.filter((p) => ownedProjectIds.has(p._id))
-    const sharedWithPinned = projectsWithMetadata.filter((p) => !ownedProjectIds.has(p._id))
+    const ownedWithPinned = projectsWithMetadata.filter((p) => primaryProjectIds.has(p._id))
+    const sharedWithPinned = projectsWithMetadata.filter((p) => !primaryProjectIds.has(p._id))
 
     return {
       owned: ownedWithPinned,
       shared: sharedWithPinned,
+      activeOrgId: orgId,
     }
   },
 })
@@ -116,6 +128,7 @@ export const getById = query({
       ...project,
       role: access.role,
       isReadOnly: access.isReadOnly,
+      canManage: identity ? canManageProject(project, identity) : false,
     }
   },
 })
@@ -174,9 +187,11 @@ export const create = mutation({
     const trimmedName = args.name?.trim()
     const name = trimmedName && trimmedName.length > 0 ? trimmedName : 'Untitled Project'
 
+    const { orgId } = extractOrgContext(identity)
     const now = Date.now()
     return await ctx.db.insert('projects', {
       ownerId: identity.tokenIdentifier,
+      ...(orgId ? { orgId } : {}),
       name,
       description: args.description?.trim() || undefined,
       status: 'DRAFT',
@@ -414,7 +429,7 @@ export const bulkUpdateStatus = mutation({
 
     for (const projectId of args.projectIds) {
       const project = await ctx.db.get(projectId)
-      if (project && project.ownerId === identity.tokenIdentifier) {
+      if (project && canManageProject(project, identity)) {
         await ctx.db.patch(projectId, { status: args.status, updatedAt: Date.now() })
       }
     }
@@ -431,7 +446,7 @@ export const bulkDelete = mutation({
 
     for (const projectId of args.projectIds) {
       const project = await ctx.db.get(projectId)
-      if (project && project.ownerId === identity.tokenIdentifier) {
+      if (project && canManageProject(project, identity)) {
         await cascadeDeleteProject(ctx, projectId)
       }
     }
@@ -507,6 +522,7 @@ export const getByRoomId = query({
       ...project,
       role: access.role,
       isReadOnly: access.isReadOnly,
+      canManage: identity ? canManageProject(project, identity) : false,
     }
   },
 })

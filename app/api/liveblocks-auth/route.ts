@@ -1,5 +1,6 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
+import { resolveConvexToken } from '@/lib/api-auth'
 import { getLiveblocksClient, getCursorColor } from '@/lib/liveblocks'
 import { checkProjectAccess } from '@/lib/project-access'
 
@@ -17,14 +18,12 @@ export async function POST(req: Request) {
     // 1. Resolve Clerk session synchronously from request token claims
     const authSession = await auth()
     const userId = authSession.userId
-    let token: string | null = null
-    if (userId) {
-      try {
-        token = await authSession.getToken({ template: 'convex' })
-      } catch {
-        token = await authSession.getToken().catch(() => null)
-      }
-    }
+    const token = userId
+      ? await resolveConvexToken(
+          authSession.sessionClaims as Record<string, unknown> | null | undefined,
+          authSession.getToken
+        )
+      : null
 
     // 2. Verify project access & permission
     const project = await checkProjectAccess(roomId, { userId, token })

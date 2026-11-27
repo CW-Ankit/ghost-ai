@@ -4,6 +4,7 @@ import { v } from 'convex/values'
 export default defineSchema({
   projects: defineTable({
     ownerId: v.string(),
+    orgId: v.optional(v.string()),
     name: v.string(),
     description: v.optional(v.string()),
     status: v.union(v.literal('DRAFT'), v.literal('ARCHIVED'), v.literal('REVIEW')),
@@ -26,6 +27,7 @@ export default defineSchema({
     tags: v.optional(v.array(v.string())),
   })
     .index('by_ownerId', ['ownerId'])
+    .index('by_orgId', ['orgId'])
     .index('by_roomId', ['roomId']),
 
   projectCollaborators: defineTable({

@@ -1,6 +1,6 @@
 import { v, ConvexError } from 'convex/values'
 import { query, mutation } from './_generated/server'
-import { requireIdentity, resolveProjectAccess } from './lib/access'
+import { requireProjectOwner, resolveProjectAccess } from './lib/access'
 
 export const listByProject = query({
   args: { projectId: v.id('projects') },
@@ -52,21 +52,16 @@ export const getById = query({
 export const remove = mutation({
   args: { specId: v.id('specs') },
   handler: async (ctx, args) => {
-    const identity = await requireIdentity(ctx)
-
     const spec = await ctx.db.get(args.specId)
     if (!spec) {
       throw new ConvexError('Spec not found')
     }
 
-    const project = await ctx.db.get(spec.projectId)
-    if (!project) {
-      throw new ConvexError('Project not found')
-    }
-
-    if (project.ownerId !== identity.tokenIdentifier) {
-      throw new ConvexError('Only the project owner can delete specifications')
-    }
+    await requireProjectOwner(
+      ctx,
+      spec.projectId,
+      'Only the project owner can delete specifications'
+    )
 
     await ctx.db.delete(args.specId)
     return true

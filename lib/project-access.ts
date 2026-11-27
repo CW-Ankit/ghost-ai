@@ -1,18 +1,17 @@
 import { auth } from '@clerk/nextjs/server'
 import { ConvexHttpClient } from 'convex/browser'
 import { api } from '@/convex/_generated/api'
+import { resolveConvexToken } from '@/lib/api-auth'
 
 export async function getCurrentUserIdentity() {
   try {
-    const { userId, getToken } = await auth()
+    const { userId, sessionClaims, getToken } = await auth()
     if (!userId) return null
 
-    let token: string | null = null
-    try {
-      token = await getToken({ template: 'convex' })
-    } catch {
-      token = await getToken().catch(() => null)
-    }
+    const token = await resolveConvexToken(
+      sessionClaims as Record<string, unknown> | null | undefined,
+      getToken
+    )
 
     return { userId, token }
   } catch (error) {

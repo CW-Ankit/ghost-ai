@@ -183,6 +183,12 @@ Update this file whenever the current phase, active feature, or implementation s
     - `GET /api/projects/[projectId]/specs` and `GET /api/projects/[projectId]/specs/[specId]/download`
     - `POST /api/specs/upload` and `GET/DELETE /api/specs/[specId]` (SSRF guard)
   - Added `convex/backend.test.ts` (`convex-test`), `test/api-routes.test.ts`, live runner `scripts/test-backend.mjs` (`pnpm test:api`), and Postman collection/environment in `postman/`.
+- [x] Wired Optional Clerk Organizations into Backend (`convex/` & `app/api/`):
+  - Added optional `orgId` field and `by_orgId` index to `projects` in `convex/schema.ts`.
+  - Added `extractOrgContext` (supporting `org_id`/`org_role`, `orgId`/`orgRole`, and Clerk v2 compact `o.id`/`o.rol` claims) and `canManageProject` in `convex/lib/access.ts`.
+  - Updated `resolveProjectAccess` and `requireProjectOwner` so personal projects remain scoped to `ownerId` + email collaborators while organization projects grant org members `editor` access and creator / `org:admin` management permissions.
+  - Scoped `projects.list` and `projects.create` by active Clerk organization (`orgId`) vs personal profile (`null`), and updated `bulkUpdateStatus`, `bulkDelete`, and `specs.remove` to support organization admins.
+  - Exposed `orgId` and `orgRole` in `lib/api-auth.ts` and `POST /api/projects`, aligned server token resolution (`resolveConvexToken` across `lib/api-auth.ts`, `lib/project-access.ts`, and `/api/liveblocks-auth`) with Clerk's native Convex integration (`sessionClaims.aud === 'convex'`), and added unit/Convex tests for personal vs organization isolation and role boundaries.
 
 ## Current Phase
 

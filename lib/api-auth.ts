@@ -5,12 +5,39 @@ import { NextResponse } from 'next/server'
 
 export interface AuthenticatedConvexContext {
   userId: string
+  orgId: string | null
+  orgRole: string | null
   token: string
   convex: ConvexHttpClient
 }
 
 /**
- * Resolves the Clerk session and creates a per-request authenticated ConvexHttpClient.
+ * Resolves a Convex-ready JWT from Clerk, matching `ConvexProviderWithClerk`:
+ * uses the default session token directly when Clerk's native Convex integration
+ * is active (`aud === 'convex'`), falling back to the legacy `convex` JWT template.
+ */
+export async function resolveConvexToken(
+  sessionClaims: Record<string, unknown> | null | undefined,
+  getToken: (options?: { template?: string }) => Promise<string | null>
+): Promise<string | null> {
+  const aud = sessionClaims?.aud
+  const hasNativeConvexAud =
+    aud === 'convex' || (Array.isArray(aud) && aud.includes('convex'))
+
+  if (hasNativeConvexAud) {
+    return await getToken().catch(() => null)
+  }
+
+  try {
+    return await getToken({ template: 'convex' })
+  } catch {
+    return await getToken().catch(() => null)
+  }
+}
+
+/**
+ * Resolves the Clerk session (including optional active organization context)
+ * and creates a per-request authenticated ConvexHttpClient.
  * Returns either the authenticated context or a ready-to-return 401/500 NextResponse.
  */
 export async function getAuthenticatedConvex(): Promise<
@@ -28,7 +55,7 @@ export async function getAuthenticatedConvex(): Promise<
     }
   }
 
-  const { userId, getToken } = await auth()
+  const { userId, orgId, orgRole, sessionClaims, getToken } = await auth()
   if (!userId) {
     return {
       ok: false,
@@ -36,12 +63,10 @@ export async function getAuthenticatedConvex(): Promise<
     }
   }
 
-  let token: string | null = null
-  try {
-    token = await getToken({ template: 'convex' })
-  } catch {
-    token = await getToken().catch(() => null)
-  }
+  const token = await resolveConvexToken(
+    sessionClaims as Record<string, unknown> | null | undefined,
+    getToken
+  )
 
   if (!token) {
     return {
@@ -55,7 +80,13 @@ export async function getAuthenticatedConvex(): Promise<
 
   return {
     ok: true,
-    ctx: { userId, token, convex },
+    ctx: {
+      userId,
+      orgId: orgId ?? null,
+      orgRole: orgRole ?? null,
+      token,
+      convex,
+    },
   }
 }
 
@@ -65,6 +96,8 @@ export async function getAuthenticatedConvex(): Promise<
  */
 export async function getOptionalConvex(): Promise<{
   userId: string | null
+  orgId: string | null
+  orgRole: string | null
   token: string | null
   convex: ConvexHttpClient
 }> {
@@ -73,22 +106,26 @@ export async function getOptionalConvex(): Promise<{
     throw new Error('NEXT_PUBLIC_CONVEX_URL is not configured')
   }
 
-  const { userId, getToken } = await auth()
-  let token: string | null = null
-  if (userId) {
-    try {
-      token = await getToken({ template: 'convex' })
-    } catch {
-      token = await getToken().catch(() => null)
-    }
-  }
+  const { userId, orgId, orgRole, sessionClaims, getToken } = await auth()
+  const token = userId
+    ? await resolveConvexToken(
+        sessionClaims as Record<string, unknown> | null | undefined,
+        getToken
+      )
+    : null
 
   const convex = new ConvexHttpClient(convexUrl)
   if (token) {
     convex.setAuth(token)
   }
 
-  return { userId: userId ?? null, token, convex }
+  return {
+    userId: userId ?? null,
+    orgId: orgId ?? null,
+    orgRole: orgRole ?? null,
+    token,
+    convex,
+  }
 }
 
 /**
