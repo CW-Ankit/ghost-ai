@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -14,7 +14,8 @@ import {
   Clock,
   Archive,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { EditorButton } from './editor-button'
+import { AnchoredPopup } from './anchored-popup'
 import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
@@ -24,6 +25,7 @@ import { api } from '@/convex/_generated/api'
 import { useProjectActions } from '../../hooks/use-project-actions'
 import { Doc } from '@/convex/_generated/dataModel'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { parseSearchQuery, searchProjects, type SearchableProject } from '@/lib/search-engine'
 
 interface ProjectCardProps {
   project: Doc<'projects'>
@@ -44,6 +46,7 @@ function ProjectCard({
 }: ProjectCardProps) {
   const router = useRouter()
   const [showMenu, setShowMenu] = React.useState(false)
+  const menuTriggerRef = React.useRef<HTMLButtonElement>(null)
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp)
@@ -53,78 +56,93 @@ function ProjectCard({
   return (
     <Card
       className={cn(
-        'group relative p-5 bg-bg-surface border-border-default hover:border-accent-primary transition-all duration-200 cursor-pointer overflow-hidden',
-        'hover:shadow-[0_0_20px_rgba(0,200,212,0.1)]'
+        'group relative p-5 bg-bg-surface border-white/[0.06] hover:border-white/20 hover:bg-bg-elevated/60 transition-all duration-200 cursor-pointer',
+        'hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.85)]'
       )}
       onClick={() => onClick(project.roomId)}
       onMouseEnter={() => router.prefetch(`/editor/${project.roomId}`)}
     >
       <div className="flex justify-between items-start mb-4">
-        <div className="w-12 h-12 rounded-xl bg-bg-subtle border border-border-subtle overflow-hidden">
+        <div className="w-12 h-12 rounded-xl bg-bg-subtle overflow-hidden">
           {project.canvasSnapshot ? (
             <CanvasPreview snapshot={project.canvasSnapshot} />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-accent-primary">
+            <div className="w-full h-full flex items-center justify-center text-[#7ecbd4]">
               <FileText className="h-5 w-5" />
             </div>
           )}
         </div>
         {isOwner && (
           <div className="relative">
-            <Button
-              variant="ghost"
+            <EditorButton
+              ref={menuTriggerRef}
+              tone="socket"
               size="icon"
-              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-text-muted hover:text-text-primary"
+              aria-label="Project options"
+              aria-expanded={showMenu}
+              className={cn(
+                'transition-opacity',
+                showMenu
+                  ? 'opacity-100'
+                  : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+              )}
               onClick={(e) => {
                 e.stopPropagation()
-                setShowMenu(!showMenu)
+                setShowMenu((prev) => !prev)
               }}
             >
               <MoreVertical className="h-4 w-4" />
-            </Button>
-            {showMenu && (
-              <div
-                className="absolute right-0 top-8 z-20 w-32 bg-bg-elevated border border-border-default rounded-xl shadow-xl p-1 flex flex-col gap-1"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start gap-2 text-xs h-8 text-text-secondary hover:text-text-primary"
+            </EditorButton>
+            <AnchoredPopup
+              open={showMenu}
+              onOpenChange={setShowMenu}
+              anchorRef={menuTriggerRef}
+              align="end"
+              minWidth={184}
+              maxWidth={212}
+              enableArrowNavigation
+              className="p-1.5"
+            >
+              <div className="flex flex-col gap-0.5">
+                <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation()
                     onRename(project)
                     setShowMenu(false)
                   }}
+                  className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-text-secondary hover:bg-white/[0.07] hover:text-text-primary focus-visible:bg-white/[0.09] focus-visible:text-text-primary focus-visible:outline-none transition-colors cursor-pointer"
                 >
-                  <Pencil className="h-3 w-3" /> Rename
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start gap-2 text-xs h-8 text-text-secondary hover:text-accent-ai"
+                  <Pencil className="h-3.5 w-3.5 text-[#7ecbd4] shrink-0" />
+                  <span>Rename</span>
+                </button>
+                <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation()
-                    onAction(project._id) // We'll use onAction for archive
+                    onAction(project._id)
                     setShowMenu(false)
                   }}
+                  className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-text-secondary hover:bg-white/[0.07] hover:text-text-primary focus-visible:bg-white/[0.09] focus-visible:text-text-primary focus-visible:outline-none transition-colors cursor-pointer"
                 >
-                  <Archive className="h-3 w-3" /> Archive
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start gap-2 text-xs h-8 text-text-secondary hover:text-destructive"
+                  <Archive className="h-3.5 w-3.5 text-text-muted shrink-0" />
+                  <span>Archive</span>
+                </button>
+                <hr className="my-1 border-white/[0.06]" />
+                <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation()
                     onDelete(project)
                     setShowMenu(false)
                   }}
+                  className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-state-error/90 hover:bg-state-error/10 hover:text-state-error focus-visible:bg-state-error/10 focus-visible:outline-none transition-colors cursor-pointer"
                 >
-                  <Trash2 className="h-3 w-3" /> Delete
-                </Button>
+                  <Trash2 className="h-3.5 w-3.5 shrink-0" />
+                  <span>Delete</span>
+                </button>
               </div>
-            )}
+            </AnchoredPopup>
           </div>
         )}
       </div>
@@ -182,6 +200,7 @@ export function ProjectDashboard({
   const projects = useQuery(api.projects.list)
   const [selectedProjects, setSelectedProjects] = React.useState<string[]>([])
   const [activeTag, setActiveTag] = React.useState<string | null>(null)
+  const parsedSearch = useMemo(() => parseSearchQuery(searchQuery), [searchQuery])
 
   const handleProjectClick = (roomId: string) => {
     router.push(`/editor/${roomId}`)
@@ -203,11 +222,17 @@ export function ProjectDashboard({
   // Extract all unique tags
   const allTags = Array.from(new Set(allProjects.flatMap((p) => p.tags || []))).sort()
 
-  const filteredProjects = allProjects.filter((p) => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesTag = !activeTag || (p.tags && p.tags.includes(activeTag))
-    return matchesSearch && matchesTag
-  })
+  const filterList = (list: typeof allProjects) => {
+    const byTag = activeTag
+      ? list.filter((p) => p.tags && p.tags.includes(activeTag))
+      : list
+    if (!searchQuery.trim()) return byTag
+    return searchProjects(byTag as SearchableProject[], parsedSearch).map(
+      (r) => r.project as (typeof allProjects)[number]
+    )
+  }
+
+  const filteredProjects = filterList(allProjects)
 
   const recentProjects = [...filteredProjects]
     .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
@@ -216,16 +241,8 @@ export function ProjectDashboard({
   const myProjects = projects?.owned ?? []
   const sharedProjects = projects?.shared ?? []
 
-  const filteredMyProjects = myProjects.filter((p) => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesTag = !activeTag || (p.tags && p.tags.includes(activeTag))
-    return matchesSearch && matchesTag
-  })
-  const filteredSharedProjects = sharedProjects.filter((p) => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesTag = !activeTag || (p.tags && p.tags.includes(activeTag))
-    return matchesSearch && matchesTag
-  })
+  const filteredMyProjects = filterList(myProjects)
+  const filteredSharedProjects = filterList(sharedProjects)
 
   return (
     <div className="h-full w-full flex flex-col p-8 overflow-y-auto">
@@ -233,7 +250,7 @@ export function ProjectDashboard({
         <div className="mb-8">
           <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4 flex items-center gap-2">
             <Clock className="h-3 w-3" />
-            Recent Projects
+            Fresh off the canvas
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {recentProjects.map((project) => (
@@ -241,9 +258,9 @@ export function ProjectDashboard({
                 key={project._id}
                 href={`/editor/${project.roomId}`}
                 prefetch={true}
-                className="p-3 bg-bg-surface border border-border-default rounded-2xl flex items-center gap-3 hover:border-accent-primary transition-colors group"
+                className="p-3 bg-bg-surface rounded-2xl flex items-center gap-3 hover:bg-bg-elevated transition-colors group"
               >
-                <div className="p-2 rounded-lg bg-bg-subtle text-accent-primary">
+                <div className="p-2 rounded-lg bg-bg-subtle text-[#7ecbd4]">
                   <FileText className="h-4 w-4" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -262,43 +279,43 @@ export function ProjectDashboard({
       )}
 
       {selectedProjects.length > 0 && (
-        <div className="mb-6 p-3 bg-accent-primary-dim border border-accent-primary rounded-2xl flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+        <div className="mb-6 p-3 bg-bg-elevated rounded-2xl shadow-lg flex items-center justify-between animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-accent-ai-text">
-              {selectedProjects.length} projects selected
+              {selectedProjects.length} picked — what&apos;s the move?
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
+            <EditorButton
+              tone="surface"
               size="sm"
               onClick={() => setSelectedProjects([])}
-              className="h-8 text-xs text-text-secondary hover:text-text-primary"
+              className="text-xs"
             >
               Cancel
-            </Button>
-            <Button
-              variant="ghost"
+            </EditorButton>
+            <EditorButton
+              tone="aiSoft"
               size="sm"
               onClick={() => {
                 actions.handleBulkUpdateStatus(selectedProjects, 'ARCHIVED')
                 setSelectedProjects([])
               }}
-              className="h-8 text-xs text-text-secondary hover:text-accent-ai"
+              className="text-xs"
             >
               <Archive className="h-3 w-3 mr-1" /> Archive
-            </Button>
-            <Button
-              variant="ghost"
+            </EditorButton>
+            <EditorButton
+              tone="destructive"
               size="sm"
               onClick={() => {
                 actions.handleBulkDelete(selectedProjects)
                 setSelectedProjects([])
               }}
-              className="h-8 text-xs text-text-secondary hover:text-destructive"
+              className="text-xs"
             >
               <Trash2 className="h-3 w-3 mr-1" /> Delete
-            </Button>
+            </EditorButton>
           </div>
         </div>
       )}
@@ -306,34 +323,22 @@ export function ProjectDashboard({
       {allTags.length > 0 && (
         <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1">
           <span className="text-xs text-text-muted font-medium mr-1">Tags:</span>
-          <Button
-            variant="ghost"
-            size="sm"
+          <EditorButton
+            tone={activeTag === null ? 'primarySoft' : 'surface'}
+            size="xs"
             onClick={() => setActiveTag(null)}
-            className={cn(
-              'h-7 px-2.5 rounded-full text-xs transition-all',
-              activeTag === null
-                ? 'bg-accent-primary text-bg-base font-medium hover:bg-accent-primary/90'
-                : 'bg-bg-surface border border-border-default text-text-secondary hover:text-text-primary hover:border-border-subtle'
-            )}
           >
             All
-          </Button>
+          </EditorButton>
           {allTags.map((tag) => (
-            <Button
+            <EditorButton
               key={tag}
-              variant="ghost"
-              size="sm"
+              tone={activeTag === tag ? 'primarySoft' : 'surface'}
+              size="xs"
               onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-              className={cn(
-                'h-7 px-2.5 rounded-full text-xs transition-all',
-                activeTag === tag
-                  ? 'bg-accent-primary text-bg-base font-medium hover:bg-accent-primary/90'
-                  : 'bg-bg-surface border border-border-default text-text-secondary hover:text-text-primary hover:border-border-subtle'
-              )}
             >
               #{tag}
-            </Button>
+            </EditorButton>
           ))}
         </div>
       )}
@@ -342,7 +347,7 @@ export function ProjectDashboard({
         <TabsList className="grid w-[400px] grid-cols-2 bg-bg-subtle">
           <TabsTrigger value="my-projects" className="gap-2">
             <Folder className="h-3.5 w-3.5" />
-            My Projects
+            {projects?.activeOrgId ? 'Team Projects' : 'My Projects'}
           </TabsTrigger>
           <TabsTrigger value="shared" className="gap-2">
             <Users className="h-3.5 w-3.5" />
@@ -358,7 +363,7 @@ export function ProjectDashboard({
                   <ProjectCard
                     key={project._id}
                     project={project}
-                    isOwner={true}
+                    isOwner={(project as any).canManage ?? true}
                     onAction={(id) => actions.handleUpdateStatus(id, 'ARCHIVED')}
                     onRename={(p) => actions.openRenameDialog(p)}
                     onDelete={(p) => actions.openDeleteDialog(p)}
@@ -422,9 +427,14 @@ export function ProjectDashboard({
               </div>
             )
           ) : (
-            <div className="h-64 flex flex-col items-center justify-center text-center text-text-muted bg-bg-surface border border-dashed border-border-subtle rounded-3xl">
+            <div className="h-64 flex flex-col items-center justify-center text-center text-text-muted bg-bg-surface border border-dashed border-border-subtle rounded-3xl px-6">
               <Folder className="h-10 w-10 mb-3 opacity-20" />
-              <p className="text-sm">No projects found.</p>
+              <p className="text-sm text-text-secondary font-medium">
+                Spooky quiet in here.
+              </p>
+              <p className="text-xs text-text-muted mt-1 max-w-sm">
+                Hit &quot;New Project&quot; up top to summon your first architecture diagram.
+              </p>
             </div>
           )}
         </TabsContent>
@@ -501,9 +511,14 @@ export function ProjectDashboard({
               </div>
             )
           ) : (
-            <div className="h-64 flex flex-col items-center justify-center text-center text-text-muted bg-bg-surface border border-dashed border-border-subtle rounded-3xl">
+            <div className="h-64 flex flex-col items-center justify-center text-center text-text-muted bg-bg-surface border border-dashed border-border-subtle rounded-3xl px-6">
               <Users className="h-10 w-10 mb-3 opacity-20" />
-              <p className="text-sm">No shared projects found.</p>
+              <p className="text-sm text-text-secondary font-medium">
+                No invites in your inbox yet.
+              </p>
+              <p className="text-xs text-text-muted mt-1 max-w-sm">
+                When someone shares a blueprint with you, it&apos;ll show up right here.
+              </p>
             </div>
           )}
         </TabsContent>

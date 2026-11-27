@@ -1,13 +1,10 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
-import { useParams } from 'next/navigation'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ProjectSidebar } from './project-sidebar'
 import {
   Share2,
-  PanelLeftClose,
-  PanelLeftOpen,
   ChevronLeft,
   LayoutTemplate,
   Bot,
@@ -17,8 +14,9 @@ import {
   AlertCircle,
   Eye,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { EditorButton, editorButtonClass } from './editor-button'
+import { EditorShell } from './editor-shell'
+import { SearchCommandBar } from './search-command-bar'
 import { useProjectActions } from '../../hooks/use-project-actions'
 import { ShareDialog } from './share-dialog'
 import { ProjectDialogsComponent } from './project-dialogs'
@@ -26,7 +24,10 @@ import { useQuery, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { useMutation as useLiveblocksMutation, useStorage } from '@liveblocks/react'
 import { LiveObject, LiveMap } from '@liveblocks/client'
-import { useReactFlow } from '@xyflow/react'
+import { useEdges, useNodes, useReactFlow } from '@xyflow/react'
+import type { CanvasEdge, CanvasNode } from '@/types/canvas'
+import type { QuickActionItem } from '@/lib/search-engine'
+import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { StarterTemplatesModal } from './starter-templates-modal'
 import { CanvasTemplate } from './starter-templates'
@@ -53,23 +54,24 @@ function SaveStatusIndicator({ isReadOnly }: { isReadOnly?: boolean }) {
     )
   }
 
+  const tone =
+    saveStatus === 'saving'
+      ? 'primarySoft'
+      : saveStatus === 'error'
+        ? 'destructive'
+        : saveStatus === 'unsaved'
+          ? 'surface'
+          : 'socket'
+
   return (
-    <Button
-      variant="outline"
+    <EditorButton
+      tone={tone}
       size="sm"
       onClick={() => triggerSave()}
       disabled={saveStatus === 'saving'}
       className={cn(
-        'gap-2 h-8 px-2.5 rounded-lg border text-xs font-medium transition-all shadow-sm',
-        saveStatus === 'saving' &&
-          'border-accent-primary/40 bg-accent-primary-dim text-accent-primary',
-        saveStatus === 'saved' &&
-          'border-border-subtle bg-bg-subtle/50 text-text-muted hover:text-text-primary',
-        saveStatus === 'unsaved' &&
-          'border-state-warning/40 bg-bg-subtle text-text-primary hover:border-state-warning',
-        saveStatus === 'error' &&
-          'border-state-error/40 bg-state-error/10 text-state-error hover:bg-state-error/20',
-        saveStatus === 'idle' && 'border-border-subtle bg-bg-subtle text-text-secondary'
+        'px-2.5 text-xs',
+        saveStatus === 'unsaved' && 'ring-1 ring-state-warning/50'
       )}
       title="Save Canvas to Blob Storage & Database"
     >
@@ -99,12 +101,13 @@ function SaveStatusIndicator({ isReadOnly }: { isReadOnly?: boolean }) {
           <span className="hidden sm:inline">Save</span>
         </>
       )}
-    </Button>
+    </EditorButton>
   )
 }
 
 function WorkspaceShellInner({ children }: WorkspaceShellProps) {
   const params = useParams()
+  const router = useRouter()
   const roomIdParam = params?.roomId
   const roomId = (Array.isArray(roomIdParam) ? roomIdParam[0] : roomIdParam) as string | undefined
   const project = useQuery(api.projects.getByRoomId, { roomId: roomId ?? '' })
@@ -124,12 +127,13 @@ function WorkspaceShellInner({ children }: WorkspaceShellProps) {
     }
   }, [project?._id, setPresence, clearPresence])
 
-  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false)
   const [templatesModalOpen, setTemplatesModalOpen] = useState(false)
   const actions = useProjectActions()
 
-  const { fitView } = useReactFlow()
+  const { fitView, setNodes } = useReactFlow()
+  const canvasNodes = useNodes<CanvasNode>()
+  const canvasEdges = useEdges<CanvasEdge>()
 
   const nodeCount =
     useStorage((root: any) => {
@@ -235,6 +239,67 @@ function WorkspaceShellInner({ children }: WorkspaceShellProps) {
     [loadTemplate, fitView]
   )
 
+  const isReadOnly = Boolean((project as { isReadOnly?: boolean } | null | undefined)?.isReadOnly)
+
+  const workspaceQuickActions: QuickActionItem[] = useMemo(
+    () => [
+      {
+        id: 'toggle-ai',
+        label: aiSidebarOpen ? 'Close AI Workspace' : 'Open AI Workspace',
+        description: 'Switch the Ghost AI panel on or off',
+        keywords: ['ai', 'architect', 'spec', 'assistant'],
+      },
+      ...(!isReadOnly
+        ? [
+            {
+              id: 'open-templates',
+              label: 'Browse Starter Blueprints',
+              description: 'Drop in a prebuilt architecture template',
+              keywords: ['templates', 'blueprints', 'starter'],
+            },
+          ]
+        : []),
+      {
+        id: 'open-share',
+        label: 'Invite Crew & Share Link',
+        description: 'Manage collaborators or public view link',
+        keywords: ['share', 'invite', 'collaborators', 'link'],
+      },
+      {
+        id: 'new-project',
+        label: 'Start a New Blueprint',
+        description: 'Create a fresh architecture canvas',
+        keywords: ['new', 'create', 'project'],
+      },
+      {
+        id: 'go-projects',
+        label: 'Back to Projects Dashboard',
+        description: 'Return to all workspace projects',
+        keywords: ['dashboard', 'home', 'projects'],
+      },
+    ],
+    [aiSidebarOpen, isReadOnly]
+  )
+
+  const handleJumpToNode = useCallback(
+    (nodeId: string) => {
+      setNodes((prev) => prev.map((n) => ({ ...n, selected: n.id === nodeId })))
+      fitView({ nodes: [{ id: nodeId }], duration: 420, padding: 0.45 })
+    },
+    [setNodes, fitView]
+  )
+
+  const handleQuickAction = useCallback(
+    (actionId: string) => {
+      if (actionId === 'toggle-ai') setAiSidebarOpen((prev) => !prev)
+      if (actionId === 'open-templates' && !isReadOnly) setTemplatesModalOpen(true)
+      if (actionId === 'open-share' && project) actions.openShareDialog(project)
+      if (actionId === 'new-project') actions.openCreateDialog()
+      if (actionId === 'go-projects') router.push('/editor')
+    },
+    [isReadOnly, project, actions, router]
+  )
+
   if (!roomId) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-base text-text-muted">
@@ -252,123 +317,114 @@ function WorkspaceShellInner({ children }: WorkspaceShellProps) {
       <div className="h-screen w-full flex items-center justify-center bg-base text-text-muted">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-8 w-8 text-accent-primary animate-spin" />
-          <p className="text-sm font-medium text-text-secondary">Loading workspace...</p>
+          <p className="text-sm font-medium text-text-secondary">
+            Waking up the ghosts and wiring your canvas...
+          </p>
         </div>
       </div>
     )
   }
 
-  const isReadOnly = Boolean((project as any)?.isReadOnly)
-
   return (
-    <div className="flex h-screen w-full bg-base overflow-hidden">
-      {/* Left Sidebar */}
-      <ProjectSidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        actions={actions}
-        activeProjectId={project?._id}
-      />
+    <EditorShell
+      defaultDesktopSidebarOpen={false}
+      actions={actions}
+      activeProjectId={project?._id}
+      locationSlot={
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Link
+            href="/editor"
+            className={editorButtonClass({
+              tone: 'ghost3d',
+              size: 'sm',
+              className: 'px-2 text-xs group shrink-0',
+            })}
+            title="Back to Projects"
+          >
+            <ChevronLeft className="h-3.5 w-3.5 text-text-muted group-hover:text-accent-primary transition-colors" />
+            <span>Projects</span>
+          </Link>
 
-      <div className="flex flex-col flex-1 relative">
-        {/* Top Navbar */}
-        <header className="h-14 bg-bg-surface border-b border-border-default flex items-center justify-between px-4 z-10">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-text-secondary hover:text-text-primary"
-            >
-              {sidebarOpen ? (
-                <PanelLeftClose className="h-5 w-5" />
-              ) : (
-                <PanelLeftOpen className="h-5 w-5" />
-              )}
-            </Button>
+          <span className="text-text-muted/40 text-xs select-none hidden sm:inline">/</span>
 
-            <Link
-              href="/editor"
-              className="flex items-center gap-1.5 text-xs font-medium text-text-secondary hover:text-text-primary px-2.5 py-1.5 rounded-lg hover:bg-bg-subtle transition-all group"
-              title="Back to Dashboard"
-            >
-              <ChevronLeft className="h-4 w-4 text-text-muted group-hover:text-accent-primary transition-colors" />
-              <span>Projects</span>
-            </Link>
+          <h1 className="text-sm font-semibold font-heading text-text-primary truncate max-w-[140px] sm:max-w-[220px] md:max-w-xs">
+            {project?.name || 'Loading...'}
+          </h1>
 
-            <span className="text-text-muted/40 text-xs select-none">/</span>
+          {isReadOnly && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-medium bg-white/[0.06] text-[#8cd3dc] shrink-0">
+              <Eye className="h-3 w-3" />
+              <span className="hidden md:inline">View Only</span>
+            </span>
+          )}
+        </div>
+      }
+      searchSlot={
+        <SearchCommandBar
+          activeProjectId={project?._id}
+          canvasNodes={canvasNodes}
+          canvasEdges={canvasEdges}
+          onJumpToNode={handleJumpToNode}
+          onSelectTemplate={() => {
+            if (!isReadOnly) setTemplatesModalOpen(true)
+          }}
+          quickActions={workspaceQuickActions}
+          onRunQuickAction={handleQuickAction}
+          placeholder="Search nodes on board, projects, or commands..."
+        />
+      }
+      actionsSlot={
+        <div className="flex items-center gap-2">
+          <SaveStatusIndicator isReadOnly={isReadOnly} />
 
-            <h1 className="text-sm font-medium text-text-primary truncate max-w-md">
-              {project?.name || 'Loading...'}
-            </h1>
-
-            {isReadOnly && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-accent-primary-dim text-accent-primary border border-accent-primary/40 shrink-0">
-                <Eye className="h-3 w-3" />
-                View Only
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <SaveStatusIndicator isReadOnly={isReadOnly} />
-
-            {!isReadOnly && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTemplatesModalOpen(true)}
-                className="gap-2 border-border-subtle bg-bg-subtle text-text-primary hover:bg-bg-elevated hover:text-accent-primary transition-colors h-8"
-              >
-                <LayoutTemplate className="h-4 w-4" />
-                <span className="hidden sm:inline">Templates</span>
-              </Button>
-            )}
-            <Button
-              variant="ghost"
+          {!isReadOnly && (
+            <EditorButton
+              tone="surface"
               size="sm"
-              disabled={!project}
-              onClick={() => project && actions.openShareDialog(project)}
-              className="text-text-secondary gap-2 h-8"
+              onClick={() => setTemplatesModalOpen(true)}
+              className="hover:text-accent-primary"
             >
-              <Share2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Share</span>
-            </Button>
-            <Button
-              variant={aiSidebarOpen ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setAiSidebarOpen(!aiSidebarOpen)}
-              className={cn(
-                'gap-2 h-8',
-                aiSidebarOpen
-                  ? 'bg-accent-ai-dim text-accent-ai-text border border-accent-ai/30'
-                  : 'text-text-secondary'
-              )}
-            >
-              <Bot className="h-4 w-4 text-accent-ai-text" />
-              <span className="hidden sm:inline">AI Workspace</span>
-            </Button>
-          </div>
-        </header>
+              <LayoutTemplate className="h-4 w-4" />
+              <span className="hidden md:inline">Templates</span>
+            </EditorButton>
+          )}
+          <EditorButton
+            tone="surface"
+            size="sm"
+            disabled={!project}
+            onClick={() => project && actions.openShareDialog(project)}
+          >
+            <Share2 className="h-4 w-4" />
+            <span className="hidden md:inline">Share</span>
+          </EditorButton>
+          <EditorButton
+            tone={aiSidebarOpen ? 'aiSoft' : 'surface'}
+            size="sm"
+            onClick={() => setAiSidebarOpen(!aiSidebarOpen)}
+            aria-pressed={aiSidebarOpen}
+          >
+            <Bot className="h-4 w-4 text-accent-ai-text" />
+            <span className="hidden sm:inline">AI Workspace</span>
+          </EditorButton>
+        </div>
+      }
+    >
+      {/* Canvas + Right AI Sidebar inside the Rounded Work Box */}
+      <div className="flex-1 flex overflow-hidden relative h-full">
+        <div className="flex-1 relative bg-bg-base overflow-hidden">{children}</div>
 
-        {/* Main Workspace Area */}
-        <main className="flex-1 flex overflow-hidden relative">
-          {/* Canvas Area */}
-          <div className="flex-1 relative bg-base">{children}</div>
-
-          {/* Right AI Sidebar */}
-          <AISidebar
-            isOpen={aiSidebarOpen}
-            onClose={() => setAiSidebarOpen(false)}
-            projectId={project?._id}
-            isReadOnly={isReadOnly}
-          />
-        </main>
+        <AISidebar
+          isOpen={aiSidebarOpen}
+          onClose={() => setAiSidebarOpen(false)}
+          projectId={project?._id}
+          isReadOnly={isReadOnly}
+        />
       </div>
 
       <ShareDialog
         projectId={actions.selectedProject?._id ?? project?._id ?? ''}
         ownerId={project?.ownerId ?? ''}
+        canManage={(project as any)?.canManage}
         open={actions.activeDialog === 'share'}
         onOpenChange={(open) => !open && actions.closeDialog()}
         publicAccess={(project as any)?.publicAccess}
@@ -381,7 +437,7 @@ function WorkspaceShellInner({ children }: WorkspaceShellProps) {
         onSelectTemplate={handleSelectTemplate}
         hasExistingNodes={nodeCount > 0}
       />
-    </div>
+    </EditorShell>
   )
 }
 

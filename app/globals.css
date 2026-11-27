@@ -13,6 +13,10 @@
   --color-bg-surface: var(--bg-surface);
   --color-bg-elevated: var(--bg-elevated);
   --color-bg-subtle: var(--bg-subtle);
+  --color-bg-shell: var(--bg-shell);
+  --color-bg-shell-deep: var(--bg-shell-deep);
+  --color-bg-shell-surface: var(--bg-shell-surface);
+  --color-border-shell: var(--border-shell);
   --color-border-default: var(--border-default);
   --color-border-subtle: var(--border-subtle);
   --color-text-primary: var(--text-primary);
@@ -61,6 +65,10 @@
   --bg-surface: #111114;
   --bg-elevated: #18181c;
   --bg-subtle: #1e1e23;
+  --bg-shell: #091720;
+  --bg-shell-deep: #050d13;
+  --bg-shell-surface: #0e222e;
+  --border-shell: rgba(139, 201, 209, 0.12);
   --border-default: #2a2a30;
   --border-subtle: #3a3a42;
   --text-primary: #f0f0f4;
@@ -123,6 +131,18 @@
     letter-spacing: -0.011em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  input,
+  textarea,
+  [contenteditable='true'],
+  [data-selectable='true'],
+  pre,
+  code {
+    user-select: text;
+    -webkit-user-select: text;
   }
 
   h1,
@@ -140,4 +160,42 @@
   .font-mono {
     font-family: var(--font-mono);
   }
+}
+
+@keyframes marquee-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.marquee-viewport {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 10%,
+    black 90%,
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 10%,
+    black 90%,
+    transparent
+  );
+}
+
+.marquee-track {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: marquee-scroll 28s linear infinite;
+    will-change: transform;
+  }
+}
+
+.marquee-viewport:hover .marquee-track,
+.marquee-viewport:focus-within .marquee-track {
+  animation-play-state: paused;
 }

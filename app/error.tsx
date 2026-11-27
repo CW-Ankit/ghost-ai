@@ -29,11 +29,11 @@ export default function GlobalError({
           </div>
 
           <h1 className="text-xl font-semibold font-heading text-text-primary mb-2">
-            Browser Shield / Ad-Blocker Detected
+            Your ad-blocker is gatekeeping login
           </h1>
 
           <p className="text-xs text-text-secondary leading-relaxed mb-6">
-            Your browser (such as <strong>Brave Shields</strong>, <strong>uBlock Origin</strong>, or a privacy extension) is blocking Clerk&apos;s authentication script (<code className="font-mono text-accent-primary bg-bg-elevated px-1.5 py-0.5 rounded text-[11px]">*.clerk.accounts.dev</code>).
+            Looks like <strong>Brave Shields</strong>, <strong>uBlock Origin</strong>, or a privacy extension is blocking Clerk&apos;s auth script (<code className="font-mono text-accent-primary bg-bg-elevated px-1.5 py-0.5 rounded text-[11px]">*.clerk.accounts.dev</code>).
           </p>
 
           <div className="w-full bg-bg-elevated/70 border border-border-subtle rounded-2xl p-4 text-left text-xs space-y-2.5 mb-6 text-text-secondary">
@@ -81,11 +81,11 @@ export default function GlobalError({
         </div>
 
         <h1 className="text-lg font-semibold font-heading text-text-primary mb-2">
-          Something went wrong
+          Well, that wasn&apos;t supposed to happen.
         </h1>
 
         <p className="text-xs text-text-muted mb-6 leading-relaxed max-w-sm">
-          {error.message || 'An unexpected runtime error occurred.'}
+          {error.message || 'Something tripped on a wire back here. Give it another shot.'}
         </p>
 
         <Button
