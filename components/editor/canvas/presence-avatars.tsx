@@ -2,7 +2,8 @@
 
 import React, { useMemo } from 'react'
 import { useOthers } from '@liveblocks/react'
-import { useUser, UserButton } from '@clerk/nextjs'
+import { useUser } from '@clerk/nextjs'
+import { GhostUserButton } from '@/components/clerk/ghost-user-button'
 import { ClientOnly } from '@/components/ui/client-only'
 
 function getInitials(name?: string): string {
@@ -114,10 +115,10 @@ export function PresenceAvatars() {
       {/* Divider only appears when collaborators exist */}
       {collaborators.length > 0 && <div className="h-5 w-[1px] bg-border-subtle mx-0.5" />}
 
-      {/* Clerk UserButton for Current User */}
+      {/* Custom Ghost AI UserButton for Current User */}
       <ClientOnly>
         <div className="flex items-center">
-          <UserButton />
+          <GhostUserButton variant="compact" />
         </div>
       </ClientOnly>
     </div>
