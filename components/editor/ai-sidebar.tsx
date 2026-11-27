@@ -23,7 +23,7 @@ import {
   Loader2,
   Printer,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { EditorButton, editorButtonClass } from './editor-button'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -606,20 +606,19 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                   AI Workspace
                 </h2>
                 <p className="text-[11px] text-text-muted mt-1 leading-none">
-                  Collaborate with Ghost AI
+                  Your architecture co-pilot
                 </p>
               </div>
             </div>
 
-            <Button
-              variant="ghost"
+            <EditorButton
+              tone="socket"
               size="icon"
               onClick={onClose}
               aria-label="Close AI workspace"
-              className="h-8 w-8 text-text-muted hover:text-text-primary hover:bg-bg-subtle rounded-lg"
             >
               <X className="h-4 w-4" />
-            </Button>
+            </EditorButton>
           </div>
 
           {/* Tab Navigation */}
@@ -654,14 +653,16 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                 {isReadOnly && (
                   <div className="flex items-center gap-2 p-2.5 mx-1 mb-2 rounded-xl bg-accent-primary-dim/60 border border-accent-primary/40 text-xs text-text-secondary select-none">
                     <Eye className="h-4 w-4 text-accent-primary shrink-0" />
-                    <span>View-only mode: Architecture generation and modifications are disabled.</span>
+                    <span>
+                      View-only mode: feel free to peek around, but AI edits stay locked.
+                    </span>
                   </div>
                 )}
 
                 {isSomeoneElseThinking && (
                   <div className="flex items-center gap-2 p-2.5 mx-1 mb-2 rounded-xl bg-accent-ai/10 border border-accent-ai/30 text-xs text-accent-ai-text animate-pulse select-none">
                     <Loader2 className="h-4 w-4 animate-spin text-accent-ai shrink-0" />
-                    <span>{collaboratorThinkingName} is actively designing the architecture...</span>
+                    <span>{collaboratorThinkingName} is cooking up changes on the canvas...</span>
                   </div>
                 )}
 
@@ -674,19 +675,19 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                           <Bot className="h-7 w-7 text-accent-ai-text" />
                         </div>
                         <h3 className="text-sm font-semibold text-text-primary font-heading">
-                          Ghost AI Architect
+                          Hey, I&apos;m Ghost AI
                         </h3>
                         <p className="text-xs text-text-muted mt-1 max-w-[260px] leading-relaxed">
-                          Describe your system architecture in plain English, and Ghost AI will map
-                          nodes and relationships directly onto your canvas.
+                          Tell me what you&apos;re building in plain English and I&apos;ll sketch
+                          the boxes, arrows, and trade-offs right onto your canvas.
                         </p>
                       </div>
 
                       <div className="space-y-2 mt-4">
                         <div className="text-[11px] font-medium text-text-faint uppercase tracking-wider px-1">
                           {canvasElements.nodes.length > 0
-                            ? 'Refinement Suggestions'
-                            : 'Starter Blueprints'}
+                            ? 'Try riffing on this'
+                            : 'Need a spark?'}
                         </div>
                         <div className="flex flex-col gap-2">
                           {(canvasElements.nodes.length > 0
@@ -701,8 +702,9 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                                 disabled={isReadOnly}
                                 onClick={() => handleSelectStarterChip(item.prompt)}
                                 className={cn(
-                                  "group flex items-center justify-between p-2.5 rounded-xl bg-bg-subtle hover:bg-bg-elevated border border-border-subtle hover:border-accent-ai/30 text-left transition-all text-xs shadow-sm",
-                                  isReadOnly ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                                  editorButtonClass({ tone: 'surface', size: 'md' }),
+                                  'group h-auto w-full justify-between p-2.5 text-left text-xs font-normal whitespace-normal',
+                                  isReadOnly ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                                 )}
                               >
                                 <div className="flex items-center gap-2.5">
@@ -768,8 +770,8 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             <span>
                               {canvasElements.nodes.length > 0
-                                ? 'Refining canvas components & relationships...'
-                                : 'Synthesizing system components & connections...'}
+                                ? 'Rearranging the boxes and wiring things up...'
+                                : 'Sketching out components and connections...'}
                             </span>
                           </div>
                         </div>
@@ -799,12 +801,12 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                       onKeyDown={handleKeyDown}
                       placeholder={
                         isReadOnly
-                          ? 'Architecture is view-only...'
+                          ? 'This room is view-only...'
                           : isSomeoneElseThinking
-                            ? `${collaboratorThinkingName} is generating...`
+                            ? `${collaboratorThinkingName} is at the wheel...`
                             : canvasElements.nodes.length > 0
-                              ? 'Suggest changes, additions, or refinements...'
-                              : 'Describe a system architecture...'
+                              ? 'Tell Ghost AI what to tweak, add, or rip out...'
+                              : 'Describe what you want to build...'
                       }
                       disabled={isGeneratingDesign || isSomeoneElseThinking || isReadOnly}
                       className="min-h-[72px] max-h-[160px] resize-none border-0 bg-transparent p-1 text-xs text-text-primary placeholder:text-text-muted focus-visible:ring-0 focus-visible:outline-none leading-relaxed disabled:opacity-50"
@@ -820,11 +822,12 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                         </kbd>{' '}
                         newline
                       </span>
-                      <Button
-                        size="sm"
+                      <EditorButton
+                        tone="ai"
+                        size="xs"
                         onClick={() => handleSendMessage()}
                         disabled={!inputPrompt.trim() || isGeneratingDesign || isSomeoneElseThinking || isReadOnly}
-                        className="h-7 px-3 gap-1.5 bg-accent-ai hover:bg-accent-ai/90 text-white rounded-lg text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                        className="px-3"
                       >
                         {isGeneratingDesign ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
@@ -834,7 +837,7 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                             <Send className="h-3 w-3" />
                           </>
                         )}
-                      </Button>
+                      </EditorButton>
                     </div>
                   </div>
                 </div>
@@ -855,12 +858,13 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                           Specification Generator
                         </h4>
                         <p className="text-[11px] text-text-muted mt-1 leading-relaxed">
-                          Convert your current canvas graph into a Markdown technical spec and
-                          persist it to artifact storage.
+                          Turn whatever&apos;s on your canvas into a crisp Markdown spec you can
+                          preview, copy, or export.
                         </p>
                       </div>
 
-                      <Button
+                      <EditorButton
+                        tone="ai"
                         size="sm"
                         onClick={handleGenerateSpec}
                         disabled={
@@ -869,12 +873,12 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                           canvasElements.nodes.length === 0 ||
                           isReadOnly
                         }
-                        className="w-full gap-2 bg-accent-ai hover:bg-accent-ai/90 text-white text-xs font-medium rounded-xl h-8 shadow-sm transition-all disabled:opacity-50"
+                        className="w-full"
                       >
                         {isGeneratingSpec ? (
                           <>
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            <span>Writing Technical Spec...</span>
+                            <span>Drafting your spec...</span>
                           </>
                         ) : isSomeoneElseThinking ? (
                           <>
@@ -886,17 +890,17 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                             <Sparkles className="h-3.5 w-3.5" />
                             <span>
                               {isReadOnly
-                                ? 'Spec Generation Disabled (View Only)'
+                                ? 'Spec Generation Locked (View Only)'
                                 : `Generate Spec (${canvasElements.nodes.length} nodes)`}
                             </span>
                           </>
                         )}
-                      </Button>
+                      </EditorButton>
 
                       {canvasElements.nodes.length === 0 && (
                         <div className="flex items-center gap-1.5 text-[10px] text-state-warning">
                           <AlertTriangle className="h-3 w-3 flex-shrink-0" />
-                          <span>Add components to the canvas before generating a spec.</span>
+                          <span>Drop at least one node on the board first so I have something to write about.</span>
                         </div>
                       )}
                     </div>
@@ -913,10 +917,12 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                       {specs.length === 0 ? (
                         <div className="rounded-2xl bg-bg-elevated/50 border border-dashed border-border-subtle p-6 text-center text-text-muted">
                           <FileText className="h-8 w-8 mx-auto mb-2 opacity-30 text-accent-primary" />
-                          <p className="text-xs">No specifications generated yet.</p>
+                          <p className="text-xs text-text-secondary font-medium">
+                            No specs written yet.
+                          </p>
                           <p className="text-[10px] text-text-faint mt-1">
-                            Click &quot;Generate Spec&quot; above to synthesize a Markdown document
-                            from your canvas graph.
+                            Hit &quot;Generate Spec&quot; above and I&apos;ll turn your diagram into
+                            proper docs.
                           </p>
                         </div>
                       ) : (
@@ -948,39 +954,39 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                                 </div>
 
                                 {!isReadOnly && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
+                                  <EditorButton
+                                    tone="ghost3d"
+                                    size="icon-sm"
                                     onClick={() => handleDeleteSpec(spec._id)}
-                                    className="h-6 w-6 text-text-muted hover:text-state-error hover:bg-state-error/10 rounded-md flex-shrink-0"
+                                    className="h-6 w-6 text-text-muted hover:text-state-error flex-shrink-0"
                                     title="Delete specification"
                                   >
                                     <Trash2 className="h-3 w-3" />
-                                  </Button>
+                                  </EditorButton>
                                 )}
                               </div>
 
                               {/* Actions */}
                               <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border-subtle/50">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
+                                <EditorButton
+                                  tone="surface"
+                                  size="xs"
                                   onClick={() => handleOpenSpecPreview(spec)}
-                                  className="gap-1.5 text-[11px] border-border-subtle bg-bg-subtle text-text-secondary hover:text-text-primary hover:bg-bg-elevated h-7 rounded-lg justify-center"
+                                  className="text-[11px] justify-center"
                                 >
                                   <Eye className="h-3 w-3" />
                                   <span>View Spec</span>
-                                </Button>
+                                </EditorButton>
 
-                                <Button
-                                  variant="outline"
-                                  size="sm"
+                                <EditorButton
+                                  tone="primarySoft"
+                                  size="xs"
                                   onClick={() => handleDownloadSpec(spec)}
-                                  className="gap-1.5 text-[11px] border-border-subtle bg-bg-subtle text-accent-primary hover:text-accent-primary hover:bg-accent-primary-dim h-7 rounded-lg justify-center"
+                                  className="text-[11px] justify-center"
                                 >
                                   <Download className="h-3 w-3" />
                                   <span>Download</span>
-                                </Button>
+                                </EditorButton>
                               </div>
                             </div>
                           ))}
@@ -997,11 +1003,14 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
 
       {/* Markdown Spec Preview Dialog */}
       <Dialog open={!!previewSpec} onOpenChange={(open) => !open && setPreviewSpec(null)}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] rounded-3xl bg-bg-surface border-border-default text-text-primary flex flex-col overflow-hidden p-6">
-          <DialogHeader className="pb-3 border-b border-border-default flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle className="text-base font-semibold font-heading">
+        <DialogContent
+          showCloseButton
+          className="sm:max-w-3xl max-w-3xl h-[82vh] max-h-[82vh] overflow-hidden"
+        >
+          <DialogHeader className="pb-3 border-b border-white/[0.06] pr-8 shrink-0">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <DialogTitle className="text-base font-semibold font-heading truncate">
                   {previewSpec?.title || 'System Architecture Specification'}
                 </DialogTitle>
                 <DialogDescription className="text-xs text-text-muted mt-0.5">
@@ -1009,12 +1018,11 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                 </DialogDescription>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <EditorButton
+                  tone="socket"
                   size="sm"
                   onClick={handleCopyMarkdown}
-                  className="gap-1.5 h-8 text-xs border-border-subtle bg-bg-subtle text-text-secondary hover:text-text-primary rounded-xl"
                   title="Copy Markdown source to clipboard"
                 >
                   {copiedSpec ? (
@@ -1023,38 +1031,36 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                     <Copy className="h-3.5 w-3.5" />
                   )}
                   <span>{copiedSpec ? 'Copied' : 'Copy'}</span>
-                </Button>
+                </EditorButton>
 
                 {previewSpec && (
                   <>
-                    <Button
-                      variant="outline"
+                    <EditorButton
+                      tone="socket"
                       size="sm"
                       onClick={handlePrintSpec}
-                      className="gap-1.5 h-8 text-xs border-border-subtle bg-bg-subtle text-text-secondary hover:text-text-primary rounded-xl"
                       title="Export as PDF or print specification"
                     >
                       <Printer className="h-3.5 w-3.5" />
                       <span>PDF / Print</span>
-                    </Button>
+                    </EditorButton>
 
-                    <Button
-                      variant="outline"
+                    <EditorButton
+                      tone="primarySoft"
                       size="sm"
                       onClick={() => handleDownloadSpec(previewSpec)}
-                      className="gap-1.5 h-8 text-xs border-accent-primary/40 bg-accent-primary-dim text-accent-primary hover:bg-accent-primary-dim/80 rounded-xl"
                       title="Download raw Markdown file"
                     >
                       <Download className="h-3.5 w-3.5" />
                       <span>Download (.md)</span>
-                    </Button>
+                    </EditorButton>
                   </>
                 )}
               </div>
             </div>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto py-4 pr-1">
+          <div className="flex-1 min-h-0 overflow-y-auto py-2 pr-1">
             {isLoadingPreview ? (
               <div className="h-64 flex flex-col items-center justify-center gap-2 text-text-muted">
                 <Loader2 className="h-6 w-6 animate-spin text-accent-primary" />
@@ -1063,6 +1069,7 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
             ) : (
               <div
                 ref={specMarkdownRef}
+                data-selectable="true"
                 className="prose prose-invert prose-sm max-w-none text-text-secondary leading-relaxed space-y-4 font-sans [&>h1]:text-lg [&>h1]:font-semibold [&>h1]:text-text-primary [&>h1]:font-heading [&>h2]:text-sm [&>h2]:font-semibold [&>h2]:text-text-primary [&>h2]:mt-4 [&>h2]:font-heading [&>h3]:text-xs [&>h3]:font-semibold [&>h3]:text-accent-ai-text [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&>p]:text-xs [&>li]:text-xs [&>table]:w-full [&>table]:text-xs [&>table]:border-collapse [&>th]:border-b [&>th]:border-border-default [&>th]:pb-1 [&>td]:py-1 [&>td]:border-b [&>td]:border-border-subtle"
               >
                 <ReactMarkdown>{previewSpec?.content || ''}</ReactMarkdown>
