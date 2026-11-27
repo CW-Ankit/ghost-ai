@@ -27,6 +27,7 @@ import { api } from '@/convex/_generated/api'
 import { useProjectActions } from '../../hooks/use-project-actions'
 import { Doc } from '@/convex/_generated/dataModel'
 import { parseSearchQuery, searchProjects, type SearchableProject } from '@/lib/search-engine'
+import { EmptyStateIllustration } from './empty-state-illustration'
 
 type ProjectWithMeta = Doc<'projects'> & {
   isPinned?: boolean
@@ -725,20 +726,11 @@ export function ProjectDashboard({
             />
           )
         ) : (
-          <div className="relative min-h-[300px] flex flex-col items-center justify-center text-center rounded-2xl bg-[#0e141c]/65 border border-white/[0.07] px-6 py-12 overflow-hidden">
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute h-48 w-48 rounded-full bg-[#00c8d4]/[0.06] blur-3xl"
+          <div className="min-h-[320px] flex flex-col items-center justify-center text-center px-6 py-16">
+            <EmptyStateIllustration
+              type={isFiltered ? 'search' : activeTab === 'shared' ? 'shared' : 'projects'}
+              className="mb-6"
             />
-            <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#152834_0%,#0c171f_100%)] border border-white/[0.08] shadow-[0_12px_28px_-8px_rgba(0,0,0,0.85)] text-[#7ecbd4] mb-4">
-              {isFiltered ? (
-                <Search className="h-5 w-5" />
-              ) : activeTab === 'shared' ? (
-                <Users className="h-5 w-5" />
-              ) : (
-                <Folder className="h-5 w-5" />
-              )}
-            </div>
 
             {isFiltered ? (
               <>

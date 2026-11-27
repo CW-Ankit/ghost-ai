@@ -268,7 +268,7 @@ export function ShareDialog({
                 <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
               </div>
             ) : collaborators.length === 0 ? (
-              <div className="text-center py-5 border border-dashed border-white/[0.08] rounded-2xl px-4">
+              <div className="text-center py-5 px-4">
                 <p className="text-xs text-text-muted">
                   Just you in here right now. Drop an email above to bring in a teammate.
                 </p>

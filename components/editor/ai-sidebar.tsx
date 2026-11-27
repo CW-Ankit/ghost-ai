@@ -50,6 +50,7 @@ import { toast } from 'sonner'
 import ReactMarkdown from 'react-markdown'
 import { printSpecDocument } from '@/lib/print-spec'
 import { computeArchitectureDiffs } from '@/lib/ai-helpers'
+import { EmptyStateIllustration } from './empty-state-illustration'
 
 interface AISidebarProps {
   isOpen: boolean
@@ -915,14 +916,13 @@ export function AISidebar({ isOpen, onClose, projectId, isReadOnly = false }: AI
                       </div>
 
                       {specs.length === 0 ? (
-                        <div className="rounded-2xl bg-bg-elevated/50 border border-dashed border-border-subtle p-6 text-center text-text-muted">
-                          <FileText className="h-8 w-8 mx-auto mb-2 opacity-30 text-accent-primary" />
-                          <p className="text-xs text-text-secondary font-medium">
+                        <div className="flex flex-col items-center justify-center text-center py-10 px-4">
+                          <EmptyStateIllustration type="specs" className="mb-5" />
+                          <p className="text-xs font-semibold text-text-primary">
                             No specs written yet.
                           </p>
-                          <p className="text-[10px] text-text-faint mt-1">
-                            Hit &quot;Generate Spec&quot; above and I&apos;ll turn your diagram into
-                            proper docs.
+                          <p className="text-[11px] text-text-muted mt-1 max-w-[200px]">
+                            Hit &quot;Generate Spec&quot; above to turn your diagram into proper docs.
                           </p>
                         </div>
                       ) : (
