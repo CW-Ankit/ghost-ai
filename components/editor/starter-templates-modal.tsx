@@ -5,10 +5,11 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
+import { EditorButton } from './editor-button'
 import { Input } from '@/components/ui/input'
 import { CANVAS_TEMPLATES, CanvasTemplate } from '@/components/editor/starter-templates'
 import { NODE_COLORS, NodeShape } from '@/types/canvas'
@@ -343,64 +344,63 @@ export function StarterTemplatesModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-6 rounded-3xl bg-bg-surface border-border-default text-text-primary">
-          <DialogHeader className="pb-4 border-b border-border-subtle">
+        <DialogContent
+          showCloseButton
+          className="sm:max-w-4xl max-w-4xl h-[82vh] max-h-[82vh] overflow-hidden"
+        >
+          <DialogHeader className="pb-4 border-b border-white/[0.06] pr-8">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-accent-primary/10 text-accent-primary">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#15303d_0%,#0c1f28_100%)] text-[#8ee0ea] ring-1 ring-white/10">
                 <LayoutTemplate className="h-5 w-5" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-semibold">Starter Templates</DialogTitle>
-                <DialogDescription className="text-text-muted text-sm mt-0.5">
-                  Kickstart your system architecture with pre-built, production-grade templates.
+                <DialogTitle className="text-lg font-semibold">Starter Blueprints</DialogTitle>
+                <DialogDescription className="text-text-muted text-xs mt-0.5">
+                  Skip the blank-canvas stare — drop in a ready-made system and make it yours.
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
 
           {/* Search & Category Filter */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-4 pb-2">
+          <div className="flex flex-col sm:flex-row gap-3 shrink-0">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-text-muted" />
               <Input
                 placeholder="Search templates..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 h-9 bg-bg-subtle border-border-subtle text-text-primary placeholder:text-text-faint rounded-xl text-sm"
+                className="pl-9 h-9 bg-bg-base/85 border-white/[0.09] text-text-primary placeholder:text-text-faint rounded-xl text-sm focus-visible:border-accent-primary/65"
               />
             </div>
-            <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
               {categories.map((cat) => (
-                <Button
+                <EditorButton
                   key={cat}
-                  variant={selectedCategory === cat ? 'secondary' : 'ghost'}
+                  tone={selectedCategory === cat ? 'primarySoft' : 'socket'}
                   size="sm"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`text-xs h-9 rounded-xl px-3 transition-colors ${
-                    selectedCategory === cat
-                      ? 'bg-accent-primary/15 text-accent-primary font-medium border border-accent-primary/30'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-bg-subtle'
-                  }`}
+                  className="text-xs px-3"
                 >
                   {cat}
-                </Button>
+                </EditorButton>
               ))}
             </div>
           </div>
 
           {/* Templates Grid */}
-          <div className="flex-1 overflow-y-auto pr-1 -mr-1 py-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex-1 min-h-0 overflow-y-auto pr-1 py-1 grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredTemplates.map((template) => (
               <div
                 key={template.id}
-                className="flex flex-col justify-between p-4 rounded-2xl bg-bg-elevated border border-border-subtle hover:border-accent-primary/50 transition-all group"
+                className="flex flex-col justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/[0.07] hover:border-accent-primary/45 transition-all group"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-text-primary group-hover:text-accent-primary transition-colors text-base">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <h3 className="font-semibold text-text-primary group-hover:text-accent-primary transition-colors text-base truncate">
                       {template.name}
                     </h3>
-                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-bg-subtle text-text-muted border border-border-subtle">
+                    <span className="text-[11px] px-2 py-0.5 rounded-md bg-white/[0.05] text-text-muted border border-white/[0.08] shrink-0">
                       {template.category}
                     </span>
                   </div>
@@ -410,25 +410,28 @@ export function StarterTemplatesModal({
                   <TemplatePreview template={template} />
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-border-subtle flex items-center justify-between">
+                <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between">
                   <span className="text-xs text-text-muted">
                     {template.nodes.length} nodes · {template.edges.length} edges
                   </span>
-                  <Button
+                  <EditorButton
+                    tone="primary"
                     size="sm"
                     onClick={() => handleApply(template)}
-                    className="bg-accent-primary text-bg-base hover:bg-accent-primary/90 rounded-lg text-xs font-medium h-8 px-4"
+                    className="px-4"
                   >
-                    <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                    <Sparkles className="h-3.5 w-3.5" />
                     Use Template
-                  </Button>
+                  </EditorButton>
                 </div>
               </div>
             ))}
 
             {filteredTemplates.length === 0 && (
               <div className="col-span-full py-12 text-center text-text-muted">
-                <p className="text-sm">No templates found matching &quot;{search}&quot;</p>
+                <p className="text-sm">
+                  Nothing matched &quot;{search}&quot; — try another keyword or browse all.
+                </p>
               </div>
             )}
           </div>
@@ -440,35 +443,35 @@ export function StarterTemplatesModal({
         open={Boolean(pendingTemplate)}
         onOpenChange={(isOpen) => !isOpen && setPendingTemplate(null)}
       >
-        <DialogContent className="max-w-md p-6 rounded-3xl bg-bg-surface border-border-default text-text-primary">
-          <DialogHeader className="flex-row items-center gap-3">
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
-              <AlertTriangle className="h-6 w-6" />
+        <DialogContent showCloseButton className="sm:max-w-[440px]">
+          <DialogHeader className="flex-row items-center gap-3 pr-8">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20">
+              <AlertTriangle className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-semibold">Replace Current Canvas?</DialogTitle>
-              <DialogDescription className="text-text-muted text-sm mt-1">
-                Loading &quot;{pendingTemplate?.name}&quot; will clear all existing nodes and edges
-                on your canvas. This action cannot be undone.
+              <DialogTitle className="text-base font-semibold">Wipe the Current Canvas?</DialogTitle>
+              <DialogDescription className="text-text-muted text-xs mt-1">
+                Dropping in &quot;{pendingTemplate?.name}&quot; clears whatever&apos;s on the board
+                right now. Sure you want a fresh slate?
               </DialogDescription>
             </div>
           </DialogHeader>
-          <div className="flex justify-end gap-3 mt-4">
-            <Button
-              variant="ghost"
+          <DialogFooter>
+            <EditorButton
+              tone="socket"
+              size="md"
               onClick={() => setPendingTemplate(null)}
-              className="text-text-secondary hover:text-text-primary rounded-xl"
             >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
+              Never Mind
+            </EditorButton>
+            <EditorButton
+              tone="destructive"
+              size="md"
               onClick={confirmApply}
-              className="bg-red-600 hover:bg-red-700 text-white rounded-xl"
             >
-              Replace Canvas
-            </Button>
-          </div>
+              Yep, Replace It
+            </EditorButton>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

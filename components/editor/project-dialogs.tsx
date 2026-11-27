@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
+import { EditorButton } from './editor-button'
 import { Input } from '@/components/ui/input'
 import { useProjectActions } from '../../hooks/use-project-actions'
 import { FolderPlus, Pencil, Trash2 } from 'lucide-react'
@@ -44,46 +44,53 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
   if (activeDialog === 'create') {
     return (
       <Dialog open={true} onOpenChange={closeDialog}>
-        <DialogContent>
-          <DialogHeader className="flex-row items-center gap-3">
-            <FolderPlus className="h-5 w-5 text-accent-primary" />
+        <DialogContent showCloseButton className="sm:max-w-[460px]">
+          <DialogHeader className="flex-row items-center gap-3 pr-8">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#15303d_0%,#0c1f28_100%)] text-[#8ee0ea] ring-1 ring-white/10">
+              <FolderPlus className="h-5 w-5" />
+            </div>
             <div>
-              <DialogTitle>Create Project</DialogTitle>
-              <DialogDescription>Enter a name for your new architecture project.</DialogDescription>
+              <DialogTitle className="text-base font-semibold">Start a New Blueprint</DialogTitle>
+              <DialogDescription className="text-xs text-text-muted">
+                Give your architecture a name you&apos;ll still recognize at 2 AM.
+              </DialogDescription>
             </div>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
+          <div className="space-y-4 py-1">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-medium text-text-muted uppercase tracking-wider">
                 Project Name
               </label>
               <Input
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
-                placeholder="e.g. E-commerce Platform"
+                placeholder="e.g. Realtime Chat Engine"
                 autoFocus
+                className="h-10 rounded-xl bg-bg-base/85 border-white/[0.09] text-text-primary placeholder:text-text-faint focus-visible:border-accent-primary/65"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-medium text-text-muted uppercase tracking-wider">
                 Room ID Preview
               </label>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-bg-subtle border border-border-subtle text-text-secondary font-mono text-sm">
-                <span className="text-text-muted">ghost.ai/</span>
-                <span>{slugify(projectName) || 'your-project'}-XXXXX</span>
+              <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.07] text-text-secondary font-mono text-xs truncate">
+                <span className="text-text-muted shrink-0">ghost.ai/</span>
+                <span className="truncate">{slugify(projectName) || 'your-project'}-XXXXX</span>
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={closeDialog}>
+            <EditorButton tone="socket" size="md" onClick={closeDialog}>
               Cancel
-            </Button>
-            <Button
+            </EditorButton>
+            <EditorButton
+              tone="primary"
+              size="md"
               onClick={() => handleCreateProject(projectName)}
               disabled={!projectName || isLoading}
             >
               {isLoading ? 'Creating...' : 'Create Project'}
-            </Button>
+            </EditorButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -93,26 +100,29 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
   if (activeDialog === 'rename') {
     return (
       <Dialog open={true} onOpenChange={closeDialog}>
-        <DialogContent>
-          <DialogHeader className="flex-row items-center gap-3">
-            <Pencil className="h-5 w-5 text-accent-primary" />
+        <DialogContent showCloseButton className="sm:max-w-[460px]">
+          <DialogHeader className="flex-row items-center gap-3 pr-8">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#15303d_0%,#0c1f28_100%)] text-[#8ee0ea] ring-1 ring-white/10">
+              <Pencil className="h-5 w-5" />
+            </div>
             <div>
-              <DialogTitle>Rename Project</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-base font-semibold">Give It a Fresh Name</DialogTitle>
+              <DialogDescription className="text-xs text-text-muted">
                 Renaming <strong>{selectedProject?.name}</strong>.
               </DialogDescription>
             </div>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
+          <div className="space-y-4 py-1">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-medium text-text-muted uppercase tracking-wider">
                 New Project Name
               </label>
               <Input
                 ref={inputRef}
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
-                placeholder="Enter new name"
+                placeholder="What should we call it now?"
+                className="h-10 rounded-xl bg-bg-base/85 border-white/[0.09] text-text-primary placeholder:text-text-faint focus-visible:border-accent-primary/65"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && selectedProject?._id && projectName.trim()) {
                     e.preventDefault()
@@ -123,10 +133,12 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={closeDialog}>
+            <EditorButton tone="socket" size="md" onClick={closeDialog}>
               Cancel
-            </Button>
-            <Button
+            </EditorButton>
+            <EditorButton
+              tone="primary"
+              size="md"
               onClick={() => {
                 if (selectedProject?._id && projectName.trim()) {
                   handleRenameProject(selectedProject._id, projectName)
@@ -135,7 +147,7 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
               disabled={!selectedProject?._id || !projectName.trim() || isLoading}
             >
               {isLoading ? 'Saving...' : 'Save Changes'}
-            </Button>
+            </EditorButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -145,24 +157,26 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
   if (activeDialog === 'delete') {
     return (
       <Dialog open={true} onOpenChange={closeDialog}>
-        <DialogContent>
-          <DialogHeader className="flex-row items-center gap-3">
-            <Trash2 className="h-5 w-5 text-state-error" />
+        <DialogContent showCloseButton className="sm:max-w-[460px]">
+          <DialogHeader className="flex-row items-center gap-3 pr-8">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-state-error/10 text-state-error ring-1 ring-state-error/25">
+              <Trash2 className="h-5 w-5" />
+            </div>
             <div>
-              <DialogTitle>Delete Project</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete <strong>{selectedProject?.name}</strong>? This
-                action cannot be undone.
+              <DialogTitle className="text-base font-semibold">Send to the Void?</DialogTitle>
+              <DialogDescription className="text-xs text-text-muted mt-0.5">
+                Deleting <strong>{selectedProject?.name}</strong> wipes its canvas and specs for
+                good. No Ctrl+Z on this one.
               </DialogDescription>
             </div>
           </DialogHeader>
-          <div className="py-4" />
           <DialogFooter>
-            <Button variant="outline" onClick={closeDialog}>
+            <EditorButton tone="socket" size="md" onClick={closeDialog}>
               Cancel
-            </Button>
-            <Button
-              variant="destructive"
+            </EditorButton>
+            <EditorButton
+              tone="destructive"
+              size="md"
               onClick={() => {
                 if (selectedProject?._id && selectedProject?.roomId) {
                   handleDeleteProject(selectedProject._id, selectedProject.roomId)
@@ -171,7 +185,7 @@ export function ProjectDialogsComponent({ state }: ProjectDialogsProps) {
               disabled={isLoading || !selectedProject?._id}
             >
               {isLoading ? 'Deleting...' : 'Delete Project'}
-            </Button>
+            </EditorButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

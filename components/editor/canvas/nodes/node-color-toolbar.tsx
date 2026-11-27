@@ -12,7 +12,7 @@ interface NodeColorToolbarProps {
 export function NodeColorToolbar({ currentColor, onColorChange }: NodeColorToolbarProps) {
   return (
     <div
-      className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-1 bg-bg-surface border border-border-default rounded-xl shadow-lg z-50 transition-all animate-in fade-in slide-in-from-bottom-1"
+      className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-1.5 bg-[#0e141c]/95 backdrop-blur-2xl border border-white/[0.08] rounded-xl shadow-[0_16px_40px_-8px_rgba(0,0,0,0.88),inset_0_1px_0_rgba(255,255,255,0.06)] z-50 transition-all animate-in fade-in slide-in-from-bottom-1"
       onMouseDown={(e) => e.stopPropagation()}
       onMouseEnter={(e) => e.stopPropagation()}
       onMouseLeave={(e) => e.stopPropagation()}

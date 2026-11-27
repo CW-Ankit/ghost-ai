@@ -10,7 +10,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
+import { EditorButton } from './editor-button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Switch } from '@/components/ui/switch'
@@ -29,6 +29,7 @@ interface Collaborator {
 interface ShareDialogProps {
   projectId: string
   ownerId: string
+  canManage?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
   publicAccess?: 'PRIVATE' | 'VIEW_ONLY'
@@ -38,13 +39,16 @@ interface ShareDialogProps {
 export function ShareDialog({
   projectId,
   ownerId,
+  canManage,
   open,
   onOpenChange,
   publicAccess: initialPublicAccess,
   roomId: propRoomId,
 }: ShareDialogProps) {
   const { userId } = useAuth()
-  const isOwner = userId === ownerId
+  const isOwner =
+    canManage ??
+    (Boolean(userId) && (userId === ownerId || ownerId.endsWith(`|${userId}`)))
 
   const setPublicAccessMutation = useMutation(api.projects.setPublicAccess)
 
@@ -164,24 +168,24 @@ export function ShareDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-3xl bg-bg-surface border-border-default text-text-primary overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">Share Architecture</DialogTitle>
-          <DialogDescription className="text-text-muted">
-            Share this architecture diagram with your team or publish a view-only link.
+      <DialogContent showCloseButton className="sm:max-w-[520px] max-h-[85vh] overflow-hidden">
+        <DialogHeader className="pr-8">
+          <DialogTitle className="text-lg font-semibold">Invite the Crew</DialogTitle>
+          <DialogDescription className="text-xs text-text-muted">
+            Bring teammates onto the canvas or flip on a read-only link for lurkers.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5 py-3">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-5 py-1">
           {/* Public Link Sharing Toggle Card */}
-          <div className="p-3.5 rounded-2xl bg-bg-elevated border border-border-default space-y-2.5">
+          <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] space-y-2.5">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
                 <div
                   className={`p-2 rounded-xl border flex items-center justify-center transition-colors shrink-0 ${
                     isPublic
                       ? 'bg-accent-primary-dim text-accent-primary border-accent-primary/40'
-                      : 'bg-bg-subtle text-text-muted border-border-subtle'
+                      : 'bg-white/[0.04] text-text-muted border-white/[0.08]'
                   }`}
                 >
                   {isPublic ? <Globe className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
@@ -190,10 +194,10 @@ export function ShareDialog({
                   <div className="flex items-center gap-2">
                     <h4 className="text-xs font-semibold text-text-primary">Public Link Sharing</h4>
                     <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${
+                      className={`text-[10px] px-2 py-0.5 rounded-md font-medium border ${
                         isPublic
                           ? 'bg-accent-primary-dim text-accent-primary border-accent-primary/40'
-                          : 'bg-bg-subtle text-text-muted border-border-subtle'
+                          : 'bg-white/[0.04] text-text-muted border-white/[0.08]'
                       }`}
                     >
                       {isPublic ? 'View Only' : 'Restricted'}
@@ -201,8 +205,8 @@ export function ShareDialog({
                   </div>
                   <p className="text-[11px] text-text-muted mt-0.5">
                     {isPublic
-                      ? 'Anyone with this link can view the canvas.'
-                      : 'Only invited collaborators can access.'}
+                      ? 'Anyone with this link can peek (read-only).'
+                      : 'Locked down — invite-only access.'}
                   </p>
                 </div>
               </div>
@@ -218,8 +222,8 @@ export function ShareDialog({
             </div>
 
             {!isOwner && (
-              <p className="text-[10px] text-text-faint italic pt-1 border-t border-border-subtle/50">
-                Only the project owner can change public link sharing settings.
+              <p className="text-[10px] text-text-faint italic pt-1 border-t border-white/[0.06]">
+                Only the project owner or an org admin can flip the public link switch.
               </p>
             )}
           </div>
@@ -227,7 +231,7 @@ export function ShareDialog({
           {/* Invite Section */}
           {isOwner && (
             <div className="space-y-2">
-              <h3 className="text-xs font-medium text-text-faint uppercase tracking-wider">
+              <h3 className="text-[11px] font-medium text-text-faint uppercase tracking-wider">
                 Invite by Email
               </h3>
               <div className="flex gap-2">
@@ -236,25 +240,27 @@ export function ShareDialog({
                     placeholder="colleague@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="bg-bg-base border-border-subtle text-text-primary placeholder:text-text-faint rounded-xl text-xs h-9"
+                    className="bg-bg-base/85 border-white/[0.09] text-text-primary placeholder:text-text-faint rounded-xl text-xs h-9 focus-visible:border-accent-primary/65"
                   />
                 </div>
-                <Button
+                <EditorButton
+                  tone="primary"
+                  size="sm"
                   onClick={handleInvite}
                   disabled={isLoading || !email}
-                  className="bg-accent-primary text-bg-base hover:bg-accent-primary/90 rounded-xl gap-1.5 text-xs h-9 font-medium"
+                  className="text-xs px-3.5 shrink-0"
                 >
                   {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                   <UserPlus className="h-3.5 w-3.5" />
                   <span>Invite</span>
-                </Button>
+                </EditorButton>
               </div>
             </div>
           )}
 
           {/* Collaborators List */}
           <div className="space-y-2.5">
-            <h3 className="text-xs font-medium text-text-faint uppercase tracking-wider">
+            <h3 className="text-[11px] font-medium text-text-faint uppercase tracking-wider">
               Collaborators
             </h3>
             {isFetching ? (
@@ -262,40 +268,42 @@ export function ShareDialog({
                 <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
               </div>
             ) : collaborators.length === 0 ? (
-              <div className="text-center py-5 border border-dashed border-border-subtle rounded-2xl">
-                <p className="text-xs text-text-muted">No collaborators invited yet</p>
+              <div className="text-center py-5 border border-dashed border-white/[0.08] rounded-2xl px-4">
+                <p className="text-xs text-text-muted">
+                  Just you in here right now. Drop an email above to bring in a teammate.
+                </p>
               </div>
             ) : (
-              <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                 {collaborators.map((collab) => (
                   <div
                     key={collab.email}
-                    className="flex items-center justify-between p-2 rounded-xl bg-bg-elevated border border-transparent hover:border-border-subtle transition-colors"
+                    className="flex items-center justify-between p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] transition-colors"
                   >
-                    <div className="flex items-center gap-2.5">
-                      <Avatar className="h-7 w-7 border border-border-subtle">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Avatar className="h-7 w-7 border border-white/10 shrink-0">
                         <AvatarImage src={collab.avatarUrl || ''} />
                         <AvatarFallback className="bg-bg-subtle text-text-secondary text-[10px]">
                           {collab.email[0].toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex flex-col">
-                        <span className="text-xs font-medium text-text-primary">
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-medium text-text-primary truncate">
                           {collab.name || collab.email}
                         </span>
-                        <span className="text-[10px] text-text-muted">{collab.email}</span>
+                        <span className="text-[10px] text-text-muted truncate">{collab.email}</span>
                       </div>
                     </div>
                     {isOwner && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
+                      <EditorButton
+                        tone="ghost3d"
+                        size="icon-sm"
                         onClick={() => handleRemove(collab.email)}
-                        className="h-7 w-7 text-text-muted hover:text-state-error hover:bg-state-error/10 rounded-lg"
+                        className="text-text-muted hover:text-state-error shrink-0"
                         title={`Remove ${collab.email}`}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      </EditorButton>
                     )}
                   </div>
                 ))}
@@ -304,11 +312,12 @@ export function ShareDialog({
           </div>
 
           {/* Copy Link Section */}
-          <div className="pt-2 border-t border-border-subtle">
-            <Button
-              variant="outline"
+          <div className="pt-2 border-t border-white/[0.06]">
+            <EditorButton
+              tone="socket"
+              size="md"
               onClick={handleCopyLink}
-              className="w-full justify-between bg-bg-base border-border-subtle text-text-secondary hover:text-text-primary hover:bg-bg-subtle rounded-xl gap-2 h-9 text-xs"
+              className="w-full justify-between text-xs"
             >
               <div className="flex items-center gap-2">
                 <Copy className="h-3.5 w-3.5" />
@@ -320,18 +329,18 @@ export function ShareDialog({
                   <span className="text-[11px]">Copied</span>
                 </div>
               ) : null}
-            </Button>
+            </EditorButton>
           </div>
         </div>
 
         <DialogFooter>
-          <Button
-            variant="ghost"
+          <EditorButton
+            tone="socket"
+            size="sm"
             onClick={() => onOpenChange(false)}
-            className="text-text-muted hover:text-text-primary rounded-xl text-xs h-8"
           >
             Close
-          </Button>
+          </EditorButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>
