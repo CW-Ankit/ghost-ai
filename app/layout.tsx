@@ -5,6 +5,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { shadcn } from '@clerk/ui/themes'
 import ConvexClientProvider from '@/components/convex-client-provider'
 import { CustomCursor } from '@/components/custom-cursor'
+import { Analytics } from '@vercel/analytics/next'
 
 const googleSansFlex = localFont({
   src: './fonts/GoogleSansFlex-Variable.woff2',
@@ -86,6 +87,7 @@ export default function RootLayout({
           <ConvexClientProvider>{children}</ConvexClientProvider>
         </ClerkProvider>
         <CustomCursor />
+        <Analytics />
       </body>
     </html>
   )
