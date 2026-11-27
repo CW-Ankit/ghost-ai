@@ -4,12 +4,9 @@ import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery } from 'convex/react'
 import {
-  ArrowUpRight,
   Command,
   FileText,
-  Layers,
   LayoutTemplate,
-  Palette,
   Search,
   Sparkles,
   X,
@@ -46,16 +43,6 @@ interface SearchCommandBarProps {
   onRunQuickAction?: (actionId: string) => void
   placeholder?: string
 }
-
-const LAYER_SWATCHES: Array<{ key: keyof typeof NODE_COLORS; label: string }> = [
-  { key: 'blue', label: 'API / Edge' },
-  { key: 'purple', label: 'AI / ML' },
-  { key: 'orange', label: 'Events' },
-  { key: 'green', label: 'Databases' },
-  { key: 'teal', label: 'Infra' },
-  { key: 'pink', label: 'Frontend' },
-  { key: 'red', label: 'Cache / Alerts' },
-]
 
 const FALLBACK_TRENDING = ['microservices', 'kafka', 'status:review', 'color:purple']
 
@@ -233,12 +220,6 @@ export function SearchCommandBar({
   const clampedActiveIndex =
     flatOptions.length > 0 ? Math.min(activeIndex, flatOptions.length - 1) : -1
 
-  const recentPreviewProjects = useMemo(() => {
-    return [...allProjects]
-      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
-      .slice(0, 2)
-  }, [allProjects])
-
   const commitQueryHistory = (term: string) => {
     if (term.trim()) {
       setRecentSearches(pushRecentSearch(term))
@@ -268,18 +249,6 @@ export function SearchCommandBar({
 
   const applyFilterChip = (chip: string) => {
     setQuery(chip)
-    setActiveIndex(0)
-    inputRef.current?.focus()
-  }
-
-  const toggleColorFilter = (colorKey: string) => {
-    const token = `color:${colorKey}`
-    const existingTokens = query.trim().split(/\s+/).filter(Boolean)
-    const hasToken = existingTokens.some((t) => t.toLowerCase() === token)
-    const nextTokens = hasToken
-      ? existingTokens.filter((t) => t.toLowerCase() !== token)
-      : [...existingTokens.filter((t) => !t.toLowerCase().startsWith('color:')), token]
-    setQuery(nextTokens.join(' '))
     setActiveIndex(0)
     inputRef.current?.focus()
   }
@@ -383,24 +352,6 @@ export function SearchCommandBar({
                 Ctrl K
               </kbd>
             )}
-
-            <button
-              type="button"
-              onClick={() => {
-                setIsOpen((prev) => !prev)
-                inputRef.current?.focus()
-              }}
-              aria-label="Toggle layer filters"
-              title="Filter by layer color or tag"
-              className={cn(
-                'rounded-lg p-1.5 transition-colors',
-                isOpen
-                  ? 'text-[#8cd3dc] bg-white/[0.08]'
-                  : 'text-text-muted hover:text-text-primary hover:bg-white/[0.06]'
-              )}
-            >
-              <Palette className="h-3.5 w-3.5" />
-            </button>
           </div>
         </div>
 
@@ -414,105 +365,20 @@ export function SearchCommandBar({
           >
             {!isFiltering ? (
               <>
-                {/* Section 1: Recent & Tags (Cosmos "Trending") */}
+                {/* Recent & Tags */}
                 <div className="space-y-2">
                   <div className="text-[11px] font-medium text-text-muted">Recent &amp; Tags</div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {trendingChips.map((chip) => (
                       <button
                         key={chip}
                         type="button"
                         onClick={() => applyFilterChip(chip)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-xs font-medium text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-xs text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
                       >
-                        <ArrowUpRight className="h-3 w-3 text-text-muted" />
                         <span>{chip}</span>
                       </button>
                     ))}
-                  </div>
-                </div>
-
-                {/* Section 2: Architectural Layer Colors (Cosmos "Colors") */}
-                <div className="space-y-2">
-                  <div className="text-[11px] font-medium text-text-muted">Layers</div>
-                  <div className="flex flex-wrap gap-2">
-                    {LAYER_SWATCHES.map((swatch) => {
-                      const palette = NODE_COLORS[swatch.key]
-                      const active = parsed.colors.includes(swatch.key)
-                      return (
-                        <button
-                          key={swatch.key}
-                          type="button"
-                          onClick={() => toggleColorFilter(swatch.key)}
-                          className={cn(
-                            'inline-flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs transition-colors cursor-pointer',
-                            active
-                              ? 'bg-white/[0.14] text-text-primary'
-                              : 'bg-white/[0.05] hover:bg-white/[0.09] text-text-secondary hover:text-text-primary'
-                          )}
-                        >
-                          <span
-                            className="h-3.5 w-3.5 rounded-full shrink-0 shadow-sm"
-                            style={{ backgroundColor: palette.text }}
-                          />
-                          <span>{swatch.label}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                {/* Section 3: Visual Quick Browse Cards (Cosmos "Categories") */}
-                <div className="space-y-2">
-                  <div className="text-[11px] font-medium text-text-muted">Quick Browse</div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    {recentPreviewProjects.map((proj) => (
-                      <button
-                        key={proj._id}
-                        type="button"
-                        onClick={() => {
-                          setIsOpen(false)
-                          router.push(`/editor/${proj.roomId}`)
-                        }}
-                        className="flex items-center gap-3 p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.09] text-left transition-colors cursor-pointer group"
-                      >
-                        <div className="h-10 w-10 rounded-lg bg-bg-subtle overflow-hidden shrink-0">
-                          {proj.canvasSnapshot ? (
-                            <CanvasPreview snapshot={proj.canvasSnapshot} />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center text-[#7ecbd4]">
-                              <FileText className="h-4 w-4" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-medium text-text-primary truncate group-hover:text-white">
-                            {proj.name}
-                          </div>
-                          <div className="text-[10px] text-text-muted truncate">
-                            {proj.nodeCount ? `${proj.nodeCount} nodes` : 'Open canvas'}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-
-                    <button
-                      type="button"
-                      onClick={() => applyFilterChip('status:review')}
-                      className="flex items-center gap-3 p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.09] text-left transition-colors cursor-pointer group"
-                    >
-                      <div className="h-10 w-10 rounded-lg bg-accent-ai-dim flex items-center justify-center text-accent-ai-text shrink-0">
-                        <Layers className="h-4 w-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-xs font-medium text-text-primary truncate">
-                          In Review
-                        </div>
-                        <div className="text-[10px] text-text-muted truncate">
-                          Filter review boards
-                        </div>
-                      </div>
-                    </button>
                   </div>
                 </div>
               </>
